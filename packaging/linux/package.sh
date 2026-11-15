@@ -70,9 +70,6 @@ sed -e "s/@VERSION@/$VERSION/g" -e "s/@DATE@/$PULSO_BUILD_DATE/g" \
 mkdir -p "$STAGE/usr/share/icons"
 cp -R "$ROOT/assets/app-icon/hicolor" "$STAGE/usr/share/icons/"
 
-# The .desktop names the icon dev.danielmiguelt.Pulso, the Nodalia name, so an icon theme can
-# tell this app from the Craft app that shares its ID.
-for f in "$STAGE"/usr/share/icons/hicolor/*/apps/"$APP_ID".{png,svg}; do cp "$f" "${f%/*}/dev.danielmiguelt.Pulso.${f##*.}"; done
 mkdir -p "$STAGE/usr/share/doc/pulso"
 copy_docs "$STAGE/usr/share/doc/pulso"
 
@@ -139,7 +136,6 @@ if has appimage; then
   ln -s usr/bin/pulso "$APPDIR/AppRun"
   cp "$HERE/$APP_ID.desktop" "$APPDIR/$APP_ID.desktop"
   cp "$ROOT/assets/app-icon/hicolor/256x256/apps/$APP_ID.png" "$APPDIR/$APP_ID.png"
-  cp "$ROOT/assets/app-icon/hicolor/256x256/apps/$APP_ID.png" "$APPDIR/dev.danielmiguelt.Pulso.png"
   ln -s "$APP_ID.png" "$APPDIR/.DirIcon"
 
   TOOL="${APPIMAGETOOL:-$(command -v appimagetool || true)}"
