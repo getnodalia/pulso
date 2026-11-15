@@ -10,8 +10,7 @@
 use std::path::{Path, PathBuf};
 
 pub const APP_ID: &str = "dev.danielmiguelt.Pulso";
-/// The icon's theme name, the Nodalia one, so an icon theme can tell Pulso from the Craft app
-/// that shares its ID. Same as `Icon=` in `packaging/linux/dev.danielmiguelt.Pulso.desktop`.
+/// The icon's theme name: the app ID, as `Icon=` in `packaging/linux/dev.danielmiguelt.Pulso.desktop`.
 pub const ICON_NAME: &str = "dev.danielmiguelt.Pulso";
 
 /// Marks entries this module wrote (it never touches others).

@@ -457,7 +457,7 @@ pub(crate) fn submenu(app: &PulsoApp, source: &str, shown: String) -> String {
 
 /// Simplified Chinese (zh-hans): the same (command, English label) keys as `JAPANESE`, one
 /// entry per fixed menu row of the engine's menu tree. The wording follows Adobe's Simplified
-/// Chinese After Effects documentation and the catalogs the sibling Craft apps ship; see the
+/// Chinese After Effects documentation and the catalogs the sibling Nodalia apps ship; see the
 /// pull request for the rows taken from #321.
 const SIMPLIFIED_CHINESE: &[(&str, &str, &str)] = &[
     ("", "Pulso", "Pulso"),
@@ -1740,7 +1740,7 @@ const SWEDISH: &[(&str, &str, &str)] = &[
 
 /// Traditional Chinese (zh-hant): the same (command, English label) keys as `JAPANESE`, one
 /// entry per fixed menu row of the engine's menu tree, mirroring `SIMPLIFIED_CHINESE` in the
-/// vocabulary the sibling Craft apps' zh-hant catalogs use.
+/// vocabulary the sibling Nodalia apps' zh-hant catalogs use.
 const TRADITIONAL_CHINESE: &[(&str, &str, &str)] = &[
     ("", "Pulso", "Pulso"),
     ("app.about", "About Pulso...", "關於 Pulso..."),
@@ -8152,7 +8152,7 @@ const CZECH: &[(&str, &str, &str)] = &[
 
 /// Georgian (ka): the same (command, English label) keys as `JAPANESE`, one entry per fixed menu row.
 /// Original translations written from the meaning of the English labels, sharing the terminology of
-/// the other Craft apps' Georgian catalogs (შრე, საკვანძო კადრი, კომპოზიცია, ნიღაბი); commands are
+/// the other Nodalia apps' Georgian catalogs (შრე, საკვანძო კადრი, კომპოზიცია, ნიღაბი); commands are
 /// verbal nouns (შენახვა, გახსნა) and Georgian has no capital letters.
 const GEORGIAN: &[(&str, &str, &str)] = &[
     ("", "Pulso", "Pulso"),
