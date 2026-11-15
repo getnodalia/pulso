@@ -4,9 +4,9 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use effectcraft_color::luminance;
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
+use pulso_color::luminance;
+use pulso_keyframe::Value;
+use pulso_project::ParamUi;
 use rayon::prelude::*;
 
 use crate::util::{premul, unpremul};
@@ -114,10 +114,10 @@ impl Cineon {
         1.0 - (self.rolloff / 100.0).clamp(0.0, 0.99)
     }
     /// Normalized code value (code / 1023) → linear, raised to `1.7 / gamma`
-    /// ([`effectcraft_project::cineon_log_to_lin`], which Interpret Footage ▸ Cineon Settings
+    /// ([`pulso_project::cineon_log_to_lin`], which Interpret Footage ▸ Cineon Settings
     /// also uses with `1 / gamma`).
     pub fn log_to_lin(&self, v: f32) -> f32 {
-        let lin = effectcraft_project::cineon_log_to_lin(v, self.black, self.white, 1.7, self.gamma, self.rolloff);
+        let lin = pulso_project::cineon_log_to_lin(v, self.black, self.white, 1.7, self.gamma, self.rolloff);
         self.ib + (self.iw - self.ib) * lin
     }
     /// Linear → normalised code value.
@@ -517,14 +517,14 @@ mod tests {
             }
             let vals = [("conversionType", Value::Enum(1)), ("gamma", num(gamma * 1.7)), ("highlightRolloff", num(rolloff))];
             let out = run("ec.utility.cineon", &vals, img);
-            let settings = effectcraft_project::CineonSettings { log_conversion: true, gamma: gamma as f32, rolloff: rolloff as f32, ..Default::default() };
+            let settings = pulso_project::CineonSettings { log_conversion: true, gamma: gamma as f32, rolloff: rolloff as f32, ..Default::default() };
             for (x, code) in codes.iter().enumerate() {
                 let footage = settings.convert(code / 1023.0);
                 let effect = out.img.data[x][0];
                 assert!((footage - effect).abs() < 1e-6, "gamma {gamma}, rolloff {rolloff}, code {code}: {footage} vs {effect}");
             }
         }
-        let linear = effectcraft_project::CineonSettings { gamma: 1.0, rolloff: 0.0, ..Default::default() };
+        let linear = pulso_project::CineonSettings { gamma: 1.0, rolloff: 0.0, ..Default::default() };
         assert!((linear.convert(400.0 / 1023.0) - 0.10251).abs() < 1e-4);
     }
 

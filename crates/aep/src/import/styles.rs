@@ -1,27 +1,27 @@
-//! Layer styles (`ADBE Layer Styles`, docs `aep-format.md` 3.14) into EffectCraft's `layerStyles`
+//! Layer styles (`ADBE Layer Styles`, docs `aep-format.md` 3.14) into Pulso's `layerStyles`
 //! group, through the shared table [`crate::style_map`].
 //!
 //! A style is imported when its switch group is applied (`tdsb` 1). Every parameter starts at
-//! After Effects' default (not EffectCraft's: Use Global Light is off there), then the stored
+//! After Effects' default (not Pulso's: Use Global Light is off there), then the stored
 //! records, keys and expressions are applied. Global Light Angle / Altitude are one setting per
-//! composition in EffectCraft: they land on the layer's Blending Options and the composition
-//! adopts them afterwards ([`effectcraft_project::styles::sync_comp`]). Not imported, reported:
+//! composition in Pulso: they land on the layer's Blending Options and the composition
+//! adopts them afterwards ([`pulso_project::styles::sync_comp`]). Not imported, reported:
 //! gradients (`GCst`, not decoded), Pattern Overlay, switch groups in the state 3 (not
 //! sampled; state 0 is a style switched off, 988), keys on popups and
 //! checkboxes, and styles on layers that take none here (adjustment layers, cameras, lights).
 
 use crate::style_map::{self as sm, StyleConv, StyleParam};
 use crate::{Layer as AepLayer, PropGroup as AepGroup, PropNode, Property as AepProp};
-use effectcraft_keyframe::Value;
-use effectcraft_project::build::Ids;
-use effectcraft_project::styles::{self as st, GlobalLight, STYLE_BLEND_MODES};
-use effectcraft_project::{Layer, Property as EcProp};
+use pulso_keyframe::Value;
+use pulso_project::build::Ids;
+use pulso_project::styles::{self as st, GlobalLight, STYLE_BLEND_MODES};
+use pulso_project::{Layer, Property as EcProp};
 
 use crate::import::props::{Kind, import_expression, import_keys, sane};
 use crate::import::report::{Collector, LossCategory};
 use crate::import::time::TimeMap;
 
-/// A stored style value as an EffectCraft value; `None` when it does not fit the conversion.
+/// A stored style value as an Pulso value; `None` when it does not fit the conversion.
 pub(crate) fn value(conv: StyleConv, c: &[f64]) -> Option<Value> {
     let g = |i: usize| c.get(i).copied().filter(|v| v.is_finite());
     let v = match conv {
@@ -54,7 +54,7 @@ fn key_kind(conv: StyleConv) -> Option<Kind> {
 fn import_param(spec: &StyleParam, full: &str, node: Option<PropNode<'_, '_>>, prop: &mut EcProp, tm: &TimeMap, what: &str, col: &mut Collector) {
     if spec.conv == StyleConv::Gradient {
         if node.is_some() {
-            col.lose(LossCategory::LayerStyles, format!("{what}: {full} (gradient colours are not decoded, EffectCraft's default gradient kept)"));
+            col.lose(LossCategory::LayerStyles, format!("{what}: {full} (gradient colours are not decoded, Pulso's default gradient kept)"));
         }
         return;
     }

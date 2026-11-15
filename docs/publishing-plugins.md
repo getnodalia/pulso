@@ -1,6 +1,6 @@
 # Publishing an effect plug-in
 
-This guide takes you from an empty folder to an effect listed in EffectCraft's **Plug-in
+This guide takes you from an empty folder to an effect listed in Pulso's **Plug-in
 Library** (Settings ▸ Plug-in Library, also Effect ▸ Plug-in Library…). The reference for the
 plug-in API is [plugins.md](plugins.md#effect-plug-ins); this page is the walk-through.
 
@@ -28,13 +28,13 @@ If you only want to use plug-ins, skip to [For users](#for-users).
 in plain Rust with no dependencies. Copy it into a new folder (and a new Git repository):
 
 ```sh
-cp -r effectcraft/examples/plugins/posterize-bands my-effect
+cp -r pulso/examples/plugins/posterize-bands my-effect
 cd my-effect
 rm -rf target
 git init
 ```
 
-The folder has its own `[workspace]`, so it builds on its own, outside the EffectCraft repository.
+The folder has its own `[workspace]`, so it builds on its own, outside the Pulso repository.
 
 Then make it yours:
 
@@ -73,7 +73,7 @@ cargo build --release --target wasm32-unknown-unknown
 
 The module is `target/wasm32-unknown-unknown/release/<name>.wasm`.
 
-## 3. Test it in EffectCraft
+## 3. Test it in Pulso
 
 Load the module straight from the build folder:
 
@@ -83,7 +83,7 @@ Load the module straight from the build folder:
 * **CLI:**
 
   ```sh
-  effectcraft-cli exec effect.plugins.load '{"path": "target/wasm32-unknown-unknown/release/my_effect.wasm"}'
+  pulso-cli exec effect.plugins.load '{"path": "target/wasm32-unknown-unknown/release/my_effect.wasm"}'
   ```
 
   The reply describes the effect, or says why the module was refused (a missing export, an
@@ -94,7 +94,7 @@ To have it at every start, put the `.wasm` in the `Plug-ins` folder of the
 
 ## 4. Check the live preview
 
-Every package in the Plug-in Library gets a **live preview**: you do nothing to get it. EffectCraft
+Every package in the Plug-in Library gets a **live preview**: you do nothing to get it. Pulso
 downloads the module (without installing it) and renders your effect in the sandbox on a built-in
 sample frame (320 × 180: a colour gradient, two discs and a band of fine stripes), with the
 **default parameters**, for 2 seconds of animation (12 frames per second),
@@ -192,13 +192,13 @@ Release fields (one per entry in `versions`):
 |---|---|---|
 | `version` | yes | Dotted numbers only, at most 32 characters: `1.0.0`, `1.2`. No `v` and no suffixes such as `-beta`. |
 | `api` | yes | The plug-in API the module implements: `1`. |
-| `minApp` | no | The oldest EffectCraft version the release needs (`0.17.0`). Leave it out if any version with this API works. |
+| `minApp` | no | The oldest Pulso version the release needs (`0.17.0`). Leave it out if any version with this API works. |
 | `url` | yes | The release asset's `https://` URL on GitHub. |
 | `sha256` | yes | The file's SHA-256, 64 hex digits. |
 | `size` | no, but reviewed | The file's size in bytes. When it is given, a download of another size is refused. |
-| `effects` | yes | The effect ids the module registers (its manifest's `id`). EffectCraft uses them to find the package that provides an effect a project needs. |
+| `effects` | yes | The effect ids the module registers (its manifest's `id`). Pulso uses them to find the package that provides an effect a project needs. |
 
-The rules EffectCraft applies when it reads the catalog:
+The rules Pulso applies when it reads the catalog:
 
 * Downloads are `https://` only, from GitHub's hosts only: `github.com`,
   `raw.githubusercontent.com`, and the hosts release assets redirect to
@@ -209,8 +209,8 @@ The rules EffectCraft applies when it reads the catalog:
 * A package with a bad id, no name, or an id another package already uses is left out; so is a
   release with a bad version, `minApp` or `sha256`, or no `url`. The rest of the catalog still
   works.
-* EffectCraft installs the newest release whose `api` it implements and whose `minApp` it meets.
-  When the newest release needs a newer EffectCraft, `library.list` says so (`needsNewerApp`).
+* Pulso installs the newest release whose `api` it implements and whose `minApp` it meets.
+  When the newest release needs a newer Pulso, `library.list` says so (`needsNewerApp`).
 * The download must match `sha256` (and `size`, if given) exactly, or it is refused.
 
 ## 8. Test the entry locally
@@ -231,11 +231,11 @@ File URLs are absolute: `file:///home/me/glow-rings/index.json` on Linux and mac
 Use a separate settings folder, so the test doesn't touch your real installation:
 
 ```sh
-export EFFECTCRAFT_CONFIG_DIR="$PWD/ec-test"           # PowerShell: $env:EFFECTCRAFT_CONFIG_DIR = "$PWD\ec-test"
-effectcraft-cli exec library.refresh '{"catalog": "file:///home/me/glow-rings/index.json", "wait": true}'
-effectcraft-cli exec library.list
-effectcraft-cli exec library.preview '{"id": "io.github.yourname.glow-rings", "wait": true}'
-effectcraft-cli exec library.install '{"id": "io.github.yourname.glow-rings", "wait": true}'
+export PULSO_CONFIG_DIR="$PWD/ec-test"           # PowerShell: $env:PULSO_CONFIG_DIR = "$PWD\ec-test"
+pulso-cli exec library.refresh '{"catalog": "file:///home/me/glow-rings/index.json", "wait": true}'
+pulso-cli exec library.list
+pulso-cli exec library.preview '{"id": "io.github.yourname.glow-rings", "wait": true}'
+pulso-cli exec library.install '{"id": "io.github.yourname.glow-rings", "wait": true}'
 ```
 
 * `library.refresh` reads the catalog and keeps a copy, so the next commands (separate runs of
@@ -248,11 +248,11 @@ effectcraft-cli exec library.install '{"id": "io.github.yourname.glow-rings", "w
 * `library.install` installs it into the test settings folder and loads it.
 
 To look at the preview in the app, start the desktop app with the control channel
-(`effectcraft --control 9877`, with the same `EFFECTCRAFT_CONFIG_DIR` if you set one), point it at
+(`pulso --control 9877`, with the same `PULSO_CONFIG_DIR` if you set one), point it at
 your catalog, then open Settings ▸ Plug-in Library and press Preview on your package:
 
 ```sh
-effectcraft-cli exec library.refresh '{"catalog": "file:///home/me/glow-rings/index.json", "wait": true}' --bridge 9877
+pulso-cli exec library.refresh '{"catalog": "file:///home/me/glow-rings/index.json", "wait": true}' --bridge 9877
 ```
 
 The Refresh button in the app goes back to the community catalog.
@@ -275,7 +275,7 @@ Reviewers check, and you can check first:
 * **Public source.** `repo` is public and contains the plug-in's source at the release's tag.
 * **Reproducible.** The module builds from that source (the steps are in the repository's README)
   and the result has the SHA-256 in the entry.
-* **No imports.** The module imports nothing; EffectCraft refuses it otherwise. `library.install`
+* **No imports.** The module imports nothing; Pulso refuses it otherwise. `library.install`
   from a local catalog shows it.
 * **Ids.** The package id and effect ids are your own, follow the rules, don't start with `ec.`,
   and `effects` matches the manifest's `id`.
@@ -290,7 +290,7 @@ Reviewers check, and you can check first:
 1. Change the code, raise the version in `Cargo.toml` and in the manifest, build, and publish a
    new GitHub release (a new tag; never re-use an old one).
 2. Add a new object to `versions` with the new `version`, `url`, `sha256`, `size` and `effects`.
-   Keep the old entries: they may stay, and users of an older EffectCraft still get a release they
+   Keep the old entries: they may stay, and users of an older Pulso still get a release they
    can run (set `minApp` on the new one if it needs a newer app).
 3. Test it with a local catalog as in [step 8](#8-test-the-entry-locally) (`library.update`
    updates an installed package), and open a pull request.
@@ -318,7 +318,7 @@ Settings ▸ Plug-in Library (also Effect ▸ Plug-in Library…):
 * **Update** (or **Update All**) installs a newer release. **Remove** deletes a package.
 * **Restart after updating or removing** a package whose effects are loaded: loaded effects can't
   be unloaded, so the change takes effect at the next start, and the list says "Restart
-  EffectCraft to finish".
+  Pulso to finish".
 * A project that uses an effect you don't have: `library.missing` lists the missing effects and
   the catalog packages that provide them.
 
@@ -332,12 +332,12 @@ Packages are installed in the `Plug-ins/Library` folder of the settings folder:
 
 | System | Settings folder |
 |---|---|
-| macOS | `~/Library/Application Support/EffectCraft` |
-| Windows | `%APPDATA%\EffectCraft` |
-| Linux | `$XDG_CONFIG_HOME/effectcraft` or `~/.config/effectcraft` |
-| Portable (a `portable.txt` beside the executable) | `EffectCraftData` beside the executable |
+| macOS | `~/Library/Application Support/Pulso` |
+| Windows | `%APPDATA%\Pulso` |
+| Linux | `$XDG_CONFIG_HOME/pulso` or `~/.config/pulso` |
+| Portable (a `portable.txt` beside the executable) | `PulsoData` beside the executable |
 
-`EFFECTCRAFT_CONFIG_DIR` overrides it. In `Plug-ins/Library`:
+`PULSO_CONFIG_DIR` overrides it. In `Plug-ins/Library`:
 
 * `<id>/<version>/<id>.wasm`: each installed module.
 * `installed.json`: what is installed, with the SHA-256 each module was installed with. At start-up

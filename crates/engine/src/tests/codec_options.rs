@@ -1,6 +1,6 @@
 //! M13.4: HEVC / AV1 output modules and the WebM codec / Opus options over the command API.
 
-use effectcraft_project::render_queue::{Channels, CodecProfile, OpusApplication, OutputFormat, RateControlMode, VideoCodecOptions, WebmVideoCodec};
+use pulso_project::render_queue::{Channels, CodecProfile, OpusApplication, OutputFormat, RateControlMode, VideoCodecOptions, WebmVideoCodec};
 use serde_json::json;
 
 use crate::Session;
@@ -53,7 +53,7 @@ fn hevc_and_av1_output_module_options() {
 }
 
 /// An explicit format wins over the output file's extension, which follows it (#154:
-/// `effectcraft-cli render --format hevc --out x.mp4` wrote H.264). Without a format, the extension
+/// `pulso-cli render --format hevc --out x.mp4` wrote H.264). Without a format, the extension
 /// still picks one.
 #[test]
 fn an_explicit_format_wins_over_the_output_extension() {
@@ -177,7 +177,7 @@ fn an_unknown_comp_is_named_in_the_error() {
 /// through a project save and load. A module that doesn't name them stays ZIP, 32-bit float.
 #[test]
 fn exr_compression_and_bit_depth_options() {
-    use effectcraft_project::render_queue::{ExrBitDepth, ExrCompression};
+    use pulso_project::render_queue::{ExrBitDepth, ExrCompression};
     let mut s = session();
     let a = s.execute("renderQueue.add", json!({"format": "exr"})).unwrap();
     let om = &s.project.render_queue[0].output;
@@ -226,11 +226,11 @@ fn exr_compression_and_bit_depth_options() {
 /// `_16bpc` and a 32-bit one's `_32bpc` (#2911).
 #[test]
 fn append_bit_depth_follows_the_exr_bit_depth() {
-    use effectcraft_project::render_queue::{ExrBitDepth, RenderQueueItem};
+    use pulso_project::render_queue::{ExrBitDepth, RenderQueueItem};
     let mut s = session();
     s.execute("prefs.set", json!({"values": {"export.appendBitsToName": true}})).unwrap();
     let mut item = RenderQueueItem::new(1, s.active_comp_id().unwrap());
-    item.output = effectcraft_project::render_queue::OutputModule::for_format(OutputFormat::ExrSequence);
+    item.output = pulso_project::render_queue::OutputModule::for_format(OutputFormat::ExrSequence);
     item.output.output = "/out/Main_[#####].exr".into();
     for (depth, tag) in [(ExrBitDepth::Half, "_16bpc"), (ExrBitDepth::Float, "_32bpc")] {
         item.output.exr_bit_depth = depth;

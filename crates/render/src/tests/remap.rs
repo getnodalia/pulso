@@ -1,10 +1,10 @@
 //! Time remapping and separated Position dimensions.
 
-use effectcraft_color::Label;
-use effectcraft_keyframe::{Keyframe, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{Comp, ItemKind, LayerSource, Node, Project, Solid};
-use effectcraft_time::{FrameRate, Tick};
+use pulso_color::Label;
+use pulso_keyframe::{Keyframe, Value};
+use pulso_project::build::{self, Ids};
+use pulso_project::{Comp, ItemKind, LayerSource, Node, Project, Solid};
+use pulso_time::{FrameRate, Tick};
 
 use crate::render_frame;
 

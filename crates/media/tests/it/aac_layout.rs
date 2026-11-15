@@ -1,5 +1,5 @@
 //! Multichannel AAC reaches stereo by where each channel plays, whatever order its channel
-//! configuration decodes in (#1701). Fixtures are tones encoded with FilmCraft's AAC encoder (no
+//! configuration decodes in (#1701). Fixtures are tones encoded with Toma's AAC encoder (no
 //! ffmpeg needed, so nothing is skipped), with the configuration rewritten where the coded
 //! elements fit another: configurations 11 and 12 code the same elements as the encoder's 7- and
 //! 8-channel output, and a program config element can name any of them.
@@ -9,9 +9,9 @@ use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use effectcraft_media::{MediaPool, probe, probe_bytes};
-use effectcraft_time::Tick;
 use filmcraft_aac::{AudioSpecificConfig, Encoder, EncoderConfig, ProgramConfig};
+use pulso_media::{MediaPool, probe, probe_bytes};
+use pulso_time::Tick;
 
 const RATE: u32 = 48_000;
 /// Tone frequencies by channel; an LFE gets [`LFE_TONE`], which its element can carry.
@@ -153,7 +153,7 @@ fn mkv_after(empty: Option<(Vec<u8>, u32)>, asc: Vec<u8>, channels: u32, units: 
 
 /// The fixture written to disk as `name`.
 fn write(name: &str, bytes: &[u8]) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("effectcraft-aac-layout-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("pulso-aac-layout-{}", std::process::id()));
     std::fs::create_dir_all(&dir).expect("mkdir");
     let p = dir.join(name);
     std::fs::write(&p, bytes).expect("write");
@@ -173,7 +173,7 @@ fn amp(s: &[f32], side: usize, freq: u32) -> f64 {
 }
 
 /// Stereo of one second from 0.5 s in, through the media pool as footage reads it.
-fn mix(pool: &MediaPool, footage: &effectcraft_project::Footage) -> Vec<f32> {
+fn mix(pool: &MediaPool, footage: &pulso_project::Footage) -> Vec<f32> {
     pool.audio_samples(footage, Tick::from_seconds_f64(0.5), RATE as usize, RATE)
 }
 
@@ -243,9 +243,9 @@ fn adts_aac_layouts_mix_by_speaker() {
     }
 }
 
-/// Audio plays from the first track FilmCraft can play, so an audio track with no samples before
+/// Audio plays from the first track Toma can play, so an audio track with no samples before
 /// it lends it no configuration. Each case decodes in another order than the empty track's
-/// configuration would (FilmCraft reorders 12 to WAVE / SMPTE but not 7, and 11 but not a PCE).
+/// configuration would (Toma reorders 12 to WAVE / SMPTE but not 7, and 11 but not a PCE).
 #[test]
 fn an_empty_audio_track_lends_its_configuration_to_no_other() {
     for (name, empty) in [("config12", 7), ("pce61-centre-first", 11)] {
@@ -264,7 +264,7 @@ fn an_empty_audio_track_lends_its_configuration_to_no_other() {
 /// A transport stream plays its first audio stream and mixes by that stream's configuration,
 /// whatever follows it. ADTS of configuration 7 decodes in element order, LATM of configuration
 /// 12 reordered to WAVE / SMPTE; LATM of configuration 7 names 7 channels, which mix as
-/// configuration 7's rather than as 7 channels by count. (FilmCraft decodes LATM of configuration
+/// configuration 7's rather than as 7 channels by count. (Toma decodes LATM of configuration
 /// 12 as 12 channels, so it isn't played here.)
 #[test]
 fn mpeg_aac_mixes_by_the_stream_played() {

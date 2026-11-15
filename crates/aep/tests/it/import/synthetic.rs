@@ -8,9 +8,9 @@
 //! change made to what After Effects wrote is that the one `Utf8` chunk holding an embedded
 //! colour profile was replaced by `{}`.
 
-use effectcraft_aep::import::{ImportOptions, ImportResult, LossCategory, import};
-use effectcraft_aep::{AepFile, Body, Chunk, parse, write};
-use effectcraft_project::{FootageKind, ItemKind, Project};
+use pulso_aep::import::{ImportOptions, ImportResult, LossCategory, import};
+use pulso_aep::{AepFile, Body, Chunk, parse, write};
+use pulso_project::{FootageKind, ItemKind, Project};
 
 const SYNTHETIC: &[u8] = include_bytes!("../../fixtures/synthetic.aep");
 
@@ -39,7 +39,7 @@ fn set_data(c: &mut Chunk<'_>, at: usize, bytes: &[u8]) {
     }
 }
 
-fn run(bytes: &[u8], allow_losses: bool) -> (Project, Result<ImportResult, effectcraft_aep::import::AepImportError>) {
+fn run(bytes: &[u8], allow_losses: bool) -> (Project, Result<ImportResult, pulso_aep::import::AepImportError>) {
     let mut project = Project::default();
     let none = |_: &str| false;
     let r = import(&mut project, bytes, &ImportOptions { allow_losses, ..ImportOptions::new(&none) });
@@ -125,12 +125,12 @@ fn with_first_file(bytes: &[u8], name: &str) -> Vec<u8> {
 }
 
 /// The imported sequence item's footage.
-fn the_footage(p: &Project) -> effectcraft_project::Footage {
+fn the_footage(p: &Project) -> pulso_project::Footage {
     p.items.values().find_map(|i| if let ItemKind::Footage(f) = &i.kind { Some(f.clone()) } else { None }).expect("the sequence")
 }
 
 /// The file names (without the folder) of a footage's sequence.
-fn file_names(f: &effectcraft_project::Footage) -> Vec<String> {
+fn file_names(f: &pulso_project::Footage) -> Vec<String> {
     f.sequence.iter().map(|s| s.rsplit(['\\', '/']).next().unwrap_or_default().to_string()).collect()
 }
 
@@ -527,7 +527,7 @@ fn with_record(param: &str, tdsb: u32, value: f64) -> Vec<u8> {
 }
 
 /// The values of the imported effect parameters, by property id, in file order.
-fn effect_values(p: &Project) -> Vec<(String, effectcraft_keyframe::Value)> {
+fn effect_values(p: &Project) -> Vec<(String, pulso_keyframe::Value)> {
     let mut out = Vec::new();
     for item in p.items.values() {
         if let ItemKind::Comp(c) = &item.kind {
@@ -549,7 +549,7 @@ fn a_default_state_effect_record_holds_the_value() {
     // read back as recorded. The reader reads them like a written record (`tdsb` 1).
     let bytes = with_record("ADBE Glo2-0011", 3, 0.75);
     let file = parse(&bytes).unwrap();
-    let project = effectcraft_aep::Project::new(&file).unwrap();
+    let project = pulso_aep::Project::new(&file).unwrap();
     let defs = project.effect_definition_index();
     let mut seen = 0;
     for item in project.all_items() {
@@ -561,8 +561,8 @@ fn a_default_state_effect_record_holds_the_value() {
                 assert_eq!(p.stored().and_then(|s| s.flags()), Some(3));
                 // `stored_value` keeps reading written records only.
                 assert_eq!(p.stored_value(), None);
-                assert_eq!(p.recorded_value(), Some(effectcraft_aep::ParamValue::Number(0.75)));
-                assert_eq!(p.value(), Some(effectcraft_aep::ParamValue::Number(0.75)));
+                assert_eq!(p.recorded_value(), Some(pulso_aep::ParamValue::Number(0.75)));
+                assert_eq!(p.value(), Some(pulso_aep::ParamValue::Number(0.75)));
                 assert_eq!(p.is_default(), Some(false));
                 seen += 1;
             }
@@ -586,12 +586,12 @@ fn default_state_effect_records_import_like_written_ones() {
     // Glow's A & B Midpoint 0.75 is 75 % (the default is 50).
     let (p, _) = run(&with_record("ADBE Glo2-0011", 3, 0.75), true);
     let mid: Vec<_> = effect_values(&p).into_iter().filter(|(id, _)| id == "abMidpoint").collect();
-    assert_eq!(mid, vec![("abMidpoint".to_string(), effectcraft_keyframe::Value::Scalar(75.0))]);
-    // Levels' Clip To Output Black (`-0008`) recorded as After Effects' item 1, On: EffectCraft's
+    assert_eq!(mid, vec![("abMidpoint".to_string(), pulso_keyframe::Value::Scalar(75.0))]);
+    // Levels' Clip To Output Black (`-0008`) recorded as After Effects' item 1, On: Pulso's
     // On is item 1 of Off, On, Off for 32 bpc Color (the default is item 2).
     let (p, _) = run(&with_record("ADBE Easy Levels2-0008", 3, 1.0), true);
     let clip: Vec<_> = effect_values(&p).into_iter().filter(|(id, _)| id == "clipToOutputBlack").collect();
-    assert_eq!(clip, vec![("clipToOutputBlack".to_string(), effectcraft_keyframe::Value::Enum(1))]);
+    assert_eq!(clip, vec![("clipToOutputBlack".to_string(), pulso_keyframe::Value::Enum(1))]);
 }
 
 /// Sets the `cdat` of the value record `param` in the value group `tdgp` (the first `f64`), and
@@ -660,14 +660,14 @@ fn second_glow_without_definitions(edit_copy: &mut dyn FnMut(&mut Chunk<'_>), em
 }
 
 /// The imported Glows in stack order, each as its property values by property id.
-fn glow_values(p: &Project) -> Vec<Vec<(String, effectcraft_keyframe::Value)>> {
-    let glow = effectcraft_project::GroupKind::Effect { effect: "ec.stylize.glow".to_string() };
+fn glow_values(p: &Project) -> Vec<Vec<(String, pulso_keyframe::Value)>> {
+    let glow = pulso_project::GroupKind::Effect { effect: "ec.stylize.glow".to_string() };
     let mut glows = Vec::new();
     for item in p.items.values() {
         if let ItemKind::Comp(c) = &item.kind {
             for layer in &c.layers {
                 for node in layer.effects().map(|fx| fx.children.as_slice()).unwrap_or_default() {
-                    if let effectcraft_project::Node::Group(g) = node
+                    if let pulso_project::Node::Group(g) = node
                         && g.kind == glow
                     {
                         let mut values = Vec::new();
@@ -682,7 +682,7 @@ fn glow_values(p: &Project) -> Vec<Vec<(String, effectcraft_keyframe::Value)>> {
 }
 
 /// The value of property `id` in `values`.
-fn value_of<'v>(values: Option<&'v Vec<(String, effectcraft_keyframe::Value)>>, id: &str) -> Option<&'v effectcraft_keyframe::Value> {
+fn value_of<'v>(values: Option<&'v Vec<(String, pulso_keyframe::Value)>>, id: &str) -> Option<&'v pulso_keyframe::Value> {
     values?.iter().find(|(i, _)| i == id).map(|(_, v)| v)
 }
 
@@ -716,7 +716,7 @@ fn an_instance_without_definitions_imports_with_those_of_another_instance() {
     let (p, r) = run(&bytes, true);
     r.unwrap();
     let glows = glow_values(&p);
-    let seventy_five = effectcraft_keyframe::Value::Scalar(75.0);
+    let seventy_five = pulso_keyframe::Value::Scalar(75.0);
     assert_eq!(value_of(glows.first(), "abMidpoint"), Some(&seventy_five));
     let own = value_of(glows.get(1), "abMidpoint");
     assert!(own.is_some() && own != Some(&seventy_five), "{own:?}");
@@ -756,7 +756,7 @@ fn instances_without_any_definitions_are_reported() {
 fn an_instance_without_definitions_reads_those_of_another_instance() {
     let bytes = second_glow_without_definitions(&mut |_| {}, false);
     let file = parse(&bytes).unwrap();
-    let project = effectcraft_aep::Project::new(&file).unwrap();
+    let project = pulso_aep::Project::new(&file).unwrap();
     let defs = project.effect_definition_index();
     let mut sources = Vec::new();
     for item in project.all_items() {
@@ -766,12 +766,12 @@ fn an_instance_without_definitions_reads_those_of_another_instance() {
                 sources.push(defs.source(fx));
                 let params = defs.params(fx);
                 assert_eq!(params.len(), 16, "Glow's parameters");
-                assert_eq!(params.iter().all(|p| p.borrowed_definition), defs.source(fx) == effectcraft_aep::DefinitionSource::OtherInstance);
+                assert_eq!(params.iter().all(|p| p.borrowed_definition), defs.source(fx) == pulso_aep::DefinitionSource::OtherInstance);
             }
         }
     }
     // The copy is above the instance it borrows from (earlier in the stack).
-    assert_eq!(sources, [effectcraft_aep::DefinitionSource::OtherInstance, effectcraft_aep::DefinitionSource::Instance]);
+    assert_eq!(sources, [pulso_aep::DefinitionSource::OtherInstance, pulso_aep::DefinitionSource::Instance]);
 }
 
 /// A record in a state other than 1 or 3 is not read and is reported.

@@ -1,4 +1,4 @@
-use super::{EffectcraftApp, PanelKind, Resolution, Value, json};
+use super::{PanelKind, PulsoApp, Resolution, Value, json};
 
 /// Run an engine command and perform the frontend events it emitted right away.
 /// Commands that fill the internal clipboard.
@@ -6,15 +6,15 @@ const COPY_COMMANDS: &[&str] =
     &["edit.copy", "edit.cut", "edit.copyWithPropertyLinks", "edit.copyWithRelativePropertyLinks", "edit.copyExpressionOnly", "keys.copy", "effect.copy"];
 
 /// Text for the system clipboard: copied keyframes and values as After Effects keyframe text,
-/// for other applications (#1908), else a line naming what EffectCraft copied. The system
+/// for other applications (#1908), else a line naming what Pulso copied. The system
 /// clipboard must hold something: with nothing on it, the windowing layer sends no paste event
-/// for Ctrl+V. Paste in EffectCraft uses its own clipboard either way.
-fn clipboard_text(s: &effectcraft_engine::Session) -> String {
+/// for Ctrl+V. Paste in Pulso uses its own clipboard either way.
+fn clipboard_text(s: &pulso_engine::Session) -> String {
     let st = &s.state;
     if let Some(text) = &st.keyframe_text {
         return text.clone();
     }
-    let n = |n: usize, one: &str, many: &str| format!("EffectCraft: {n} {}", if n == 1 { one } else { many });
+    let n = |n: usize, one: &str, many: &str| format!("Pulso: {n} {}", if n == 1 { one } else { many });
     if st.clip_is_keys && !st.key_clipboard.is_empty() {
         n(st.key_clipboard.iter().map(|c| c.keys.len()).sum(), "keyframe", "keyframes")
     } else if !st.effect_clipboard.is_empty() {
@@ -24,7 +24,7 @@ fn clipboard_text(s: &effectcraft_engine::Session) -> String {
     } else if !st.mask_clipboard.is_empty() {
         n(st.mask_clipboard.len(), "mask", "masks")
     } else if st.link_clipboard.is_some() {
-        "EffectCraft: property links".into()
+        "Pulso: property links".into()
     } else {
         n(st.clipboard.len(), "layer", "layers")
     }
@@ -33,17 +33,17 @@ fn clipboard_text(s: &effectcraft_engine::Session) -> String {
 /// What a command is checked against for leaving the Home screen: the active composition and
 /// the project (its epoch, which a replaced project steps even when its composition has the same
 /// id).
-type HomeMark = (Option<effectcraft_project::ItemId>, u64);
+type HomeMark = (Option<pulso_project::ItemId>, u64);
 
 /// The [`HomeMark`] of the session now.
-fn home_mark(app: &EffectcraftApp) -> HomeMark {
+fn home_mark(app: &PulsoApp) -> HomeMark {
     (app.session.active_comp_id(), app.session.script_ui.project_epoch)
 }
 
 /// A command that opened a composition (an imported After Effects project, a new or opened
 /// project) leaves the Home screen, as the Home screen's own buttons do: it otherwise stayed
 /// over the opened project.
-fn leave_home_if_opened(app: &mut EffectcraftApp, before: HomeMark, ok: bool) {
+fn leave_home_if_opened(app: &mut PulsoApp, before: HomeMark, ok: bool) {
     if ok && app.session.active_comp_id().is_some() && home_mark(app) != before {
         app.ui.start_screen = false;
     }
@@ -52,7 +52,7 @@ fn leave_home_if_opened(app: &mut EffectcraftApp, before: HomeMark, ok: bool) {
 /// Runs engine command `id` from a menu, key or the control channel: the status line shows a
 /// failure, Copy commands fill the clipboard, the frontend events it queued run, and a command
 /// that opened a composition leaves the Home screen.
-pub(crate) fn run_engine(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, params: Value) -> Result<Value, String> {
+pub(crate) fn run_engine(app: &mut PulsoApp, ctx: &egui::Context, id: &str, params: Value) -> Result<Value, String> {
     // Events already queued belong to earlier invocations (`engine.execute` defers them).
     let queued = app.session.events.len();
     let before = home_mark(app);
@@ -67,7 +67,7 @@ pub(crate) fn run_engine(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str
     let events = app.session.drain_events();
     for (index, ev) in events.into_iter().enumerate() {
         match ev {
-            effectcraft_engine::Event::Frontend { command, params } => {
+            pulso_engine::Event::Frontend { command, params } => {
                 if let Err(e) = frontend(app, ctx, &command, params) {
                     app.ui.status = e.clone();
                     // A frontend-only command's own failure is the command's result (#696: a
@@ -90,7 +90,7 @@ fn toggle(slot: &mut bool, p: &Value) -> Value {
 }
 
 /// Perform a frontend command (from `Event::Frontend`).
-pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Value) -> Result<Value, String> {
+pub fn frontend(app: &mut PulsoApp, ctx: &egui::Context, id: &str, p: Value) -> Result<Value, String> {
     let now = app.now();
     let v = &mut app.ui.viewer;
     Ok(match id {
@@ -121,7 +121,7 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
         // Audio scrubbing: one frame of audio at `time` (default the current time).
         "playback.scrubAudio" => {
             let cid = app.session.active_comp_id().ok_or("no composition")?;
-            let t = p.get("time").and_then(Value::as_f64).map_or(app.session.time(), effectcraft_engine::time::Tick::from_seconds_f64);
+            let t = p.get("time").and_then(Value::as_f64).map_or(app.session.time(), pulso_engine::time::Tick::from_seconds_f64);
             app.scrub_audio(cid, t, now);
             json!({"playing": app.scrub.is_some()})
         }
@@ -130,11 +130,11 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
         // Reveal Layer Source / Reveal Composition: show the Project panel on the item, opening
         // its folders and clearing the search so the row is visible.
         "project.reveal" => {
-            let ids: Vec<effectcraft_engine::project::ItemId> = p
+            let ids: Vec<pulso_engine::project::ItemId> = p
                 .get("items")
                 .and_then(Value::as_array)
-                .map(|items| items.iter().filter_map(Value::as_u64).map(effectcraft_engine::project::ItemId).collect())
-                .or_else(|| p.get("item").and_then(Value::as_u64).map(|item| vec![effectcraft_engine::project::ItemId(item)]))
+                .map(|items| items.iter().filter_map(Value::as_u64).map(pulso_engine::project::ItemId).collect())
+                .or_else(|| p.get("item").and_then(Value::as_u64).map(|item| vec![pulso_engine::project::ItemId(item)]))
                 .unwrap_or_default();
             crate::panels::project::reveal(app, ctx, &ids);
             json!({"items": ids.iter().map(|item| item.0).collect::<Vec<_>>()})
@@ -154,7 +154,7 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
         }
         "app.settings" => {
             let page = p.get("page").and_then(Value::as_str).unwrap_or("general");
-            crate::panels::settings::open(app, effectcraft_engine::prefs::page_id(page).unwrap_or("general"));
+            crate::panels::settings::open(app, pulso_engine::prefs::page_id(page).unwrap_or("general"));
             Value::Null
         }
         "app.gpuInfo" => {
@@ -163,7 +163,7 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
                 "GPU Information",
                 &format!(
                     "{}Layer cache: {} MB  •  Preview cache: {} MB.",
-                    effectcraft_engine::sysinfo::gpu_summary(&app.session),
+                    pulso_engine::sysinfo::gpu_summary(&app.session),
                     app.session.layer_cache.budget() >> 20,
                     app.frames.budget() >> 20
                 ),
@@ -231,8 +231,8 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
             // The play button and Spacebar: `{shortcut?}` picks which Preview panel shortcut's
             // options to play with (default Spacebar).
             let sc = match p.get("shortcut").and_then(Value::as_str) {
-                Some(k) => effectcraft_engine::preview::PreviewShortcut::parse(k).ok_or_else(|| format!("unknown preview shortcut `{k}`"))?,
-                None => effectcraft_engine::preview::PreviewShortcut::Spacebar,
+                Some(k) => pulso_engine::preview::PreviewShortcut::parse(k).ok_or_else(|| format!("unknown preview shortcut `{k}`"))?,
+                None => pulso_engine::preview::PreviewShortcut::Spacebar,
             };
             app.toggle_play_with(now, sc);
             json!({"playing": app.playback.playing, "shortcut": sc.id()})
@@ -315,7 +315,7 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
                 "white" => Some([0xff, 0xff, 0xff]),
                 "custom" => Some(v.custom_pasteboard),
                 hex => {
-                    let c = effectcraft_engine::color::Rgba::from_hex(hex).ok_or_else(|| format!("unknown colour `{hex}`"))?;
+                    let c = pulso_engine::color::Rgba::from_hex(hex).ok_or_else(|| format!("unknown colour `{hex}`"))?;
                     let rgb = [(c.r * 255.0).round() as u8, (c.g * 255.0).round() as u8, (c.b * 255.0).round() as u8];
                     v.custom_pasteboard = rgb;
                     Some(rgb)
@@ -513,7 +513,7 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
             }
             // Import ▸ Interpret Unlabeled Alpha As: Ask User.
             if let Some(i) = p.get("item").and_then(Value::as_u64) {
-                app.session.state.project_selection = vec![effectcraft_engine::project::ItemId(i)];
+                app.session.state.project_selection = vec![pulso_engine::project::ItemId(i)];
             }
             crate::panels::dialogs::open_form(app, "file.interpretFootage", &json!({}));
             Value::Null
@@ -550,9 +550,8 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
             if epoch != app.session.script_ui.project_epoch || app.session.active_comp_id().map(|c| c.0) != Some(comp) {
                 return Ok(json!({"revealed": false}));
             }
-            let masks = app.session.active_comp().and_then(|c| c.layer(effectcraft_engine::project::LayerId(layer))).and_then(|l| l.masks());
-            let Some(masks) = masks.filter(|m| m.groups().any(|g| g.uid == mask && matches!(g.kind, effectcraft_engine::project::GroupKind::Mask { .. })))
-            else {
+            let masks = app.session.active_comp().and_then(|c| c.layer(pulso_engine::project::LayerId(layer))).and_then(|l| l.masks());
+            let Some(masks) = masks.filter(|m| m.groups().any(|g| g.uid == mask && matches!(g.kind, pulso_engine::project::GroupKind::Mask { .. }))) else {
                 return Ok(json!({"revealed": false}));
             };
             let masks_uid = masks.uid;
@@ -584,7 +583,7 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
                 comp.as_ref().is_some_and(|c| {
                     targets
                         .iter()
-                        .filter_map(|l| c.layer(effectcraft_engine::project::LayerId(*l)))
+                        .filter_map(|l| c.layer(pulso_engine::project::LayerId(*l)))
                         .any(|l| l.props.find(u).is_some() || l.props.find_group(u).is_some())
                 })
             };
@@ -607,7 +606,7 @@ pub fn frontend(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, p: Valu
 }
 
 /// Commands that need a file or folder path: ask the host's file dialog when `params` lacks one.
-pub(super) fn file_dialog(app: &mut EffectcraftApp, id: &str, params: &Value) -> Option<Result<Value, String>> {
+pub(super) fn file_dialog(app: &mut PulsoApp, id: &str, params: &Value) -> Option<Result<Value, String>> {
     enum Ask {
         Folder,
         /// Footage, or a file with one of these extensions.
@@ -628,7 +627,7 @@ pub(super) fn file_dialog(app: &mut EffectcraftApp, id: &str, params: &Value) ->
     };
     let (key, ask) = match id {
         // Projects too, as After Effects' File… takes an .aep: they import as projects
-        // (`run_with_picked`, and `file.import` for EffectCraft projects).
+        // (`run_with_picked`, and `file.import` for Pulso projects).
         "file.import" | "file.importMultiple" => ("paths", Ask::Import(&["aep", "aepx", "ecproj", "ecprojx"])),
         "file.open" => ("path", Ask::OpenProject),
         "file.save" if app.session.path.is_none() => ("path", Ask::Save(project_as("", "ecproj"))),
@@ -683,7 +682,7 @@ pub(super) fn file_dialog(app: &mut EffectcraftApp, id: &str, params: &Value) ->
         "png", "jpg", "jpeg", "gif", "webp", "tif", "tiff", "bmp", "exr", "dpx", "cin", "wav", "aif", "aiff", "mp3", "flac", "ogg", "opus", "svg", "pdf", "ai",
         "eps", "psd", "psb", "tga", "hdr", "gltf", "glb", "obj", "stl", "fbx", "json", "csv", "tsv",
     ];
-    let footage = |more: &[&'static str]| effectcraft_project::VIDEO_EXTENSIONS.iter().chain(more).copied().collect::<Vec<_>>();
+    let footage = |more: &[&'static str]| pulso_project::VIDEO_EXTENSIONS.iter().chain(more).copied().collect::<Vec<_>>();
     let importable = |more: &[&'static str]| footage(MEDIA).into_iter().chain(more.iter().copied()).collect::<Vec<_>>();
     // A host whose blocking dialogs are unsafe inside this frame shows the dialog without
     // blocking — macOS: the nested event loop re-entered winit's handler on a drag over the
@@ -751,7 +750,7 @@ fn picked_value(key: &str, paths: Vec<String>) -> Option<Value> {
 
 /// A file dialog shown without blocking ([`crate::Hooks::file_dialog_async`]) answered: run its
 /// command with the picked path (nothing when it was cancelled).
-pub(crate) fn dialog_answered(app: &mut EffectcraftApp, answer: crate::DialogAnswer) {
+pub(crate) fn dialog_answered(app: &mut PulsoApp, answer: crate::DialogAnswer) {
     let Some(v) = picked_value(answer.key, answer.paths) else { return };
     match run_with_picked(app, &answer.command, answer.key, &answer.params, v) {
         Ok(result) => show_result_errors(app, &result),
@@ -764,7 +763,7 @@ pub(crate) fn dialog_answered(app: &mut EffectcraftApp, answer: crate::DialogAns
 /// without turning the success into an error. The full structured array stays in the result
 /// for scripts; the status line is single-line and short-lived, so it lists the first few
 /// problems and counts the rest instead of printing raw JSON.
-pub(crate) fn show_result_errors(app: &mut EffectcraftApp, result: &Value) {
+pub(crate) fn show_result_errors(app: &mut PulsoApp, result: &Value) {
     let Some(errors) = result.get("errors").and_then(Value::as_array).filter(|e| !e.is_empty()) else { return };
     let parts: Vec<String> = errors
         .iter()
@@ -783,13 +782,13 @@ pub(crate) fn show_result_errors(app: &mut EffectcraftApp, result: &Value) {
 }
 
 /// Run command `id` with the path picked for it in parameter `key`.
-fn run_with_picked(app: &mut EffectcraftApp, id: &str, key: &str, params: &Value, v: Value) -> Result<Value, String> {
+fn run_with_picked(app: &mut PulsoApp, id: &str, key: &str, params: &Value, v: Value) -> Result<Value, String> {
     if matches!(id, "file.import" | "file.importMultiple")
         && let Some(picked) = v.as_array()
-        && picked.iter().filter_map(Value::as_str).any(effectcraft_engine::commands::is_aep_path)
+        && picked.iter().filter_map(Value::as_str).any(pulso_engine::commands::is_aep_path)
     {
         let (aep, rest): (Vec<String>, Vec<String>) =
-            picked.iter().filter_map(Value::as_str).map(str::to_string).partition(|p| effectcraft_engine::commands::is_aep_path(p));
+            picked.iter().filter_map(Value::as_str).map(str::to_string).partition(|p| pulso_engine::commands::is_aep_path(p));
         return import_picked_with_aep(app, id, key, params, aep, rest);
     }
     let mut p = params.as_object().cloned().unwrap_or_default();
@@ -833,7 +832,7 @@ fn run_with_picked(app: &mut EffectcraftApp, id: &str, key: &str, params: &Value
 /// Effects Project… does each: one that would lose parts asks first (the losses prompt), and the
 /// ones after it wait in its queue until it is answered (`panels::aep_losses`). Returns the errors
 /// of those that could not be imported; each names its file.
-pub(crate) fn import_aep_projects(app: &mut EffectcraftApp, paths: Vec<String>) -> Vec<String> {
+pub(crate) fn import_aep_projects(app: &mut PulsoApp, paths: Vec<String>) -> Vec<String> {
     let mut errors = Vec::new();
     // An unanswered prompt's projects go first.
     let mut paths = crate::panels::aep_losses::take_unanswered(app).into_iter().chain(paths);
@@ -855,7 +854,7 @@ pub(crate) fn import_aep_projects(app: &mut EffectcraftApp, paths: Vec<String>) 
 /// ([`import_aep_projects`]), then the other files as footage. Their errors lead the result's
 /// `errors` and the status line (callers of the blocking dialog drop the result), or the message
 /// when the footage import failed.
-fn import_picked_with_aep(app: &mut EffectcraftApp, id: &str, key: &str, params: &Value, aep: Vec<String>, rest: Vec<String>) -> Result<Value, String> {
+fn import_picked_with_aep(app: &mut PulsoApp, id: &str, key: &str, params: &Value, aep: Vec<String>, rest: Vec<String>) -> Result<Value, String> {
     let errors = import_aep_projects(app, aep);
     let r = if !rest.is_empty() {
         run_with_picked(app, id, key, params, json!(rest))

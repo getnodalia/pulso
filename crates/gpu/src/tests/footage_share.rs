@@ -21,7 +21,7 @@ impl Kept {
         let img = m.entry((item, f.width, f.height, i, size)).or_insert_with(|| {
             let full = pattern(item.0 as u32 + i as u32 * 7 + f.width, f.width, f.height);
             Arc::new(match size {
-                Some((w, h)) => effectcraft_raster::resample(&full, w, h),
+                Some((w, h)) => pulso_raster::resample(&full, w, h),
                 None => full,
             })
         });
@@ -162,14 +162,14 @@ fn shared_pictures_do_not_change_the_frame() {
             let m = build::mask(&mut Ids(&mut next), "Mask 1", ShapePath::ellipse([40.0, 30.0], 60.0, 40.0), MaskMode::Add, [255, 255, 0]);
             let comp = s.p.comp_mut(s.cid).unwrap();
             comp.layers[0].props.sub_mut("masks").unwrap().children.push(m.into());
-            effectcraft_project::styles::add_style(&mut comp.layers[1], &mut Ids(&mut next), "dropShadow", &s.comp.global_light, true).unwrap();
+            pulso_project::styles::add_style(&mut comp.layers[1], &mut Ids(&mut next), "dropShadow", &s.comp.global_light, true).unwrap();
             s.p.next_id = next;
             cases.push(("mask and layer style".into(), s, opts()));
         }
         {
             let (mut s, fid) = shared_scene(depth, 3);
             let proxy = Footage { path: "proxy.png".into(), kind: FootageKind::Still, width: 48, height: 30, has_video: true, ..Default::default() };
-            s.p.item_mut(fid).unwrap().proxy = Some(Box::new(effectcraft_project::Proxy { footage: proxy, enabled: true }));
+            s.p.item_mut(fid).unwrap().proxy = Some(Box::new(pulso_project::Proxy { footage: proxy, enabled: true }));
             cases.push(("proxy".into(), s, opts()));
         }
         for (label, s, o) in cases {

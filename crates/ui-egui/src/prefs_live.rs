@@ -8,24 +8,24 @@ use serde_json::Value;
 #[cfg(not(target_arch = "wasm32"))]
 use serde_json::json;
 
-use crate::EffectcraftApp;
+use crate::PulsoApp;
 use crate::frames::FrameKey;
 
 /// Settings read once per tick, before any paint (they must keep working while hidden).
-pub fn tick(app: &mut EffectcraftApp, ctx: &egui::Context, now: f64) {
+pub fn tick(app: &mut PulsoApp, ctx: &egui::Context, now: f64) {
     memory_watch(app, ctx, now);
     home_on_open(app, ctx);
 }
 
 /// Settings that show or draw something: run in the UI pass, before the panels draw.
-pub fn frame(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub fn frame(app: &mut PulsoApp, ctx: &egui::Context) {
     video_preview(app, ctx);
 }
 
 /// Import native file drops through the same command as the file picker. Run after the dock
 /// layout to use the current viewer rectangle for drops that also add layers.
 #[cfg(not(target_arch = "wasm32"))]
-pub fn dropped_files(app: &mut EffectcraftApp, ui: &egui::Ui, bounds: Rect) {
+pub fn dropped_files(app: &mut PulsoApp, ui: &egui::Ui, bounds: Rect) {
     use egui::{Align2, Stroke, StrokeKind, vec2};
 
     let ctx = ui.ctx().clone();
@@ -86,7 +86,7 @@ pub fn dropped_files(app: &mut EffectcraftApp, ui: &egui::Ui, bounds: Rect) {
 
     // After Effects projects import as projects (File ▸ Import ▸ Adobe After Effects Project…),
     // each into a folder named after its file, opening its first composition.
-    let (aep, mut rest): (Vec<String>, Vec<String>) = rest.into_iter().partition(|p| effectcraft_engine::commands::is_aep_path(p));
+    let (aep, mut rest): (Vec<String>, Vec<String>) = rest.into_iter().partition(|p| pulso_engine::commands::is_aep_path(p));
     // A project in the drop changes the active composition: the other files go to the Project
     // panel only, not into a composition.
     let has_project = !proj.is_empty() || !aep.is_empty();
@@ -174,7 +174,7 @@ pub fn dropped_files(app: &mut EffectcraftApp, ui: &egui::Ui, bounds: Rect) {
 
 /// Re-read the system's free memory every 30 s (cache budgets follow it; on Windows each
 /// reading starts PowerShell in the background, so it isn't done more often).
-pub(crate) fn memory_watch(app: &mut EffectcraftApp, ctx: &egui::Context, now: f64) {
+pub(crate) fn memory_watch(app: &mut PulsoApp, ctx: &egui::Context, now: f64) {
     let id = egui::Id::unique("prefs-memory-watch");
     // While free disk space keeps frames and layers out of the disk cache, the idle passes ask
     // for no repaint (nothing to write): keep a frame coming so its free space is read again and
@@ -194,7 +194,7 @@ pub(crate) fn memory_watch(app: &mut EffectcraftApp, ctx: &egui::Context, now: f
 }
 
 /// Startup ▸ Show Home Screen When Opening a Project.
-pub(crate) fn home_on_open(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub(crate) fn home_on_open(app: &mut PulsoApp, ctx: &egui::Context) {
     let id = egui::Id::unique("prefs-last-project");
     let path = app.session.path.clone();
     let last = ctx.data(|d| d.get_temp::<Option<String>>(id));
@@ -208,13 +208,13 @@ pub(crate) fn home_on_open(app: &mut EffectcraftApp, ctx: &egui::Context) {
 
 /// Video ▸ Mirror on Computer Monitor off: during playback the Composition panel leaves the
 /// frame to the Video Preview window.
-pub fn main_viewer_hidden(app: &EffectcraftApp) -> bool {
+pub fn main_viewer_hidden(app: &PulsoApp) -> bool {
     let v = &app.session.prefs.video;
     v.enable_output && !v.mirror_on_monitor && app.playback.playing
 }
 
 /// Whether the Video Preview window shows now (Disable Video Output When in Background).
-pub fn video_preview_active(app: &EffectcraftApp, focused: bool) -> bool {
+pub fn video_preview_active(app: &PulsoApp, focused: bool) -> bool {
     let v = &app.session.prefs.video;
     v.enable_output && (focused || !v.disable_when_background)
 }
@@ -222,7 +222,7 @@ pub fn video_preview_active(app: &EffectcraftApp, focused: bool) -> bool {
 /// Video ▸ Enable Video Preview Output: a second native window with the current composition
 /// frame, letterboxed on black. Video Device "Full Screen" opens it full screen (move it to the
 /// external display first); Video Output During Playback off holds the last frame while playing.
-fn video_preview(app: &mut EffectcraftApp, ctx: &egui::Context) {
+fn video_preview(app: &mut PulsoApp, ctx: &egui::Context) {
     let focused = ctx.input(|i| i.focused);
     if !video_preview_active(app, focused) {
         return;
@@ -262,7 +262,7 @@ fn video_preview(app: &mut EffectcraftApp, ctx: &egui::Context) {
     }
 
     let mut closed = false;
-    ctx.show_viewport_immediate(egui::ViewportId::from_hash_of("effectcraft-video-preview"), builder, |vctx, _| {
+    ctx.show_viewport_immediate(egui::ViewportId::from_hash_of("pulso-video-preview"), builder, |vctx, _| {
         egui::CentralPanel::default().frame(egui::Frame::NONE.fill(Color32::BLACK)).show(vctx, |ui| {
             let area = ui.max_rect();
             if let Some(t) = &tex {

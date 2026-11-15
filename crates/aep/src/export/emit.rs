@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 
 use crate::{AepFile, Chunk};
-use effectcraft_project::{ItemId, LayerId};
+use pulso_project::{ItemId, LayerId};
 
 use crate::export::plan::{CompPlan, Entry, ItemPlan, KeyPlan, LayerPlan, LayerSrc, ProjectPlan, PropKind, PropPlan, SolidPlan, natural_key};
 use crate::export::template::Template;

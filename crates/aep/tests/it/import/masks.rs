@@ -1,12 +1,12 @@
-//! Masks against the synthetic mask fixtures of `effectcraft-aep` (on the red 1920x1080 solid `L`
+//! Masks against the synthetic mask fixtures of `pulso-aep` (on the red 1920x1080 solid `L`
 //! of composition `C`, 25 fps, unless noted). Expected values are those the fixtures were made with
 //! (`MANIFEST.md` of the corpus; After Effects read the paths back as listed there).
 
 use crate::import::helpers::comp;
-use effectcraft_aep::import::{LossCategory, analyze};
-use effectcraft_keyframe::{Ease, Interp, ShapePath, Value};
-use effectcraft_project::{GroupKind, Layer, MaskMode, PropGroup};
-use effectcraft_time::{TICKS_PER_SECOND, Tick};
+use pulso_aep::import::{LossCategory, analyze};
+use pulso_keyframe::{Ease, Interp, ShapePath, Value};
+use pulso_project::{GroupKind, Layer, MaskMode, PropGroup};
+use pulso_time::{TICKS_PER_SECOND, Tick};
 
 /// Every mask fixture in the repository.
 const MASK_FIXTURES: [&str; 17] = [
@@ -214,7 +214,7 @@ fn ellipse_tangents_232() {
     let p = path(&m[0]);
     assert!(p.closed);
     // After Effects read the path back as vertices [960,340],[1360,540],[960,740],[560,540] and
-    // tangents of 0.5523 times the radius: the same as an EffectCraft ellipse.
+    // tangents of 0.5523 times the radius: the same as an Pulso ellipse.
     let e = ShapePath::ellipse([960.0, 540.0], 800.0, 400.0);
     assert_eq!(p.len(), 4);
     for i in 0..4 {

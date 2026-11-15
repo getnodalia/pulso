@@ -39,8 +39,8 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 
-use effectcraft_effects::Buf;
-use effectcraft_raster::Image;
+use pulso_effects::Buf;
+use pulso_raster::Image;
 
 use crate::reads::ReadFiles;
 
@@ -137,7 +137,7 @@ struct Meta {
 
 /// The cache's index: entry sizes and least-recently-used order under a size limit. Portable
 /// (no file system): [`DiskCache`] keeps one over its folder, and the browser keeps one over the
-/// Origin Private File System (`apps/effectcraft-web`, where the files are written by workers).
+/// Origin Private File System (`apps/pulso-web`, where the files are written by workers).
 #[derive(Default)]
 pub struct DiskIndex {
     map: HashMap<(Kind, u128), Meta>,
@@ -423,17 +423,17 @@ pub fn default_folder() -> PathBuf {
     if cfg!(target_os = "macos")
         && let Some(h) = &home
     {
-        return h.join("Library/Caches/EffectCraft/Disk Cache");
+        return h.join("Library/Caches/Pulso/Disk Cache");
     }
     if cfg!(windows)
         && let Some(l) = std::env::var_os("LOCALAPPDATA")
     {
-        return PathBuf::from(l).join("EffectCraft").join("Disk Cache");
+        return PathBuf::from(l).join("Pulso").join("Disk Cache");
     }
     if let Some(x) = std::env::var_os("XDG_CACHE_HOME") {
-        return PathBuf::from(x).join("effectcraft/disk-cache");
+        return PathBuf::from(x).join("pulso/disk-cache");
     }
-    home.map(|h| h.join(".cache/effectcraft/disk-cache")).unwrap_or_else(|| std::env::temp_dir().join("effectcraft-disk-cache"))
+    home.map(|h| h.join(".cache/pulso/disk-cache")).unwrap_or_else(|| std::env::temp_dir().join("pulso-disk-cache"))
 }
 
 impl DiskCache {
@@ -1095,14 +1095,14 @@ impl DiskCache {
     }
 
     /// A segmentation (chain key, scale) written by [`DiskCache::put_seg`].
-    pub fn get_seg(&self, key: u64, scale: f64) -> Option<effectcraft_effects::roto::FrameSeg> {
+    pub fn get_seg(&self, key: u64, scale: f64) -> Option<pulso_effects::roto::FrameSeg> {
         let p = self.read(Kind::Matte, seg_key(key, scale))?;
         let raw = lz4_flex::decompress_size_prepended(&p).ok()?;
-        effectcraft_effects::roto::FrameSeg::from_bytes(&raw)
+        pulso_effects::roto::FrameSeg::from_bytes(&raw)
     }
 
     /// Queue a segmentation for writing.
-    pub fn put_seg(&self, key: u64, scale: f64, seg: &effectcraft_effects::roto::FrameSeg) {
+    pub fn put_seg(&self, key: u64, scale: f64, seg: &pulso_effects::roto::FrameSeg) {
         let k = seg_key(key, scale);
         if self.contains(Kind::Matte, k) {
             return;
@@ -1277,11 +1277,11 @@ fn seg_key(key: u64, scale: f64) -> u128 {
     h.finish()
 }
 
-impl effectcraft_effects::roto::SegStore for DiskCache {
-    fn get_seg(&self, key: u64, scale: f64) -> Option<effectcraft_effects::roto::FrameSeg> {
+impl pulso_effects::roto::SegStore for DiskCache {
+    fn get_seg(&self, key: u64, scale: f64) -> Option<pulso_effects::roto::FrameSeg> {
         DiskCache::get_seg(self, key, scale)
     }
-    fn put_seg(&self, key: u64, scale: f64, seg: &effectcraft_effects::roto::FrameSeg) {
+    fn put_seg(&self, key: u64, scale: f64, seg: &pulso_effects::roto::FrameSeg) {
         DiskCache::put_seg(self, key, scale, seg);
     }
 }
@@ -1441,7 +1441,7 @@ fn decode_layer(p: &[u8]) -> Option<Buf> {
 // ---------------------------------------------------------------- content keys
 
 /// Bump when rendering changes in a way that makes old disk entries wrong.
-const RENDER_VERSION: &str = "effectcraft-render-6";
+const RENDER_VERSION: &str = "pulso-render-6";
 
 /// Feeds the `Debug` form of `v` into the hash, followed by a separator byte.
 fn hash_debug(h: &mut Hash128, v: &impl std::fmt::Debug) {
@@ -1478,19 +1478,19 @@ pub fn layer_disk_key(key: u64) -> u128 {
 /// at: the frame entries check their own source files when read, see [`EntryFiles`]): project
 /// render settings, the comp and the items it can draw (nested comps, footage items with their
 /// settings and paths, solids, Media Replacement footage, their proxies and Use Proxy switches;
-/// [`effectcraft_project::Project::pixel_reach`]). With expressions among them, everything those
+/// [`pulso_project::Project::pixel_reach`]). With expressions among them, everything those
 /// expressions can read counts too: every layer of their comps, markers, the comps and footage
 /// they name with literal names (and which items have those names), or the whole project when
 /// they compute a name or reach items another way. An edit to an item the comp can't reach keeps
 /// its key and its frames on disk (#3184, #1492). Switches that don't change pixels (Audio, Lock,
 /// Shy, Hide Shy Layers) don't count, and neither do markers unless an expression can read them.
-pub fn comp_content_key(project: &effectcraft_project::Project, comp: effectcraft_project::ItemId) -> u128 {
+pub fn comp_content_key(project: &pulso_project::Project, comp: pulso_project::ItemId) -> u128 {
     comp_content_key_for_renderer(project, comp, RENDER_VERSION)
 }
 
 /// The content key of `comp` for one renderer: its settings, the comps and footage it uses, and the renderer name.
-fn comp_content_key_for_renderer(project: &effectcraft_project::Project, comp: effectcraft_project::ItemId, renderer: &str) -> u128 {
-    use effectcraft_project::ItemKind;
+fn comp_content_key_for_renderer(project: &pulso_project::Project, comp: pulso_project::ItemId, renderer: &str) -> u128 {
+    use pulso_project::ItemKind;
     let mut h = Hash128::default();
     h.write(renderer.as_bytes());
     hash_debug(&mut h, &project.settings);
@@ -1500,12 +1500,12 @@ fn comp_content_key_for_renderer(project: &effectcraft_project::Project, comp: e
     // (#1083); without them, layers that can't change the picture (music, hidden layers nothing
     // reads) don't count.
     let expressions = reach.expressions;
-    let silent = |id, c: &effectcraft_project::Comp| if expressions { Default::default() } else { project.silent_layers(id, c, &heard) };
+    let silent = |id, c: &pulso_project::Comp| if expressions { Default::default() } else { project.silent_layers(id, c, &heard) };
     // (the names expressions look items up by: which items have them now)
     if !reach.names.is_empty() {
         hash_debug(&mut h, &reach.names);
     }
-    let ids: Vec<effectcraft_project::ItemId> = match reach.items {
+    let ids: Vec<pulso_project::ItemId> = match reach.items {
         Some(items) => items.into_iter().collect(),
         None => project.items.keys().copied().collect(),
     };
@@ -1554,7 +1554,7 @@ mod tests {
     use super::*;
 
     fn tmpdir(name: &str) -> PathBuf {
-        let d = std::env::temp_dir().join(format!("effectcraft-disk-cache-{name}-{}", std::process::id()));
+        let d = std::env::temp_dir().join(format!("pulso-disk-cache-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&d);
         d
     }
@@ -1672,7 +1672,7 @@ mod tests {
     /// the size limit like every entry, and a damaged file is a miss.
     #[test]
     fn segmentations_round_trip_and_reopen() {
-        use effectcraft_effects::roto::FrameSeg;
+        use pulso_effects::roto::FrameSeg;
         let dir = tmpdir("seg");
         let dc = DiskCache::open(&dir, 1 << 30).unwrap();
         let seg = FrameSeg { w: 7, h: 5, matte: (0..35).map(|i| (i % 3 == 0) as u8).collect(), refine: vec![0; 35], ..Default::default() };
@@ -1727,8 +1727,8 @@ mod tests {
     /// hiding a clip does. Importing music keeps them too.
     #[test]
     fn music_keeps_the_disk_keys() {
-        use effectcraft_project::{Comp, Footage, FootageKind, ItemKind, LayerSource, Project, Solid, build};
-        use effectcraft_time::{FrameRate, Tick};
+        use pulso_project::{Comp, Footage, FootageKind, ItemKind, LayerSource, Project, Solid, build};
+        use pulso_time::{FrameRate, Tick};
         let mut p = Project::default();
         let comp = Comp::new(64, 64, FrameRate::FPS_30, Tick::from_seconds_f64(2.0));
         let cid = p.add_item("Main", Default::default(), None, ItemKind::Comp(comp.clone().into()));
@@ -1755,8 +1755,8 @@ mod tests {
     /// gives a new key when the model item is renamed: the frames on disk hold the old name.
     #[test]
     fn renaming_a_model_an_expression_reads_changes_the_disk_key() {
-        use effectcraft_project::{Comp, Expression, Footage, FootageKind, ItemKind, LayerSource, Project, Solid, build};
-        use effectcraft_time::{FrameRate, Tick};
+        use pulso_project::{Comp, Expression, Footage, FootageKind, ItemKind, LayerSource, Project, Solid, build};
+        use pulso_time::{FrameRate, Tick};
         let mut p = Project::default();
         let comp = Comp::new(64, 64, FrameRate::FPS_30, Tick::from_seconds_f64(2.0));
         let cid = p.add_item("Main", Default::default(), None, ItemKind::Comp(comp.clone().into()));
@@ -1792,14 +1792,14 @@ mod tests {
 
     #[test]
     fn previous_renderer_frames_are_not_reused() {
-        use effectcraft_project::{Comp, ItemKind, Project};
-        use effectcraft_time::{FrameRate, Tick};
+        use pulso_project::{Comp, ItemKind, Project};
+        use pulso_time::{FrameRate, Tick};
 
         let mut project = Project::default();
         let comp = Comp::new(2, 2, FrameRate::FPS_30, Tick::from_seconds_f64(1.0));
-        let id = project.add_item("Cached composition", effectcraft_color::Label::None, None, ItemKind::Comp(comp.into()));
+        let id = project.add_item("Cached composition", pulso_color::Label::None, None, ItemKind::Comp(comp.into()));
         let key = frame_key(comp_content_key(&project, id), 0, 1000, 0);
-        let previous_key = frame_key(comp_content_key_for_renderer(&project, id, "effectcraft-render-5"), 0, 1000, 0);
+        let previous_key = frame_key(comp_content_key_for_renderer(&project, id, "pulso-render-5"), 0, 1000, 0);
         let dir = tmpdir("previous-renderer");
         {
             let cache = DiskCache::open(&dir, 1 << 30).unwrap();
@@ -2054,16 +2054,16 @@ mod tests {
     /// #3184).
     #[test]
     fn virtual_file_bytes_are_checked_by_the_entries_not_the_keys() {
-        use effectcraft_project::build;
-        use effectcraft_project::{Comp, Footage, ItemKind, LayerSource, Project};
-        use effectcraft_time::{FrameRate, Tick};
+        use pulso_project::build;
+        use pulso_project::{Comp, Footage, ItemKind, LayerSource, Project};
+        use pulso_time::{FrameRate, Tick};
 
         let mut p = Project::default();
         let f = Footage { path: "/virtual.mov".into(), width: 16, height: 9, duration: Tick::from_seconds_f64(1.0), has_video: true, ..Default::default() };
-        let fid = p.add_item("virtual.mov", effectcraft_color::Label::None, None, ItemKind::Footage(f));
+        let fid = p.add_item("virtual.mov", pulso_color::Label::None, None, ItemKind::Footage(f));
         let mut comp = Comp::new(16, 9, FrameRate::FPS_30, Tick::from_seconds_f64(1.0));
         comp.layers = vec![build::layer(&mut p, &comp, "clip", LayerSource::Footage { item: fid }, (16, 9), None)].into();
-        let cid = p.add_item("C", effectcraft_color::Label::None, None, ItemKind::Comp(comp.into()));
+        let cid = p.add_item("C", pulso_color::Label::None, None, ItemKind::Comp(comp.into()));
 
         let id = |mark: u64| move |path: &str| (path == "/virtual.mov").then_some((8, mark));
         let (one, two) = (id(1), id(2));

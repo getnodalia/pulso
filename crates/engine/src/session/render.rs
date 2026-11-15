@@ -70,7 +70,7 @@ impl Session {
         let c = self.project.comp(comp).ok_or(EngineError::NoComp)?;
         let long = c.width.max(c.height).max(1) as f64;
         let scale = if max_side == 0 { 1.0 } else { (max_side as f64 / long).min(1.0) };
-        let img = self.render(comp, t, RenderOpts { scale, backend: effectcraft_render::Backend::Auto, ..Default::default() });
+        let img = self.render(comp, t, RenderOpts { scale, backend: pulso_render::Backend::Auto, ..Default::default() });
         Ok((img.width, img.height, img.to_rgba8_over(c.background)))
     }
 
@@ -81,7 +81,7 @@ impl Session {
         let it = self.project.item(item)?;
         let footage = self.footage.clone();
         match &it.kind {
-            effectcraft_project::ItemKind::Comp(c) => {
+            pulso_project::ItemKind::Comp(c) => {
                 let (project, expr, cache) = (self.project.clone(), self.expr.clone(), self.layer_cache.clone());
                 let long = c.width.max(c.height).max(1) as f64;
                 let scale = if max_side == 0 { 1.0 } else { (max_side as f64 / long).min(1.0) };
@@ -100,10 +100,10 @@ impl Session {
                     Some((img.width, img.height, img.to_rgba8_over(bg)))
                 }))
             }
-            effectcraft_project::ItemKind::Footage(f) if f.has_video => {
+            pulso_project::ItemKind::Footage(f) if f.has_video => {
                 let f = f.clone();
                 Some(Box::new(move || {
-                    let img = effectcraft_render::cineon_frame(footage.frame(item, &f, Tick(0))?, &f);
+                    let img = pulso_render::cineon_frame(footage.frame(item, &f, Tick(0))?, &f);
                     // Point-sample down to at most `max_side` on the long side.
                     let step = (img.width.max(img.height) as f32 / max_side.max(1) as f32).ceil().max(1.0) as u32;
                     let (w, h) = (img.width.div_ceil(step), img.height.div_ceil(step));
@@ -131,13 +131,13 @@ impl Session {
         let c = self.project.comp(comp).ok_or(EngineError::NoComp)?;
         let long = c.width.max(c.height).max(1) as f64;
         let scale = if max_side == 0 { 1.0 } else { (max_side as f64 / long).min(1.0) };
-        let img = self.render(comp, t, RenderOpts { scale, backend: effectcraft_render::Backend::Auto, ..Default::default() });
+        let img = self.render(comp, t, RenderOpts { scale, backend: pulso_render::Backend::Auto, ..Default::default() });
         Ok((img.width, img.height, img.to_rgba8()))
     }
 
     /// Make the media layer and the layer cache let go of what they decoded from `footage`'s
     /// files (it keys frames by path, so an overwritten file would keep showing its old pixels).
-    pub(crate) fn forget_decoded(&self, footage: &effectcraft_project::Footage) {
+    pub(crate) fn forget_decoded(&self, footage: &pulso_project::Footage) {
         for p in std::iter::once(&footage.path).chain(&footage.sequence) {
             self.footage.forget(p);
         }
@@ -158,19 +158,18 @@ impl Session {
     }
 }
 
-/// The files (each footage item's [`effectcraft_project::Footage::path`], sorted, once each) of
+/// The files (each footage item's [`pulso_project::Footage::path`], sorted, once each) of
 /// the footage layers that have an enabled effect reading their channels
-/// ([`effectcraft_effects::reads_aux`]), with the layer's Effects switch on. Several items can
+/// ([`pulso_effects::reads_aux`]), with the layer's Effects switch on. Several items can
 /// use one file: it stays in while any of them is read.
-pub(crate) fn aux_footage(project: &effectcraft_project::Project) -> Vec<String> {
-    use effectcraft_project::{GroupKind, ItemKind, LayerSource};
+pub(crate) fn aux_footage(project: &pulso_project::Project) -> Vec<String> {
+    use pulso_project::{GroupKind, ItemKind, LayerSource};
     let mut paths: Vec<String> = project
         .comps()
         .flat_map(|(_, c)| c.layers.iter())
         .filter(|l| l.switches.effects)
         .filter(|l| {
-            l.effects()
-                .is_some_and(|fx| fx.groups().any(|g| g.enabled && matches!(&g.kind, GroupKind::Effect { effect } if effectcraft_effects::reads_aux(effect))))
+            l.effects().is_some_and(|fx| fx.groups().any(|g| g.enabled && matches!(&g.kind, GroupKind::Effect { effect } if pulso_effects::reads_aux(effect))))
         })
         .filter_map(|l| match &l.source {
             LayerSource::Footage { item } => match &project.item(*item)?.kind {

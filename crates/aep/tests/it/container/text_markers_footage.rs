@@ -2,7 +2,7 @@
 //! with (its MANIFEST).
 
 use crate::container::helpers::{base_layer, first_comp, open};
-use effectcraft_aep::{CueType, ItemKind, KeyframeKind, LayerType, Marker, Project, Property, TextDocument, TextValue, parse_text_dict};
+use pulso_aep::{CueType, ItemKind, KeyframeKind, LayerType, Marker, Project, Property, TextDocument, TextValue, parse_text_dict};
 
 fn text_layer_document(name: &str) -> Option<TextDocument> {
     Some({
@@ -199,7 +199,7 @@ fn png_footage_layer() {
 
 // ---------------------------------------------------------------------------- batch 2
 
-use effectcraft_aep::Justification;
+use pulso_aep::Justification;
 
 #[test]
 fn multi_line_text_is_paragraphs_separated_by_cr() {
@@ -268,7 +268,7 @@ fn marker_with_duration_and_all_strings() {
             frame_target: "_blank".to_string(),
             cue_point_name: "CueX".to_string(),
             label: Some(0),
-            cue_type: Some(effectcraft_aep::CueType::Event),
+            cue_type: Some(pulso_aep::CueType::Event),
             cue_params: Vec::new(),
         }]
     );

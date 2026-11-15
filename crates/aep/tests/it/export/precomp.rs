@@ -1,14 +1,14 @@
 //! Precomposition layers: a composition shown as a layer of another composition. The exported
-//! bytes are parsed back with `effectcraft-aep` (source id, `idpc` / `idpi`, the Time Remapping
+//! bytes are parsed back with `pulso-aep` (source id, `idpc` / `idpi`, the Time Remapping
 //! maximum, the anchor unit) and imported again.
 
 use crate::export::helpers::*;
-use effectcraft_aep::export::LossCategory;
-use effectcraft_aep::import::{ImportOptions, import};
-use effectcraft_aep::{PropNode, parse};
-use effectcraft_keyframe::Value;
-use effectcraft_project::{ItemId, ItemKind, LayerSource, Project};
-use effectcraft_time::FrameRate;
+use pulso_aep::export::LossCategory;
+use pulso_aep::import::{ImportOptions, import};
+use pulso_aep::{PropNode, parse};
+use pulso_keyframe::Value;
+use pulso_project::{ItemId, ItemKind, LayerSource, Project};
+use pulso_time::FrameRate;
 
 fn reimport(bytes: &[u8]) -> Project {
     let mut p = Project::default();
@@ -41,7 +41,7 @@ fn a_precomposition_layer_points_at_its_composition() {
     assert!(r.report.is_lossless(), "{:?}", r.report.losses);
     assert_eq!(r.report.exported.precomp_layers, 1);
     let file = parse(&r.bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let items = view.all_items();
     let by_name = |n: &str| items.iter().find(|i| i.display_name().as_deref() == Some(n)).copied().expect(n);
     let (c, pre) = (by_name("C"), by_name("Pre"));
@@ -64,7 +64,7 @@ fn a_precomposition_layer_points_at_its_composition() {
     let v = a.static_value().expect("value");
     assert!((v[0] - 0.25).abs() < 1e-12 && (v[1] - 0.25).abs() < 1e-12, "{v:?}");
     // The Time Remapping maximum is the precomposition's duration (3 s; 0 on a solid).
-    let tdum_max = |l: &effectcraft_aep::Layer<'_, '_>| -> f64 {
+    let tdum_max = |l: &pulso_aep::Layer<'_, '_>| -> f64 {
         let Some(PropNode::Property(tr)) = l.properties().and_then(|g| g.get("ADBE Time Remapping")) else { panic!("time remap") };
         let b = tr.chunk().child(b"tduM").and_then(|x| x.bytes()).expect("tduM");
         f64::from_be_bytes(b.get(..8).and_then(|s| s.try_into().ok()).expect("8 bytes"))
@@ -104,7 +104,7 @@ fn one_composition_used_twice_is_recorded_once_and_chains_nest() {
     assert!(r.report.is_lossless(), "{:?}", r.report.losses);
     assert_eq!(r.report.exported.precomp_layers, 4);
     let file = parse(&r.bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let items = view.all_items();
     let id = |n: &str| items.iter().find(|i| i.display_name().as_deref() == Some(n)).and_then(|i| i.id()).expect(n);
     let used = |n: &str| items.iter().find(|i| i.display_name().as_deref() == Some(n)).expect(n).used_item_ids();

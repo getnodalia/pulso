@@ -8,7 +8,7 @@
 //! applied by id (`effect.apply {"effect": "org.example.posterize"}`) like a built-in.
 //!
 //! Plug-ins come from Rust code (implement the trait and register it at start-up) or from
-//! sandboxed WebAssembly modules (`effectcraft-plugin`, see `docs/plugins.md`), which implement
+//! sandboxed WebAssembly modules (`pulso-plugin`, see `docs/plugins.md`), which implement
 //! the same contract through a small C-like ABI.
 //!
 //! The contract (stable within an API version):
@@ -26,15 +26,15 @@
 //!
 //! API 2 (native plug-ins) adds [`EffectPlugin::padding`] and [`EffectPlugin::render_v2`], which
 //! gets a [`PluginHost`] to read the effect's input or other layers at other times, and the extra
-//! parameter kinds. External effect helpers (`effectcraft-helper-host`) are built on it.
+//! parameter kinds. External effect helpers (`pulso-helper-host`) are built on it.
 //!
 //! The WebAssembly ABI is versioned separately ([`WASM_API_VERSION`]): ABI 1 is `ec_render`;
 //! ABI 2 adds `ec_render2`, which receives the layer's previous and next frames.
 
 use std::sync::{Arc, OnceLock, RwLock};
 
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
+use pulso_keyframe::Value;
+use pulso_project::ParamUi;
 use serde::{Deserialize, Serialize};
 
 use crate::{Buf, EffectCtx, EffectSpec, ParamSpec, Params, RenderFn};
@@ -507,7 +507,7 @@ pub fn register_plugin(plugin: Arc<dyn EffectPlugin>) -> Result<&'static EffectS
     let slot = SLOTS
         .iter()
         .position(|s| s.get().is_none())
-        .ok_or_else(|| format!("too many plug-in effects: a session registers at most {MAX_PLUGINS}; remove some plug-ins and restart EffectCraft"))?;
+        .ok_or_else(|| format!("too many plug-in effects: a session registers at most {MAX_PLUGINS}; remove some plug-ins and restart Pulso"))?;
     SLOTS[slot].set(plugin).map_err(|_| "plug-in slot taken".to_string())?;
     let spec: &'static EffectSpec = Box::leak(Box::new(EffectSpec {
         id: leak(&m.id),

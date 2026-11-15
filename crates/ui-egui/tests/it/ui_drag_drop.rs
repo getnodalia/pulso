@@ -7,20 +7,20 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use effectcraft_engine::Session;
-use effectcraft_engine::keyframe::Value as KV;
-use effectcraft_engine::time::Tick;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
-use effectcraft_ui_egui::panels::viewer::{comp_to_screen, last_fit};
 use egui::{Event, Modifiers, Pos2, Rect, pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
+use pulso_engine::Session;
+use pulso_engine::keyframe::Value as KV;
+use pulso_engine::time::Tick;
+use pulso_ui_egui::PulsoApp;
+use pulso_ui_egui::dock::PanelKind;
+use pulso_ui_egui::panels::viewer::{comp_to_screen, last_fit};
 use serde_json::json;
 
 /// Comp "Main" (4 s at 30 fps, current time 1 s) with solids Top, Middle and Bottom, and comp
 /// "Clip" in the Project panel to drag in.
-fn harness() -> (Harness<'static, EffectcraftApp>, u64) {
+fn harness() -> (Harness<'static, PulsoApp>, u64) {
     let mut s = Session::default();
     let clip = s.execute("comp.new", json!({"name": "Clip", "width": 160, "height": 90, "frameRate": 30, "duration": 1})).unwrap()["comp"].as_u64().unwrap();
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "frameRate": 30, "duration": 4})).unwrap();
@@ -28,18 +28,18 @@ fn harness() -> (Harness<'static, EffectcraftApp>, u64) {
         s.execute("layer.newSolid", json!({"name": name, "color": "#406080"})).unwrap();
     }
     s.execute("time.set", json!({"time": 1.0})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| PulsoApp::new(s));
     h.run_steps(3);
     (h, clip)
 }
 
-fn rect(h: &Harness<'_, EffectcraftApp>, id: &str) -> Rect {
+fn rect(h: &Harness<'_, PulsoApp>, id: &str) -> Rect {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).clone();
     Rect::from_min_size(pos2(e.rect[0], e.rect[1]), vec2(e.rect[2], e.rect[3]))
 }
 
 /// Press on `from`, move to `to` in steps, release there (with `modifiers` held).
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, modifiers: Modifiers) {
+fn drag(h: &mut Harness<'_, PulsoApp>, from: Pos2, to: Pos2, modifiers: Modifiers) {
     h.event(Event::PointerMoved(from));
     h.step();
     h.event(Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
@@ -56,15 +56,15 @@ fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, modifiers: Mo
 }
 
 /// Layer names top to bottom, and the In point of `name`.
-fn stack(h: &Harness<'_, EffectcraftApp>) -> Vec<String> {
+fn stack(h: &Harness<'_, PulsoApp>) -> Vec<String> {
     h.state().session.active_comp().unwrap().layers.iter().map(|l| l.name.clone()).collect()
 }
 
-fn in_point(h: &Harness<'_, EffectcraftApp>, index: usize) -> f64 {
+fn in_point(h: &Harness<'_, PulsoApp>, index: usize) -> f64 {
     h.state().session.active_comp().unwrap().layers[index].in_point.seconds()
 }
 
-fn layer_id(h: &Harness<'_, EffectcraftApp>, name: &str) -> u64 {
+fn layer_id(h: &Harness<'_, PulsoApp>, name: &str) -> u64 {
     h.state().session.active_comp().unwrap().layers.iter().find(|l| l.name == name).unwrap().id.0
 }
 
@@ -119,8 +119,8 @@ fn alt_dragging_a_project_item_replaces_the_layer_source() {
     let before = stack(&h);
     drag(&mut h, item, row.center(), Modifiers::ALT);
     assert_eq!(stack(&h), before, "no layer is added");
-    let layer = h.state().session.active_comp().unwrap().layer(effectcraft_engine::project::LayerId(top)).unwrap();
-    assert_eq!(layer.source, effectcraft_engine::project::LayerSource::Comp { item: effectcraft_engine::project::ItemId(clip) });
+    let layer = h.state().session.active_comp().unwrap().layer(pulso_engine::project::LayerId(top)).unwrap();
+    assert_eq!(layer.source, pulso_engine::project::LayerSource::Comp { item: pulso_engine::project::ItemId(clip) });
     assert_eq!(layer.name, "Top", "the layer keeps its name");
 }
 
@@ -128,13 +128,13 @@ fn alt_dragging_a_project_item_replaces_the_layer_source() {
 /// under the pointer, as in the Timeline, instead of adding a layer (#2173).
 #[test]
 fn alt_dropping_a_project_item_on_the_viewer_replaces_the_layer_source() {
-    use effectcraft_engine::project::{ItemId, LayerId, LayerSource};
+    use pulso_engine::project::{ItemId, LayerId, LayerSource};
     let (mut h, clip) = harness();
     let item = rect(&h, &format!("project.item.{clip}.name")).center();
     let to = comp_to_screen(&h.ctx, [160.0, 90.0]).unwrap();
     // The three solids overlap completely, so the topmost one is under the pointer.
     let (top, middle, bottom) = (layer_id(&h, "Top"), layer_id(&h, "Middle"), layer_id(&h, "Bottom"));
-    let source = |h: &Harness<'_, EffectcraftApp>, id: u64| h.state().session.active_comp().unwrap().layer(LayerId(id)).unwrap().source.clone();
+    let source = |h: &Harness<'_, PulsoApp>, id: u64| h.state().session.active_comp().unwrap().layer(LayerId(id)).unwrap().source.clone();
     let (middle_before, bottom_before) = (source(&h, middle), source(&h, bottom));
     let before = stack(&h);
     drag(&mut h, item, to, Modifiers::ALT);
@@ -148,14 +148,14 @@ fn alt_dropping_a_project_item_on_the_viewer_replaces_the_layer_source() {
 /// instead (#2173).
 #[test]
 fn alt_dropping_on_a_locked_layer_in_the_viewer_replaces_nothing() {
-    use effectcraft_engine::project::LayerId;
+    use pulso_engine::project::LayerId;
     let (mut h, clip) = harness();
     let item = rect(&h, &format!("project.item.{clip}.name")).center();
     let to = comp_to_screen(&h.ctx, [160.0, 90.0]).unwrap();
     let top = layer_id(&h, "Top");
     h.state_mut().session.execute("layer.setSwitch", json!({"layers": [top], "switch": "locked", "value": true})).unwrap();
     h.run_steps(3);
-    let sources = |h: &Harness<'_, EffectcraftApp>| h.state().session.active_comp().unwrap().layers.iter().map(|l| l.source.clone()).collect::<Vec<_>>();
+    let sources = |h: &Harness<'_, PulsoApp>| h.state().session.active_comp().unwrap().layers.iter().map(|l| l.source.clone()).collect::<Vec<_>>();
     let before = sources(&h);
     drag(&mut h, item, to, Modifiers::ALT);
     assert_eq!(sources(&h), before, "no layer takes the new source");
@@ -170,7 +170,7 @@ fn ctrl_alt_slash_replaces_every_selected_layer_source() {
     let top = layer_id(&h, "Top");
     let middle = layer_id(&h, "Middle");
     h.state_mut().session.execute("layer.select", json!({"layers": [top, middle]})).unwrap();
-    h.state_mut().session.state.project_selection = vec![effectcraft_engine::project::ItemId(clip)];
+    h.state_mut().session.state.project_selection = vec![pulso_engine::project::ItemId(clip)];
     h.run_steps(3);
     let modifiers = Modifiers { command: true, alt: true, ..Default::default() };
     for pressed in [true, false] {
@@ -180,8 +180,8 @@ fn ctrl_alt_slash_replaces_every_selected_layer_source() {
     let comp = h.state().session.active_comp().unwrap();
     for lid in [top, middle] {
         assert_eq!(
-            comp.layer(effectcraft_engine::project::LayerId(lid)).unwrap().source,
-            effectcraft_engine::project::LayerSource::Comp { item: effectcraft_engine::project::ItemId(clip) }
+            comp.layer(pulso_engine::project::LayerId(lid)).unwrap().source,
+            pulso_engine::project::LayerSource::Comp { item: pulso_engine::project::ItemId(clip) }
         );
     }
     assert_eq!(stack(&h), ["Top", "Middle", "Bottom"], "no layer is added");
@@ -213,7 +213,7 @@ fn dragging_selected_project_items_adds_every_item_to_the_timeline() {
         .as_u64()
         .unwrap();
     h.state_mut().session.execute("comp.open", json!({"comp": main})).unwrap();
-    h.state_mut().session.state.project_selection = vec![effectcraft_engine::project::ItemId(clip), effectcraft_engine::project::ItemId(other)];
+    h.state_mut().session.state.project_selection = vec![pulso_engine::project::ItemId(clip), pulso_engine::project::ItemId(other)];
     h.run_steps(3);
     let from = rect(&h, &format!("project.item.{clip}.name")).center();
     let top = rect(&h, &format!("timeline.layer.{}.row", layer_id(&h, "Top")));
@@ -230,7 +230,7 @@ fn dragging_selected_project_items_adds_every_item_to_the_viewer() {
         .as_u64()
         .unwrap();
     h.state_mut().session.execute("comp.open", json!({"comp": main})).unwrap();
-    h.state_mut().session.state.project_selection = vec![effectcraft_engine::project::ItemId(clip), effectcraft_engine::project::ItemId(other)];
+    h.state_mut().session.state.project_selection = vec![pulso_engine::project::ItemId(clip), pulso_engine::project::ItemId(other)];
     h.run_steps(3);
     let from = rect(&h, &format!("project.item.{clip}.name")).center();
     let to = comp_to_screen(&h.ctx, [80.0, 45.0]).unwrap();
@@ -257,7 +257,7 @@ fn effects_dropped_on_the_viewer_go_on_the_layer_under_the_pointer() {
     let to = comp_to_screen(&h.ctx, [160.0, 90.0]).unwrap();
     drag(&mut h, fx, to, Modifiers::NONE);
     let comp = h.state().session.active_comp().unwrap();
-    let effects = |id: u64| comp.layer(effectcraft_engine::project::LayerId(id)).unwrap().effects().map_or(0, |fx| fx.groups().count());
+    let effects = |id: u64| comp.layer(pulso_engine::project::LayerId(id)).unwrap().effects().map_or(0, |fx| fx.groups().count());
     assert_eq!((effects(top), effects(middle)), (1, 0), "on Top, which is under the pointer");
 }
 
@@ -267,7 +267,7 @@ fn effects_dropped_on_the_viewer_go_on_the_layer_under_the_pointer() {
 #[test]
 fn project_items_dropped_on_new_comp_make_a_composition() {
     let (mut h, clip) = harness();
-    let comps = |h: &Harness<'_, EffectcraftApp>| h.state().session.project.comps().count();
+    let comps = |h: &Harness<'_, PulsoApp>| h.state().session.project.comps().count();
     let before = comps(&h);
     let item = rect(&h, &format!("project.item.{clip}.name")).center();
     let button = rect(&h, "project.newComp").center();
@@ -281,11 +281,11 @@ fn project_items_dropped_on_new_comp_make_a_composition() {
 
     // Two selected items, one dragged: New Composition from Selection asks how.
     let main = h.state().session.project.items.values().find(|i| i.name == "Main").unwrap().id;
-    h.state_mut().session.state.project_selection = vec![effectcraft_engine::project::ItemId(clip), main];
+    h.state_mut().session.state.project_selection = vec![pulso_engine::project::ItemId(clip), main];
     h.run_steps(2);
     let item = rect(&h, &format!("project.item.{clip}.name")).center();
     drag(&mut h, item, button, Modifiers::NONE);
-    assert_eq!(h.state().dialog, Some(effectcraft_ui_egui::Dialog::Form));
+    assert_eq!(h.state().dialog, Some(pulso_ui_egui::Dialog::Form));
     assert!(h.state().auto.find("form.field.single").is_some(), "the New Composition from Selection dialog");
     assert_eq!(comps(&h), before + 1, "nothing made yet");
 }
@@ -299,7 +299,7 @@ fn project_footage_dropped_on_empty_timeline_creates_first_comp() {
         s.execute("file.importPlaceholder", json!({"name": "Landscape.png", "width": 640, "height": 360, "frameRate": 24, "duration": 5})).unwrap()["item"]
             .as_u64()
             .unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| PulsoApp::new(s));
     h.run_steps(3);
     assert!(h.state().session.active_comp().is_none());
     let from = rect(&h, &format!("project.item.{footage}.name")).center();
@@ -307,7 +307,7 @@ fn project_footage_dropped_on_empty_timeline_creates_first_comp() {
     drag(&mut h, from, to, Modifiers::NONE);
     let comp = h.state().session.active_comp().expect("created a composition");
     assert_eq!((comp.width, comp.height), (640, 360));
-    assert_eq!(comp.frame_rate, effectcraft_engine::time::FrameRate::from_f64(24.0));
+    assert_eq!(comp.frame_rate, pulso_engine::time::FrameRate::from_f64(24.0));
     assert_eq!(comp.duration.seconds(), 5.0);
     assert_eq!(comp.layers.len(), 1);
     assert_eq!(comp.layers[0].name, "Landscape.png");
@@ -321,13 +321,13 @@ fn multiple_selected_footage_dropped_on_empty_timeline_asks_how_to_create_comps(
     let mut s = Session::default();
     let first = s.execute("file.importPlaceholder", json!({"name": "First.png", "width": 160, "height": 90})).unwrap()["item"].as_u64().unwrap();
     let second = s.execute("file.importPlaceholder", json!({"name": "Second.png", "width": 300, "height": 200})).unwrap()["item"].as_u64().unwrap();
-    s.state.project_selection = vec![effectcraft_engine::project::ItemId(first), effectcraft_engine::project::ItemId(second)];
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    s.state.project_selection = vec![pulso_engine::project::ItemId(first), pulso_engine::project::ItemId(second)];
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| PulsoApp::new(s));
     h.run_steps(3);
     let from = rect(&h, &format!("project.item.{first}.name")).center();
     let to = rect(&h, "panel.Timeline").center();
     drag(&mut h, from, to, Modifiers::NONE);
-    assert_eq!(h.state().dialog, Some(effectcraft_ui_egui::Dialog::Form));
+    assert_eq!(h.state().dialog, Some(pulso_ui_egui::Dialog::Form));
     assert!(h.state().auto.find("form.field.single").is_some());
     assert!(h.state().session.active_comp().is_none(), "no composition until the user chooses");
 }
@@ -341,7 +341,7 @@ fn project_footage_dropped_on_empty_viewer_creates_first_comp() {
         s.execute("file.importPlaceholder", json!({"name": "Landscape.png", "width": 640, "height": 360, "frameRate": 24, "duration": 5})).unwrap()["item"]
             .as_u64()
             .unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| PulsoApp::new(s));
     h.run_steps(3);
     assert!(h.state().session.active_comp().is_none());
     let from = rect(&h, &format!("project.item.{footage}.name")).center();
@@ -349,7 +349,7 @@ fn project_footage_dropped_on_empty_viewer_creates_first_comp() {
     drag(&mut h, from, pos2(viewer.min.x + 40.0, viewer.min.y + 70.0), Modifiers::NONE);
     let comp = h.state().session.active_comp().expect("created a composition");
     assert_eq!((comp.width, comp.height), (640, 360));
-    assert_eq!(comp.frame_rate, effectcraft_engine::time::FrameRate::from_f64(24.0));
+    assert_eq!(comp.frame_rate, pulso_engine::time::FrameRate::from_f64(24.0));
     assert_eq!(comp.duration.seconds(), 5.0);
     assert_eq!(comp.layers.len(), 1);
     assert_eq!(comp.layers[0].name, "Landscape.png");
@@ -363,13 +363,13 @@ fn multiple_selected_footage_dropped_on_empty_viewer_asks_how_to_create_comps() 
     let mut s = Session::default();
     let first = s.execute("file.importPlaceholder", json!({"name": "First.png", "width": 160, "height": 90})).unwrap()["item"].as_u64().unwrap();
     let second = s.execute("file.importPlaceholder", json!({"name": "Second.png", "width": 300, "height": 200})).unwrap()["item"].as_u64().unwrap();
-    s.state.project_selection = vec![effectcraft_engine::project::ItemId(first), effectcraft_engine::project::ItemId(second)];
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    s.state.project_selection = vec![pulso_engine::project::ItemId(first), pulso_engine::project::ItemId(second)];
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| PulsoApp::new(s));
     h.run_steps(3);
     let from = rect(&h, &format!("project.item.{first}.name")).center();
     let viewer = rect(&h, "panel.Composition");
     drag(&mut h, from, pos2(viewer.min.x + 40.0, viewer.min.y + 70.0), Modifiers::NONE);
-    assert_eq!(h.state().dialog, Some(effectcraft_ui_egui::Dialog::Form));
+    assert_eq!(h.state().dialog, Some(pulso_ui_egui::Dialog::Form));
     assert!(h.state().auto.find("form.field.single").is_some());
     assert!(h.state().session.active_comp().is_none(), "no composition until the user chooses");
 }
@@ -394,8 +394,8 @@ struct Gated {
     allow: Arc<AtomicUsize>,
 }
 
-impl effectcraft_engine::Importer for Gated {
-    fn probe(&self, path: &str) -> Result<effectcraft_engine::project::Footage, String> {
+impl pulso_engine::Importer for Gated {
+    fn probe(&self, path: &str) -> Result<pulso_engine::project::Footage, String> {
         let k = self.started.fetch_add(1, Ordering::SeqCst);
         let until = std::time::Instant::now() + std::time::Duration::from_secs(5);
         while self.allow.load(Ordering::SeqCst) <= k && std::time::Instant::now() < until {
@@ -404,12 +404,12 @@ impl effectcraft_engine::Importer for Gated {
         if path.ends_with(".unsupported") {
             return Err("unsupported media format".into());
         }
-        Ok(effectcraft_engine::project::Footage { path: path.into(), width: 64, height: 32, has_video: true, ..Default::default() })
+        Ok(pulso_engine::project::Footage { path: path.into(), width: 64, height: 32, has_video: true, ..Default::default() })
     }
 }
 
 /// Step the app until `done` holds (the import runs on another thread).
-fn step_until(h: &mut Harness<'_, EffectcraftApp>, done: impl Fn(&Harness<'_, EffectcraftApp>) -> bool) {
+fn step_until(h: &mut Harness<'_, PulsoApp>, done: impl Fn(&Harness<'_, PulsoApp>) -> bool) {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
     while !done(h) {
         assert!(std::time::Instant::now() < deadline, "timed out");
@@ -435,12 +435,12 @@ fn dropped_files_show_import_progress_then_the_items_they_made() {
         h.input_mut().dropped_files.push(Arc::new(Dropped(file(n))));
     }
     h.run_steps(2);
-    let card = |h: &Harness<'_, EffectcraftApp>| h.state().auto.query("import.job.").first().map(|e| e.label.clone());
+    let card = |h: &Harness<'_, PulsoApp>| h.state().auto.query("import.job.").first().map(|e| e.label.clone());
     step_until(&mut h, |h| card(h).as_deref() == Some("b.png (2 of 3)"));
     let r = rect(&h, &card_id(&h));
     assert!(r.min.x < 40.0 && r.max.y > 960.0, "bottom left, over the panels (where toasts show): {r:?}");
     assert!(h.state().auto.find(&card_id(&h).replace("import.job.", "import.cancel.")).is_some(), "with Cancel");
-    let items = |h: &Harness<'_, EffectcraftApp>| h.state().session.project.items.values().filter(|i| i.name.ends_with(".png")).count();
+    let items = |h: &Harness<'_, PulsoApp>| h.state().session.project.items.values().filter(|i| i.name.ends_with(".png")).count();
     assert_eq!(items(&h), 0, "nothing added until the import finishes");
     allow.store(usize::MAX, Ordering::SeqCst);
     step_until(&mut h, |h| card(h).is_none() && items(h) == 3);
@@ -525,7 +525,7 @@ fn dropped_photoshop_file_shows_the_import_photoshop_file_dialog() {
     h.step();
     h.input_mut().dropped_files.push(Arc::new(Dropped(std::env::temp_dir().join("Layers.PSD"))));
     h.run_steps(2);
-    assert_eq!(h.state().dialog, Some(effectcraft_ui_egui::Dialog::Form), "the drop asks first");
+    assert_eq!(h.state().dialog, Some(pulso_ui_egui::Dialog::Form), "the drop asks first");
     h.run_steps(2);
     assert!(h.query_by_label("Import Photoshop File").is_some());
     assert!(h.query_by_value("Composition - Retain Layer Sizes").is_some(), "Import Kind starts at Default Drag Import As");
@@ -537,7 +537,7 @@ fn dropped_photoshop_file_shows_the_import_photoshop_file_dialog() {
     h.state_mut().session.prefs.import.drag_import_as = "footage".into();
     h.input_mut().dropped_files.push(Arc::new(Dropped(std::env::temp_dir().join("Layers.PSD"))));
     h.run_steps(4);
-    assert_eq!(h.state().dialog, Some(effectcraft_ui_egui::Dialog::Form));
+    assert_eq!(h.state().dialog, Some(pulso_ui_egui::Dialog::Form));
     assert!(h.query_by_value("Footage").is_some());
     click_id(&mut h, "form.ok");
     step_until(&mut h, |h| h.state().session.project.items.values().any(|i| i.name == "Layers.PSD"));
@@ -559,19 +559,19 @@ fn an_unsupported_drop_reports_the_error_and_keeps_valid_files() {
 }
 
 /// The automation id of the Importing card on screen.
-fn card_id(h: &Harness<'_, EffectcraftApp>) -> String {
+fn card_id(h: &Harness<'_, PulsoApp>) -> String {
     h.state().auto.query("import.job.").first().map(|e| e.id.clone()).unwrap_or_default()
 }
 
 /// Probes any existing file as a 64×32 PNG still.
 struct Stills;
 
-impl effectcraft_engine::Importer for Stills {
-    fn probe(&self, path: &str) -> Result<effectcraft_engine::project::Footage, String> {
+impl pulso_engine::Importer for Stills {
+    fn probe(&self, path: &str) -> Result<pulso_engine::project::Footage, String> {
         if !std::path::Path::new(path).is_file() {
             return Err(format!("{path}: no such file"));
         }
-        Ok(effectcraft_engine::project::Footage { path: path.into(), width: 64, height: 32, has_video: true, codec: "PNG".into(), ..Default::default() })
+        Ok(pulso_engine::project::Footage { path: path.into(), width: 64, height: 32, has_video: true, codec: "PNG".into(), ..Default::default() })
     }
 }
 
@@ -586,7 +586,7 @@ fn frames(tag: &str, n: u32) -> std::path::PathBuf {
     d
 }
 
-fn click_id(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
+fn click_id(h: &mut Harness<'_, PulsoApp>, id: &str) {
     // A dialog that just opened settles its size and place in a frame or two.
     h.run_steps(3);
     let p = rect(h, id).center();
@@ -599,14 +599,14 @@ fn click_id(h: &mut Harness<'_, EffectcraftApp>, id: &str) {
 }
 
 /// (name, sequence files) of every footage item.
-fn footage_items(h: &Harness<'_, EffectcraftApp>) -> Vec<(String, usize)> {
+fn footage_items(h: &Harness<'_, PulsoApp>) -> Vec<(String, usize)> {
     h.state()
         .session
         .project
         .items
         .values()
         .filter_map(|i| match &i.kind {
-            effectcraft_engine::project::ItemKind::Footage(f) => Some((i.name.clone(), f.sequence.len())),
+            pulso_engine::project::ItemKind::Footage(f) => Some((i.name.clone(), f.sequence.len())),
             _ => None,
         })
         .collect()
@@ -623,10 +623,10 @@ fn import_dialog_offers_the_image_sequence_option() {
     h.state_mut().session.importer = Some(Arc::new(Stills));
     h.state_mut().hooks.pick_files = Some(Box::new(move |_: &[&str]| vec![pick.clone()]));
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "file.import", json!({})).unwrap();
+    pulso_ui_egui::menus::invoke(h.state_mut(), &ctx, "file.import", json!({})).unwrap();
     h.run_steps(2);
-    assert_eq!(h.state().dialog, Some(effectcraft_ui_egui::Dialog::Form));
-    let label = |h: &Harness<'_, EffectcraftApp>, id: &str| h.state().auto.find(id).map(|e| e.label.clone());
+    assert_eq!(h.state().dialog, Some(pulso_ui_egui::Dialog::Form));
+    let label = |h: &Harness<'_, PulsoApp>, id: &str| h.state().auto.find(id).map(|e| e.label.clone());
     assert_eq!(label(&h, "form.field.sequence").as_deref(), Some("PNG Sequence"));
     assert!(label(&h, "form.field.alphabetical").is_some() && label(&h, "form.field.frameRate").is_some());
     assert!(footage_items(&h).is_empty(), "nothing imported before OK");
@@ -636,7 +636,7 @@ fn import_dialog_offers_the_image_sequence_option() {
     assert_eq!(footage_items(&h), [("frame_0002.png".to_string(), 0)]);
 
     // Ticked: the whole run as one sequence.
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "file.import", json!({})).unwrap();
+    pulso_ui_egui::menus::invoke(h.state_mut(), &ctx, "file.import", json!({})).unwrap();
     h.run_steps(2);
     click_id(&mut h, "form.field.sequence");
     click_id(&mut h, "form.ok");
@@ -650,14 +650,14 @@ fn import_dialog_offers_the_image_sequence_option() {
 /// of it, as in After Effects.
 #[test]
 fn new_composition_from_footage_makes_a_comp_of_the_picked_file() {
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(Session::default()));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| PulsoApp::new(Session::default()));
     h.run_steps(3);
     let dir = frames("fromfootage", 2);
     let pick = dir.join("frame_0002.png").to_string_lossy().to_string();
     h.state_mut().session.importer = Some(Arc::new(Stills));
     h.state_mut().hooks.pick_files = Some(Box::new(move |_: &[&str]| vec![pick.clone()]));
     click_id(&mut h, "viewer.empty.import");
-    assert_eq!(h.state().dialog, Some(effectcraft_ui_egui::Dialog::Form));
+    assert_eq!(h.state().dialog, Some(pulso_ui_egui::Dialog::Form));
     click_id(&mut h, "form.ok");
     step_until(&mut h, |h| h.state().session.active_comp().is_some());
     let comp = h.state().session.active_comp().unwrap();
@@ -689,7 +689,7 @@ fn a_dropped_folder_imports_as_one_sequence_with_sequence_interpretation() {
     assert!(h.state().dialog.is_none(), "drops don't ask");
     // Interpret Footage on it (the import selected it).
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "file.interpretFootage", json!({})).unwrap();
+    pulso_ui_egui::menus::invoke(h.state_mut(), &ctx, "file.interpretFootage", json!({})).unwrap();
     h.run_steps(2);
     for id in ["form.field.sequenceInfo", "form.field.overrideStart", "form.field.startTimecode", "form.field.frameRate", "form.field.alpha"] {
         assert!(h.state().auto.find(id).is_some(), "{id}");
@@ -700,12 +700,12 @@ fn a_dropped_folder_imports_as_one_sequence_with_sequence_interpretation() {
 
 #[test]
 fn illustrator_import_offers_and_applies_retain_layer_sizes() {
-    let path = std::env::temp_dir().join(format!("effectcraft-retain-ui-{}.ai", std::process::id()));
+    let path = std::env::temp_dir().join(format!("pulso-retain-ui-{}.ai", std::process::id()));
     std::fs::write(&path, b"%PDF-1.4\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 120 80] /Contents 4 0 R >> endobj\n4 0 obj << >> stream\n1 0 0 rg 20 15 30 20 re f\nendstream endobj\n%%EOF").unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(effectcraft_host::session()));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| PulsoApp::new(pulso_host::session()));
     h.run_steps(3);
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "file.import", json!({"paths": [path]})).unwrap();
+    pulso_ui_egui::menus::invoke(h.state_mut(), &ctx, "file.import", json!({"paths": [path]})).unwrap();
     h.run_steps(3);
     assert!(h.query_by_label("Import PDF / Illustrator File").is_some());
     click_id(&mut h, "form.field.importAs");
@@ -717,8 +717,8 @@ fn illustrator_import_offers_and_applies_retain_layer_sizes() {
     let comp = s.active_comp().unwrap();
     assert_eq!((comp.width, comp.height), (120, 80));
     assert_eq!(comp.layers.len(), 1);
-    let effectcraft_engine::project::LayerSource::Footage { item } = comp.layers[0].source else { panic!("footage") };
-    let effectcraft_engine::project::ItemKind::Footage(f) = &s.project.item(item).unwrap().kind else { panic!("footage") };
+    let pulso_engine::project::LayerSource::Footage { item } = comp.layers[0].source else { panic!("footage") };
+    let pulso_engine::project::ItemKind::Footage(f) = &s.project.item(item).unwrap().kind else { panic!("footage") };
     assert_eq!((f.width, f.height), (30, 20));
     assert!(f.layer.as_ref().unwrap().layer_size);
 }
@@ -738,13 +738,13 @@ fn aep_file(tag: &str) -> std::path::PathBuf {
 }
 
 /// The open composition is "Intro", in the folder named after the imported file.
-fn intro_is_open_in_its_folder(h: &Harness<'_, EffectcraftApp>) {
+fn intro_is_open_in_its_folder(h: &Harness<'_, PulsoApp>) {
     let s = &h.state().session;
     let comp = s.project.item(s.active_comp_id().expect("a composition is open")).unwrap();
     assert_eq!(comp.name, "Intro");
     let folder = s.project.item(comp.parent.expect("in a folder")).unwrap();
     assert_eq!(folder.name, "Intro.aep");
-    assert!(matches!(folder.kind, effectcraft_engine::project::ItemKind::Folder));
+    assert!(matches!(folder.kind, pulso_engine::project::ItemKind::Folder));
 }
 
 /// Dropped After Effects projects import as File ▸ Import ▸ Adobe After Effects Project… does
@@ -784,7 +784,7 @@ fn import_file_dialog_imports_a_picked_after_effects_project_with_the_other_file
         picked.clone()
     }));
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "file.import", json!({})).unwrap();
+    pulso_ui_egui::menus::invoke(h.state_mut(), &ctx, "file.import", json!({})).unwrap();
     assert!(["aep", "aepx"].iter().all(|e| offered.lock().unwrap().iter().any(|o| o == e)), "{:?}", offered.lock().unwrap());
     step_until(&mut h, |h| footage_items(h).iter().any(|(n, _)| n == "still.png"));
     intro_is_open_in_its_folder(&h);
@@ -827,12 +827,12 @@ fn a_dropped_after_effects_project_with_losses_asks_first() {
         h.input_mut().dropped_files.push(Arc::new(Dropped(path)));
     }
     h.run_steps(3);
-    assert_eq!(h.state().dialog, Some(effectcraft_ui_egui::Dialog::AepLosses), "the drop asks first");
+    assert_eq!(h.state().dialog, Some(pulso_ui_egui::Dialog::AepLosses), "the drop asks first");
     assert_eq!(h.state_mut().dialog_state_mut().aep_losses.queue, [intro.to_string_lossy().to_string()], "the other project waits");
-    let named = |h: &Harness<'_, EffectcraftApp>, name: &str| h.state().session.project.items.values().any(|i| i.name == name);
+    let named = |h: &Harness<'_, PulsoApp>, name: &str| h.state().session.project.items.values().any(|i| i.name == name);
     assert!(!named(&h, "Synthetic.aep") && !named(&h, "Intro.aep"), "no project imported before the answer");
     step_until(&mut h, |h| ["Layers.PSD", "still.png"].iter().all(|n| footage_items(h).iter().any(|(f, _)| f == n)));
-    assert_eq!(h.state().dialog, Some(effectcraft_ui_egui::Dialog::AepLosses), "the footage did not replace the prompt");
+    assert_eq!(h.state().dialog, Some(pulso_ui_egui::Dialog::AepLosses), "the footage did not replace the prompt");
 
     click_id(&mut h, "dialog.aepLosses.cancel");
     h.run_steps(2);
@@ -842,7 +842,7 @@ fn a_dropped_after_effects_project_with_losses_asks_first() {
 
     h.input_mut().dropped_files.push(Arc::new(Dropped(lossy)));
     h.run_steps(3);
-    assert_eq!(h.state().dialog, Some(effectcraft_ui_egui::Dialog::AepLosses));
+    assert_eq!(h.state().dialog, Some(pulso_ui_egui::Dialog::AepLosses));
     click_id(&mut h, "dialog.aepLosses.continue");
     h.run_steps(2);
     assert_eq!(h.state().dialog, None);
@@ -860,7 +860,7 @@ fn a_photoshop_file_dropped_with_an_after_effects_project_still_asks() {
     h.input_mut().dropped_files.push(Arc::new(Dropped(aep)));
     h.run_steps(2);
     intro_is_open_in_its_folder(&h);
-    assert_eq!(h.state().dialog, Some(effectcraft_ui_egui::Dialog::Form), "Import Photoshop File asks");
+    assert_eq!(h.state().dialog, Some(pulso_ui_egui::Dialog::Form), "Import Photoshop File asks");
 }
 
 /// A dropped file that is not an After Effects project reports why, changes nothing, and the

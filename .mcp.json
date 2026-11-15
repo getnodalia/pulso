@@ -1,12 +1,12 @@
 {
   "mcpServers": {
-    "effectcraft": {
+    "pulso": {
       "command": "cargo",
-      "args": ["run", "--quiet", "--release", "-p", "effectcraft-cli", "--", "mcp", "--demo"]
+      "args": ["run", "--quiet", "--release", "-p", "pulso-cli", "--", "mcp", "--demo"]
     },
-    "effectcraft-app": {
+    "pulso-app": {
       "command": "cargo",
-      "args": ["run", "--quiet", "--release", "-p", "effectcraft-cli", "--", "mcp", "--bridge", "9877"]
+      "args": ["run", "--quiet", "--release", "-p", "pulso-cli", "--", "mcp", "--bridge", "9877"]
     }
   }
 }

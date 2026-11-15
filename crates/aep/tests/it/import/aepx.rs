@@ -6,10 +6,10 @@
 //! equal, not only similar. The tests read the two whole files: a case cut from the `.aepx` would
 //! be written back as `.aep`.
 
-use effectcraft_aep::import::{AepImportError, ImportOptions, analyze, import};
-use effectcraft_project::Project;
+use pulso_aep::import::{AepImportError, ImportOptions, analyze, import};
+use pulso_project::Project;
 
-fn import_bytes(bytes: &[u8]) -> (Project, effectcraft_aep::import::ImportResult) {
+fn import_bytes(bytes: &[u8]) -> (Project, pulso_aep::import::ImportResult) {
     let mut project = Project::default();
     let none = |_: &str| false;
     let opts = ImportOptions { allow_losses: true, ..ImportOptions::new(&none) };
@@ -24,7 +24,7 @@ fn pair() -> Option<(Vec<u8>, Vec<u8>)> {
 #[test]
 fn aepx_imports_like_the_aep() {
     let (aep, aepx) = skip!(pair());
-    assert!(effectcraft_aep::is_aepx(&aepx) && !effectcraft_aep::is_aepx(&aep));
+    assert!(pulso_aep::is_aepx(&aepx) && !pulso_aep::is_aepx(&aep));
     let (pa, ra) = import_bytes(&aep);
     let (px, rx) = import_bytes(&aepx);
     assert_eq!(ra, rx, "import result and report");
@@ -68,7 +68,7 @@ fn damaged_aepx_is_an_error_not_a_panic() {
 }
 
 /// Every pair of the local corpus (not in the repository): `AEP_CORPUS=<folder> cargo test
-/// --release -p effectcraft-aep --test it import::aepx:: -- --ignored --nocapture`.
+/// --release -p pulso-aep --test it import::aepx:: -- --ignored --nocapture`.
 #[test]
 #[ignore = "needs the local corpus (AEP_CORPUS)"]
 fn every_corpus_pair_imports_alike() {

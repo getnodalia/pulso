@@ -11,18 +11,18 @@ The After Effects test projects of `crates/aep` are not in the repository; witho
 pass. They live in [storytold/effectcraft-corpus](https://github.com/storytold/effectcraft-corpus).
 `cargo xtask aep-corpus` fetches them at the commit pinned in `crates/aep/tests/fixtures/corpus.lock`,
 checks every file against the SHA-256 listed there (any mismatch fails and installs nothing) and
-installs them in `corpus/aep`. Point `EFFECTCRAFT_AEP_FIXTURES` at that folder to run those tests
-too, and set `EFFECTCRAFT_AEP_FIXTURES_REQUIRED=1` as well to make a missing project fail its test
+installs them in `corpus/aep`. Point `PULSO_AEP_FIXTURES` at that folder to run those tests
+too, and set `PULSO_AEP_FIXTURES_REQUIRED=1` as well to make a missing project fail its test
 instead of skipping (a corpus run that must not pass by skipping):
 
 ```sh
 cargo xtask aep-corpus
-EFFECTCRAFT_AEP_FIXTURES=corpus/aep EFFECTCRAFT_AEP_FIXTURES_REQUIRED=1 cargo test -p effectcraft-aep
+PULSO_AEP_FIXTURES=corpus/aep PULSO_AEP_FIXTURES_REQUIRED=1 cargo test -p pulso-aep
 ```
 
 The `dev` profile keeps debug info to line tables (fast builds, readable backtraces). To debug
 interactively — local variables, parameters, column breakpoints — build with the `dev-full`
-profile: `cargo run --profile dev-full -p effectcraft -- --demo` (see `CONTRIBUTING.md`).
+profile: `cargo run --profile dev-full -p pulso -- --demo` (see `CONTRIBUTING.md`).
 
 `cargo xtask ci` builds in the dev profile and runs the tests with `cargo nextest run` (plus
 `cargo test --doc`) when `cargo-nextest` is installed, and with `cargo test` otherwise. It then
@@ -93,14 +93,14 @@ Run the full `cargo xtask ci` before a release.
 - **Export** (`crates/export/tests`): every format is encoded and decoded back, checking frame
   count, size and pixels. When `ffmpeg`/`ffprobe` are installed they are used as an outside
   check; they are never linked or shipped.
-- **Automation** (`crates/automation`, `apps/effectcraft-cli/tests`): MCP protocol round trips and
+- **Automation** (`crates/automation`, `apps/pulso-cli/tests`): MCP protocol round trips and
   the command-line tool's JSON output.
 - **Interface** (`crates/ui-egui`): headless egui_kittest tests for panels and dialogs.
 
 ## Looking at the interface without a window
 
 ```sh
-cargo run -p effectcraft-ui-egui --example snapshot -- --out ui.png \
+cargo run -p pulso-ui-egui --example snapshot -- --out ui.png \
   --step '{"method":"engine.execute","params":{"command":"layer.select","params":{"layers":["#2"]}}}'
 ```
 
@@ -110,7 +110,7 @@ intermediate image.
 ## Benchmarks
 
 ```sh
-cargo run --release -p effectcraft-cli -- bench --n 10 --play 30
+cargo run --release -p pulso-cli -- bench --n 10 --play 30
 ```
 
 prints per-layer and per-effect timings for one frame, and playback timings with and without the
@@ -119,12 +119,12 @@ layer cache.
 ### Render benchmark (`cargo xtask bench`)
 
 ```sh
-nice -n 10 cargo xtask bench --bin target/release/effectcraft-cli   # or no --bin: one `--release` build into target/bench
+nice -n 10 cargo xtask bench --bin target/release/pulso-cli   # or no --bin: one `--release` build into target/bench
 nice -n 10 cargo xtask bench --quick --compare before.jsonl        # 8 frames instead of 60, % change against an earlier run
 cargo xtask bench --project F.ecproj --comp "Main"                 # any project's comp
 ```
 
-measures memory, CPU and wall time of whole `effectcraft-cli` runs, so every optimisation has a
+measures memory, CPU and wall time of whole `pulso-cli` runs, so every optimisation has a
 before and after number. It generates four deterministic scenarios into `target/bench/projects`
 with engine commands (no committed media): `demo` (the built-in demo comp), `layers` (1080p,
 100 solid, text and shape layers with Gaussian Blur, Glow, Levels, Curves, Drop Shadow and
@@ -190,7 +190,7 @@ No threshold is treated as proof of memory exhaustion. Typed wgpu OOM, internal/
 errors and device-loss notifications are observations; device destruction is distinguished
 from unknown loss, and neither establishes why the process later exited.
 
-Run `cargo test -p effectcraft crash_report::tests` for bounded protocol, normal shutdown,
+Run `cargo test -p pulso crash_report::tests` for bounded protocol, normal shutdown,
 actual subprocess abort, unrelated child handles, concurrent sessions, missing log/helper,
 log rotation, bounded retained events, live-GUI pipe loss, and report-write failure coverage.
 Windows also tests a real subprocess exit with explicit `0xC0000017` bits, without exhausting

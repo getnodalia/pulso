@@ -1,11 +1,11 @@
 //! Blend modes beyond the six of batch 1: 906 (13 solids over a test image, each with a mode set
-//! by name) and the codes of 907 (each rendered by After Effects and matched against EffectCraft's
+//! by name) and the codes of 907 (each rendered by After Effects and matched against Pulso's
 //! modes), here written into 906's top layer.
 
 use crate::import::helpers::comp;
-use effectcraft_aep::import::{ImportOptions, LossCategory, import};
-use effectcraft_color::BlendMode;
-use effectcraft_project::Project;
+use pulso_aep::import::{ImportOptions, LossCategory, import};
+use pulso_color::BlendMode;
+use pulso_project::Project;
 
 const F906: &str = "906-blendmodes-13-solids-on-steps.aep";
 
@@ -35,7 +35,7 @@ fn the_13_modes_of_906_import_lossless() {
 }
 
 /// 906 with the top layer's code (`ldta` byte 99 of the first layer in the file) replaced.
-fn with_code(code: u8) -> Option<(Project, effectcraft_aep::import::ImportResult)> {
+fn with_code(code: u8) -> Option<(Project, pulso_aep::import::ImportResult)> {
     Some({
         let mut b = crate::common::try_fixture(F906)?;
         let at = b.windows(4).position(|w| w == b"ldta").expect("ldta") + 8 + 99;

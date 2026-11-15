@@ -1,18 +1,18 @@
 //! H.264, HEVC and AV1 MP4s describe the frames the render path made (#2879): the `colr` box, read
-//! back with FilmCraft's demuxer, and the bitstream's own colour description (the SPS VUI, AV1's
+//! back with Toma's demuxer, and the bitstream's own colour description (the SPS VUI, AV1's
 //! `color_config`), which ffprobe reports for the first frame of the bare elementary stream when
 //! ffmpeg can copy it out and decode it.
 
 use std::path::Path;
 use std::process::Command;
 
-use effectcraft_color::Label;
-use effectcraft_export::render_queue::{OutputFormat, OutputModule, RenderSettings, TimeSpan};
-use effectcraft_export::{Job, export};
-use effectcraft_project::{ColorSpace, Comp, ItemKind, LayerSource, Project, Solid, build};
-use effectcraft_render::NoFootage;
-use effectcraft_time::{FrameRate, Tick};
 use filmcraft_isobmff::{ColorInfo, TrackKind};
+use pulso_color::Label;
+use pulso_export::render_queue::{OutputFormat, OutputModule, RenderSettings, TimeSpan};
+use pulso_export::{Job, export};
+use pulso_project::{ColorSpace, Comp, ItemKind, LayerSource, Project, Solid, build};
+use pulso_render::NoFootage;
+use pulso_time::{FrameRate, Tick};
 
 /// (name, Output color space, H.273 primaries / transfer / matrix, the same as ffprobe names them)
 const ROWS: &[(&str, Option<ColorSpace>, [u16; 3], [&str; 3])] = &[

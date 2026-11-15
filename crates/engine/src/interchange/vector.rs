@@ -2,14 +2,14 @@
 //! Illustrator and EPS footage → shape layer), Create Shapes from Text and Create Masks from
 //! Text (glyph outlines), and vector files imported as compositions (one layer per file layer).
 
-use effectcraft_keyframe::{Gradient, ShapePath, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{Comp, ItemId, Layer, LayerSource, MaskMode, Project, PropGroup};
-use effectcraft_svg::{Affine, Doc, Geom, GradientKind, Node, Paint};
 use kurbo::{BezPath, Point};
+use pulso_keyframe::{Gradient, ShapePath, Value};
+use pulso_project::build::{self, Ids};
+use pulso_project::{Comp, ItemId, Layer, LayerSource, MaskMode, Project, PropGroup};
+use pulso_svg::{Affine, Doc, Geom, GradientKind, Node, Paint};
 
 fn shape_paths(ids: &mut Ids, path: &BezPath) -> Vec<PropGroup> {
-    effectcraft_path::from_kurbo(path)
+    pulso_path::from_kurbo(path)
         .into_iter()
         .enumerate()
         .map(|(i, sp)| {
@@ -31,7 +31,7 @@ fn axis_aligned(m: Affine) -> Option<(f64, f64, f64, f64)> {
     (c[1].abs() < 1e-9 && c[2].abs() < 1e-9 && c[0] > 0.0 && c[3] > 0.0).then_some((c[0], c[3], c[4], c[5]))
 }
 
-fn gradient_value(g: &effectcraft_svg::Gradient) -> Gradient {
+fn gradient_value(g: &pulso_svg::Gradient) -> Gradient {
     Gradient {
         colors: g.stops.iter().map(|(o, c)| (*o, [c[0] as f32, c[1] as f32, c[2] as f32, 1.0])).collect(),
         opacities: g.stops.iter().map(|(o, c)| (*o, c[3] as f32)).collect(),
@@ -39,7 +39,7 @@ fn gradient_value(g: &effectcraft_svg::Gradient) -> Gradient {
 }
 
 /// Gradient start/end points in shape-layer space (`m`: shape user space → layer space).
-fn gradient_points(g: &effectcraft_svg::Gradient, m: Affine, bbox: kurbo::Rect) -> (bool, [f64; 2], [f64; 2]) {
+fn gradient_points(g: &pulso_svg::Gradient, m: Affine, bbox: kurbo::Rect) -> (bool, [f64; 2], [f64; 2]) {
     let unit = if g.bbox_units { Affine::new([bbox.width(), 0.0, 0.0, bbox.height(), bbox.x0, bbox.y0]) } else { Affine::IDENTITY };
     let full = m * unit * g.transform;
     let p = |x: f64, y: f64| {
@@ -52,7 +52,7 @@ fn gradient_points(g: &effectcraft_svg::Gradient, m: Affine, bbox: kurbo::Rect) 
     }
 }
 
-fn shape_items(ids: &mut Ids, s: &effectcraft_svg::Shape, m: Affine) -> Vec<PropGroup> {
+fn shape_items(ids: &mut Ids, s: &pulso_svg::Shape, m: Affine) -> Vec<PropGroup> {
     use kurbo::Shape as _;
     let mut items = vec![];
     // Geometry: parametric when the transform keeps rectangles/ellipses axis-aligned.
@@ -102,7 +102,7 @@ fn shape_items(ids: &mut Ids, s: &effectcraft_svg::Shape, m: Affine) -> Vec<Prop
             }
         };
         set(&mut g, "opacity", Value::Scalar(s.fill_opacity * 100.0));
-        set(&mut g, "rule", Value::Enum(u32::from(s.fill_rule == effectcraft_svg::FillRule::EvenOdd)));
+        set(&mut g, "rule", Value::Enum(u32::from(s.fill_rule == pulso_svg::FillRule::EvenOdd)));
         items.push(g);
     }
     items
@@ -133,7 +133,7 @@ fn merge_item(ids: &mut Ids, mode: u32) -> Option<PropGroup> {
 /// with Merge Paths), the clip paths, and Merge Paths ▸ Intersect before its paint, so the fill
 /// is exactly the clipped area. Open stroked paths stay unclipped (an intersection would close
 /// them).
-fn clipped_items(ids: &mut Ids, s: &effectcraft_svg::Shape, m: Affine, clips: &[BezPath]) -> Vec<PropGroup> {
+fn clipped_items(ids: &mut Ids, s: &pulso_svg::Shape, m: Affine, clips: &[BezPath]) -> Vec<PropGroup> {
     let items = shape_items(ids, s, m);
     let path = s.geom.to_path();
     let closed = path.elements().iter().any(|e| matches!(e, kurbo::PathEl::ClosePath)) || s.fill.is_some();
@@ -176,7 +176,7 @@ pub fn svg_contents(ids: &mut Ids, doc: &Doc) -> Vec<PropGroup> {
                     let items = walk(ids, &g.children, gm, &inner_clips);
                     if !items.is_empty() {
                         let mut grp = group(ids, &g.name, items, g.opacity);
-                        if g.blend != effectcraft_svg::BlendMode::Normal {
+                        if g.blend != pulso_svg::BlendMode::Normal {
                             set(&mut grp, "blend", Value::Enum(blend_index(g.blend)));
                         }
                         out.push(grp);
@@ -202,9 +202,9 @@ pub fn svg_contents(ids: &mut Ids, doc: &Doc) -> Vec<PropGroup> {
 }
 
 /// The shape-layer Blend Mode index of an SVG / PDF blend mode.
-fn blend_index(b: effectcraft_svg::BlendMode) -> u32 {
-    use effectcraft_color::BlendMode as P;
-    use effectcraft_svg::BlendMode as S;
+fn blend_index(b: pulso_svg::BlendMode) -> u32 {
+    use pulso_color::BlendMode as P;
+    use pulso_svg::BlendMode as S;
     let p = match b {
         S::Normal => P::Normal,
         S::Multiply => P::Multiply,
@@ -243,7 +243,7 @@ pub fn vector_clip_masks(doc: &Doc) -> (Vec<BezPath>, Doc) {
             break;
         }
         match &mut g.children[0] {
-            Node::Group(sub) if sub.mask.is_none() && sub.blend == effectcraft_svg::BlendMode::Normal => g = sub,
+            Node::Group(sub) if sub.mask.is_none() && sub.blend == pulso_svg::BlendMode::Normal => g = sub,
             _ => break,
         }
     }
@@ -253,19 +253,19 @@ pub fn vector_clip_masks(doc: &Doc) -> (Vec<BezPath>, Doc) {
 /// Whether text (the system clipboard's, say) is SVG markup: Edit ▸ Paste makes it a shape
 /// layer (`edit.pasteSvg`).
 pub fn is_svg_text(text: &str) -> bool {
-    effectcraft_svg::looks_like_svg(text.as_bytes())
+    pulso_svg::looks_like_svg(text.as_bytes())
 }
 
 /// Whether footage is a vector file (SVG / PDF / AI / EPS).
-pub fn is_vector(f: &effectcraft_project::Footage) -> bool {
-    effectcraft_render::is_vector_footage(f) || f.path.to_ascii_lowercase().ends_with(".svg")
+pub fn is_vector(f: &pulso_project::Footage) -> bool {
+    pulso_render::is_vector_footage(f) || f.path.to_ascii_lowercase().ends_with(".svg")
 }
 
 /// `doc` (the document of footage `f`) in the footage's layer pixels, as the renderer draws it
-/// ([`effectcraft_render::vector_fit`]): a placed page of an After Effects project is scaled to
+/// ([`pulso_render::vector_fit`]): a placed page of an After Effects project is scaled to
 /// fill the size stored for it; other footage is unchanged.
-pub fn fitted_to_footage(mut doc: Doc, f: &effectcraft_project::Footage) -> Doc {
-    let (_, [sx, sy]) = effectcraft_render::vector_fit(f, [doc.width, doc.height], doc.pixel_size(), 1.0);
+pub fn fitted_to_footage(mut doc: Doc, f: &pulso_project::Footage) -> Doc {
+    let (_, [sx, sy]) = pulso_render::vector_fit(f, [doc.width, doc.height], doc.pixel_size(), 1.0);
     if f.placed_page {
         doc.root.transform = Affine::scale_non_uniform(sx, sy) * doc.root.transform;
         (doc.width, doc.height) = (doc.width * sx, doc.height * sy);
@@ -282,7 +282,7 @@ pub fn fitted_to_footage(mut doc: Doc, f: &effectcraft_project::Footage) -> Doc 
 /// A track matte is drawn at the composition's resolution, so its edge is the footage's raster
 /// edge on shape and image layers alike; a mask on an image layer would be drawn at the image's
 /// own resolution and blur its edge when the image is scaled up.
-pub fn frame_matte(proj: &mut Project, comp: &Comp, src: &Layer, f: &effectcraft_project::Footage) -> Option<Layer> {
+pub fn frame_matte(proj: &mut Project, comp: &Comp, src: &Layer, f: &pulso_project::Footage) -> Option<Layer> {
     if !f.placed_page || f.width == 0 || f.height == 0 {
         return None;
     }
@@ -290,7 +290,7 @@ pub fn frame_matte(proj: &mut Project, comp: &Comp, src: &Layer, f: &effectcraft
         r##"<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{1}"><rect width="{0}" height="{1}" fill="#ffffff"/></svg>"##,
         f.width, f.height
     );
-    let doc = effectcraft_svg::parse(svg.as_bytes()).ok()?;
+    let doc = pulso_svg::parse(svg.as_bytes()).ok()?;
     let mut l = build::layer(proj, comp, &format!("{} Frame", src.name), LayerSource::Shape, (0, 0), None);
     add_doc_shapes(proj, &mut l, &doc);
     copy_transform(proj, src, &mut l);
@@ -307,29 +307,23 @@ pub fn frame_matte(proj: &mut Project, comp: &Comp, src: &Layer, f: &effectcraft
 }
 
 /// The vector document of footage `f` (its file read as `bytes`; `None` for other formats): its
-/// page, framed as [`effectcraft_project::Footage::placed_page`] says, restricted to its layer.
-pub fn footage_doc(f: &effectcraft_project::Footage, bytes: &[u8]) -> Option<Result<Doc, String>> {
-    let framing = if f.placed_page { effectcraft_pdf::Framing::Placed } else { effectcraft_pdf::Framing::Viewer };
+/// page, framed as [`pulso_project::Footage::placed_page`] says, restricted to its layer.
+pub fn footage_doc(f: &pulso_project::Footage, bytes: &[u8]) -> Option<Result<Doc, String>> {
+    let framing = if f.placed_page { pulso_pdf::Framing::Placed } else { pulso_pdf::Framing::Viewer };
     vector_doc(&f.path, bytes, f.layer.as_ref(), f.page, framing)
 }
 
 /// The vector document of an SVG / PDF / AI / EPS file (`None` for other formats): page
 /// `page` of a PDF framed as `framing` says, restricted to one layer when `layer` names it.
-pub fn vector_doc(
-    path: &str,
-    bytes: &[u8],
-    layer: Option<&effectcraft_project::SourceLayer>,
-    page: u32,
-    framing: effectcraft_pdf::Framing,
-) -> Option<Result<Doc, String>> {
-    if path.to_ascii_lowercase().ends_with(".svg") || effectcraft_svg::looks_like_svg(bytes) {
-        return Some(effectcraft_svg::parse(bytes).map_err(|e| format!("{path}: {e}")));
+pub fn vector_doc(path: &str, bytes: &[u8], layer: Option<&pulso_project::SourceLayer>, page: u32, framing: pulso_pdf::Framing) -> Option<Result<Doc, String>> {
+    if path.to_ascii_lowercase().ends_with(".svg") || pulso_svg::looks_like_svg(bytes) {
+        return Some(pulso_svg::parse(bytes).map_err(|e| format!("{path}: {e}")));
     }
-    effectcraft_pdf::sniff(bytes)?;
+    pulso_pdf::sniff(bytes)?;
     Some(
-        effectcraft_pdf::parse_page_framed(bytes, page as usize, framing)
+        pulso_pdf::parse_page_framed(bytes, page as usize, framing)
             .map(|d| match layer {
-                Some(l) => effectcraft_pdf::layer_doc_with_sizes(&d, l.index as usize, l.layer_size).0,
+                Some(l) => pulso_pdf::layer_doc_with_sizes(&d, l.index as usize, l.layer_size).0,
                 None => d,
             })
             .map_err(|e| format!("{path}: {e}")),
@@ -346,22 +340,22 @@ pub fn import_vector_comp(
     name: &str,
     page: u32,
     retain: bool,
-    timing: (effectcraft_time::FrameRate, effectcraft_time::Tick),
+    timing: (pulso_time::FrameRate, pulso_time::Tick),
 ) -> Result<(ItemId, ItemId, Vec<ItemId>), String> {
-    use effectcraft_color::Label;
-    use effectcraft_project::{AlphaMode, Footage, FootageKind, ItemKind, SourceLayer};
+    use pulso_color::Label;
+    use pulso_project::{AlphaMode, Footage, FootageKind, ItemKind, SourceLayer};
     let (rate, duration) = timing;
-    let doc = effectcraft_pdf::parse_page(bytes, page as usize).map_err(|e| format!("{path}: {e}"))?;
-    let codec = effectcraft_pdf::codec(path, bytes).unwrap_or("PDF");
+    let doc = pulso_pdf::parse_page(bytes, page as usize).map_err(|e| format!("{path}: {e}"))?;
+    let codec = pulso_pdf::codec(path, bytes).unwrap_or("PDF");
     let (w, h) = doc.pixel_size();
     let file = std::path::Path::new(path).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
     let folder = proj.add_item(&format!("{name} Layers"), Label::Yellow, None, ItemKind::Folder);
     let mut comp = Comp::new(w, h, rate, duration);
     let mut items = vec![];
-    let names = effectcraft_pdf::layer_names(&doc);
+    let names = pulso_pdf::layer_names(&doc);
     for (i, lname) in names.iter().enumerate() {
         let (size, offset) = if retain {
-            let (layer, offset) = effectcraft_pdf::layer_doc_with_sizes(&doc, i, true);
+            let (layer, offset) = pulso_pdf::layer_doc_with_sizes(&doc, i, true);
             (layer.pixel_size(), offset)
         } else {
             ((w, h), [0.0, 0.0])
@@ -432,7 +426,7 @@ pub struct VectorImage {
 
 /// The document's images, bottom first, and how many soft-masked groups it has.
 pub fn vector_images(doc: &Doc) -> (Vec<VectorImage>, usize) {
-    fn walk(g: &effectcraft_svg::Group, m: Affine, opacity: f64, clipped: bool, out: &mut Vec<VectorImage>, masks: &mut usize) {
+    fn walk(g: &pulso_svg::Group, m: Affine, opacity: f64, clipped: bool, out: &mut Vec<VectorImage>, masks: &mut usize) {
         let m = m * g.transform;
         let opacity = opacity * g.opacity;
         let clipped = clipped || !g.clip.is_empty() || g.mask.is_some();
@@ -467,7 +461,7 @@ pub fn vector_images(doc: &Doc) -> (Vec<VectorImage>, usize) {
 /// layers and image footage layers can stack in the document's order. One more segment than
 /// images.
 pub fn split_at_images(doc: &Doc) -> Vec<Doc> {
-    fn count(g: &effectcraft_svg::Group) -> usize {
+    fn count(g: &pulso_svg::Group) -> usize {
         g.children
             .iter()
             .map(|c| match c {
@@ -478,7 +472,7 @@ pub fn split_at_images(doc: &Doc) -> Vec<Doc> {
             .sum()
     }
     /// Keep the shapes between images `seg − 1` and `seg`; `seen` counts images passed.
-    fn prune(g: &effectcraft_svg::Group, seg: usize, seen: &mut usize) -> effectcraft_svg::Group {
+    fn prune(g: &pulso_svg::Group, seg: usize, seen: &mut usize) -> pulso_svg::Group {
         let mut out = g.clone();
         out.children = vec![];
         for c in &g.children {
@@ -579,7 +573,7 @@ fn add_doc_shapes(proj: &mut Project, l: &mut Layer, doc: &Doc) {
     }
     let mut n = 0;
     for (k, clip) in clips.iter().enumerate() {
-        for sp in effectcraft_path::from_kurbo(clip) {
+        for sp in pulso_path::from_kurbo(clip) {
             n += 1;
             let mode = if k == 0 { MaskMode::Add } else { MaskMode::Intersect };
             let mk = build::mask(&mut ids, &format!("Mask {n}"), sp, mode, [255, 255, 0]);
@@ -592,9 +586,9 @@ fn add_doc_shapes(proj: &mut Project, l: &mut Layer, doc: &Doc) {
 
 /// Layer ▸ Create ▸ Create Shapes from Text: one group per character with its outline, fill and
 /// stroke (as laid out at the comp time `ctx` was made for).
-pub fn shapes_from_text(proj: &mut Project, comp: &Comp, ctx_project: &Project, cid: ItemId, src: &Layer, time: effectcraft_time::Tick) -> Option<Layer> {
-    let ctx = effectcraft_render::EvalCtx::new(ctx_project, cid, comp, time);
-    let geom = effectcraft_render::text::text_geom(&ctx, src)?;
+pub fn shapes_from_text(proj: &mut Project, comp: &Comp, ctx_project: &Project, cid: ItemId, src: &Layer, time: pulso_time::Tick) -> Option<Layer> {
+    let ctx = pulso_render::EvalCtx::new(ctx_project, cid, comp, time);
+    let geom = pulso_render::text::text_geom(&ctx, src)?;
     let chars: Vec<char> = geom.doc.text.chars().filter(|c| !c.is_whitespace()).collect();
     let mut l = build::layer(proj, comp, &format!("{} Outlines", src.name), LayerSource::Shape, (0, 0), None);
     let mut groups = vec![];
@@ -631,15 +625,15 @@ pub fn shapes_from_text(proj: &mut Project, comp: &Comp, ctx_project: &Project, 
 }
 
 /// Glyph outlines of a text layer in comp space (for Create Masks from Text).
-pub fn text_outlines_in_comp(project: &Project, cid: ItemId, comp: &Comp, src: &Layer, time: effectcraft_time::Tick) -> Vec<ShapePath> {
-    let ctx = effectcraft_render::EvalCtx::new(project, cid, comp, time);
-    let Some(geom) = effectcraft_render::text::text_geom(&ctx, src) else { return vec![] };
+pub fn text_outlines_in_comp(project: &Project, cid: ItemId, comp: &Comp, src: &Layer, time: pulso_time::Tick) -> Vec<ShapePath> {
+    let ctx = pulso_render::EvalCtx::new(project, cid, comp, time);
+    let Some(geom) = pulso_render::text::text_geom(&ctx, src) else { return vec![] };
     let (m, _) = ctx.layer_to_comp(src);
     let mut out = vec![];
     for g in &geom.glyphs {
         let p = g.path();
-        let p = effectcraft_path::transform(std::slice::from_ref(&p), &m).remove(0);
-        out.extend(effectcraft_path::from_kurbo(&p));
+        let p = pulso_path::transform(std::slice::from_ref(&p), &m).remove(0);
+        out.extend(pulso_path::from_kurbo(&p));
     }
     out
 }

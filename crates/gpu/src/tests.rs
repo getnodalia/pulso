@@ -14,15 +14,15 @@
 
 use std::sync::{Arc, OnceLock};
 
-use effectcraft_color::{BlendMode, ColorSpace, Label};
-use effectcraft_keyframe::{Keyframe, ShapePath, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{
+use pulso_color::{BlendMode, ColorSpace, Label};
+use pulso_keyframe::{Keyframe, ShapePath, Value};
+use pulso_project::build::{self, Ids};
+use pulso_project::{
     AlphaMode, BitDepth, Comp, Footage, FootageKind, ItemId, ItemKind, Layer, LayerSource, MaskMode, MatteKind, Project, Quality, Sampling, Solid, TrackMatte,
 };
-use effectcraft_raster::Image;
-use effectcraft_render::{Backend, FootageSource, RenderOpts, Renderer};
-use effectcraft_time::{FrameRate, Tick};
+use pulso_raster::Image;
+use pulso_render::{Backend, FootageSource, RenderOpts, Renderer};
+use pulso_time::{FrameRate, Tick};
 
 use crate::Gpu;
 
@@ -215,7 +215,7 @@ pub(crate) fn gpu() -> Option<&'static Gpu> {
         struct GpuTestLog;
         impl log::Log for GpuTestLog {
             fn enabled(&self, metadata: &log::Metadata<'_>) -> bool {
-                metadata.level() <= log::Level::Warn && metadata.target().starts_with("effectcraft_gpu")
+                metadata.level() <= log::Level::Warn && metadata.target().starts_with("pulso_gpu")
             }
 
             fn log(&self, record: &log::Record<'_>) {
@@ -232,21 +232,21 @@ pub(crate) fn gpu() -> Option<&'static Gpu> {
         }
         let g = Gpu::try_headless();
         match &g {
-            Ok(g) => eprintln!("effectcraft-gpu tests: adapter {}, median {:?}", g.ctx.name, g.ctx.median_kernel),
-            Err(e) => eprintln!("effectcraft-gpu tests: no GPU ({e}), skipping GPU comparisons"),
+            Ok(g) => eprintln!("pulso-gpu tests: adapter {}, median {:?}", g.ctx.name, g.ctx.median_kernel),
+            Err(e) => eprintln!("pulso-gpu tests: no GPU ({e}), skipping GPU comparisons"),
         }
         g
     });
-    require_gpu("effectcraft-gpu tests", g.as_ref())
+    require_gpu("pulso-gpu tests", g.as_ref())
 }
 
-/// `g`, or `None` (the GPU tests skip) when there is no GPU, unless `EFFECTCRAFT_REQUIRE_GPU=1`
+/// `g`, or `None` (the GPU tests skip) when there is no GPU, unless `PULSO_REQUIRE_GPU=1`
 /// (as in `tests_init`): then a GPU that didn't start fails the test, with why.
 pub(crate) fn require_gpu<G>(tests: &str, g: Result<G, &String>) -> Option<G> {
     match g {
         Ok(g) => Some(g),
-        Err(e) if std::env::var("EFFECTCRAFT_REQUIRE_GPU").is_ok_and(|v| v == "1") => {
-            panic!("{tests}: EFFECTCRAFT_REQUIRE_GPU=1 but GPU initialization failed: {e}")
+        Err(e) if std::env::var("PULSO_REQUIRE_GPU").is_ok_and(|v| v == "1") => {
+            panic!("{tests}: PULSO_REQUIRE_GPU=1 but GPU initialization failed: {e}")
         }
         Err(_) => None,
     }
@@ -305,7 +305,7 @@ pub(crate) fn pattern(seed: u32, w: u32, h: u32) -> Image {
     for y in 0..h {
         for x in 0..w {
             let (u, v) = (x as f32 / w as f32, y as f32 / h as f32);
-            let n = effectcraft_raster::hash_noise(x, y, seed) * 0.25;
+            let n = pulso_raster::hash_noise(x, y, seed) * 0.25;
             let r = (0.5 + 0.5 * (u * 7.0 + k).sin()) * 0.75 + n;
             let g = (0.5 + 0.5 * (v * 5.0 - k).cos()) * 0.75 + n * 0.5;
             let b = ((u + v) * 0.5 + k).fract() * 0.8 + 0.1;
@@ -369,17 +369,17 @@ impl Scene {
     }
 
     /// Add on top of the stack.
-    pub(crate) fn push(&mut self, l: Layer) -> effectcraft_project::LayerId {
+    pub(crate) fn push(&mut self, l: Layer) -> pulso_project::LayerId {
         let id = l.id;
         self.p.comp_mut(self.cid).unwrap().layers.insert(0, l);
         id
     }
 
     pub(crate) fn effect(&mut self, l: &mut Layer, id: &str, vals: &[(&str, Value)]) {
-        let spec = effectcraft_effects::find(id).unwrap();
+        let spec = pulso_effects::find(id).unwrap();
         let mut next = self.p.next_id;
-        let size = effectcraft_render::effect_bounds(&self.p, &self.comp, l).0;
-        let mut g = effectcraft_effects::instantiate(spec, &mut Ids(&mut next), spec.name, size);
+        let size = pulso_render::effect_bounds(&self.p, &self.comp, l).0;
+        let mut g = pulso_effects::instantiate(spec, &mut Ids(&mut next), spec.name, size);
         self.p.next_id = next;
         for (k, v) in vals {
             g.prop_mut(k).unwrap_or_else(|| panic!("{id}: no {k}")).value = v.clone();
@@ -606,8 +606,8 @@ fn layer_styles_collapsed_precomps_and_cpu_fallbacks() {
         s.push(bg);
         let mut l = s.solid([0.8, 0.3, 0.2], 40, 30);
         let mut next = s.p.next_id;
-        effectcraft_project::styles::add_style(&mut l, &mut Ids(&mut next), "dropShadow", &s.comp.global_light, true).unwrap();
-        effectcraft_project::styles::add_style(&mut l, &mut Ids(&mut next), "stroke", &s.comp.global_light, true).unwrap();
+        pulso_project::styles::add_style(&mut l, &mut Ids(&mut next), "dropShadow", &s.comp.global_light, true).unwrap();
+        pulso_project::styles::add_style(&mut l, &mut Ids(&mut next), "stroke", &s.comp.global_light, true).unwrap();
         s.p.next_id = next;
         l.blend_mode = BlendMode::Multiply;
         set(&mut l, "transform/rotation", Value::Scalar(10.0));
@@ -652,21 +652,20 @@ fn layer_styles_collapsed_precomps_and_cpu_fallbacks() {
 /// buffer geometry (padding, offset).
 pub(crate) fn effect_direct(id: &str, vals: &[(&str, Value)], adjustment: bool) {
     let Some(g) = gpu() else { return };
-    let spec = effectcraft_effects::find(id).unwrap();
+    let spec = pulso_effects::find(id).unwrap();
     let size = [70.0, 44.0];
-    let mut params =
-        effectcraft_effects::Params { values: spec.params.iter().map(|ps| (ps.id.to_string(), effectcraft_effects::default_value(ps, size))).collect() };
+    let mut params = pulso_effects::Params { values: spec.params.iter().map(|ps| (ps.id.to_string(), pulso_effects::default_value(ps, size))).collect() };
     for (k, v) in vals {
         params.values.insert(k.to_string(), v.clone());
     }
     let expect_empty = id == "ec.distort.ccblobbylize" && vals.iter().any(|(k, v)| *k == "cutAway" && matches!(v, Value::Scalar(x) if *x == 100.0));
     for scale in [1.0, 0.5] {
         let img = pattern(7, (size[0] * scale) as u32, (size[1] * scale) as u32);
-        let buf = effectcraft_effects::Buf { img, offset: [0.0, 0.0], scale };
-        let ctx = || effectcraft_effects::EffectCtx { params: &params, time: 0.25, layer_size: size, seed: 11, adjustment, env: Default::default() };
+        let buf = pulso_effects::Buf { img, offset: [0.0, 0.0], scale };
+        let ctx = || pulso_effects::EffectCtx { params: &params, time: 0.25, layer_size: size, seed: 11, adjustment, env: Default::default() };
         let cpu = (spec.render)(&ctx(), buf.clone());
         let started = std::time::Instant::now();
-        let out = effectcraft_render::Accelerator::effects(g, &[effectcraft_render::FxStep { spec, ctx: ctx() }], &buf, None).unwrap_or_else(|| {
+        let out = pulso_render::Accelerator::effects(g, &[pulso_render::FxStep { spec, ctx: ctx() }], &buf, None).unwrap_or_else(|| {
             panic!(
                 "the GPU runs {id} {vals:?} adj {adjustment} scale {scale}; elapsed={:?}, health={:?}, unavailable={:?}, transfers={:?}",
                 started.elapsed(),
@@ -804,7 +803,7 @@ fn gpu_effects_match_cpu() {
     effect_case("ec.color.exposure", &[("channels", Value::Enum(1)), ("red/redExposure", n(0.8)), ("green/greenOffset", n(-0.05)), ("blue/blueGamma", n(1.6))]);
     effect_case("ec.color.exposure", &[("master/exposure", n(0.5)), ("master/offset", n(-0.03)), ("bypassLinearLight", Value::Bool(true))]);
     effect_case("ec.channel.invert", &[]);
-    effect_case("ec.channel.invert", &[("channel", Value::Enum(effectcraft_effects::INVERT_ALPHA)), ("blend", n(30.0))]);
+    effect_case("ec.channel.invert", &[("channel", Value::Enum(pulso_effects::INVERT_ALPHA)), ("blend", n(30.0))]);
     effect_case("ec.channel.invert", &[("channel", Value::Enum(2))]);
     effect_case("ec.distort.transform", &[("rotation", n(20.0)), ("scaleHeight", n(80.0)), ("skew", n(10.0)), ("opacity", n(70.0))]);
 }
@@ -828,7 +827,7 @@ fn effect_chains_and_mixed_stacks() {
 
 #[test]
 fn registry_badges_match_the_gpu_implementation() {
-    for s in effectcraft_effects::registry() {
+    for s in pulso_effects::registry() {
         let implemented = crate::effects::supports(s.id);
         assert_eq!(s.gpu, implemented, "{}: registry gpu = {}, GPU implementation = {implemented}", s.id, s.gpu);
     }
@@ -848,7 +847,7 @@ fn quantization_preserves_cpu_levels_and_half_step_neighbors() {
             *p = [v, v, v, 1.0];
         }
         let input = g.ctx.upload_image(&cpu).unwrap();
-        effectcraft_render::color::quantize(&mut cpu, levels);
+        pulso_render::color::quantize(&mut cpu, levels);
         let mut e = crate::context::Enc::new(&g.ctx);
         let out = crate::ops::quantize(&mut e, &input, levels);
         let bytes = e.read_texture(&out.texture, out.width, out.height, 16).unwrap();
@@ -1005,7 +1004,7 @@ fn retired_attempt_releases_kept_resources(retire_before: bool) {
     hold_gpu_lock();
     let made = Gpu::try_headless();
     let Some(g) = require_gpu("retired memory attempt", made.as_ref()) else { return };
-    let buf = Arc::new(effectcraft_effects::Buf { img: Image::new(16, 16), offset: [0.0; 2], scale: 1.0 });
+    let buf = Arc::new(pulso_effects::Buf { img: Image::new(16, 16), offset: [0.0; 2], scale: 1.0 });
     drop(g.ctx.upload_buf(&buf).expect("a small cached upload"));
     drop(crate::context::Enc::new(&g.ctx).image(32, 16));
     assert_eq!(g.ctx.upload_entries(), 1);
@@ -1222,7 +1221,7 @@ fn effect_kernels_build_on_first_use() {
 /// ties them to `effects::GLOW_GAIN` / `GLOW_KNEE` (runs without a GPU).
 #[test]
 fn glow_constants_match_the_cpu() {
-    use effectcraft_effects::{GLOW_GAIN, GLOW_KNEE};
+    use pulso_effects::{GLOW_GAIN, GLOW_KNEE};
     let kernels = include_str!("shaders/kernels.wgsl");
     let want = format!("max({GLOW_GAIN:?} * (px.xyz / a - vec3<f32>(thr - {GLOW_KNEE:?})), vec3<f32>(0.0))");
     assert!(kernels.contains(&want), "Glow's bright pass in kernels.wgsl is not `{want}`");
@@ -1233,7 +1232,7 @@ fn glow_constants_match_the_cpu() {
 #[test]
 fn gpu_tint_defaults_match_after_effects_greys() {
     let Some(g) = gpu() else {
-        // Visible skip (EFFECTCRAFT_REQUIRE_GPU=1 makes a missing adapter fail instead).
+        // Visible skip (PULSO_REQUIRE_GPU=1 makes a missing adapter fail instead).
         eprintln!("gpu_tint_defaults_match_after_effects_greys: skipped: no GPU adapter");
         return;
     };
@@ -1256,7 +1255,7 @@ fn gpu_tint_defaults_match_after_effects_greys() {
 /// op 1), Tritone and Luma Key / Extract, Black & White's tint weights and Exposure's 2.2 power.
 #[test]
 fn shader_constants_match_the_cpu() {
-    use effectcraft_effects::{BW_TINT_LUMA, EXPOSURE_LINEAR_GAMMA, LUMA_601};
+    use pulso_effects::{BW_TINT_LUMA, EXPOSURE_LINEAR_GAMMA, LUMA_601};
     let kernels = include_str!("shaders/kernels.wgsl");
     let color = include_str!("shaders/fx_color.wgsl");
     let key = include_str!("shaders/fx_key.wgsl");
@@ -1350,13 +1349,11 @@ fn adjustment_footprint_uploads_once_under_time_dependent_effects() {
     // The key itself (no GPU needed): stable across time.
     let comp = s.p.comp(s.cid).expect("the scene's comp");
     let adj = comp.layers.last().expect("the adjustment layer");
-    let key = |k: f64| {
-        effectcraft_render::cache::footprint_key(&effectcraft_render::EvalCtx::new(&s.p, s.cid, comp, Tick::from_seconds_f64(k)), adj, 1.0, false, false)
-    };
+    let key = |k: f64| pulso_render::cache::footprint_key(&pulso_render::EvalCtx::new(&s.p, s.cid, comp, Tick::from_seconds_f64(k)), adj, 1.0, false, false);
     assert!(key(0.0).is_some());
     assert_eq!(key(0.0), key(0.5), "the footprint key changes with time");
     let Some(g) = gpu() else { return };
-    let cache = effectcraft_render::cache::LayerCache::new(64 << 20);
+    let cache = pulso_render::cache::LayerCache::new(64 << 20);
     let mut r = Renderer::new(&s.p, &Pattern, RenderOpts { backend: Backend::Gpu, ..opts() });
     r.accel = Some(g);
     r.cache = Some(&cache);
@@ -1434,7 +1431,7 @@ fn upload_budget_bounds_the_layer_textures_kept() {
         s.effect(&mut l, "ec.color.levels", &[("gamma", n(1.1 + 0.2 * i as f64))]);
         s.push(l);
     }
-    let frame = |cache: &effectcraft_render::cache::LayerCache, k: u64| {
+    let frame = |cache: &pulso_render::cache::LayerCache, k: u64| {
         let mut r = Renderer::new(&s.p, &Pattern, RenderOpts { backend: Backend::Gpu, ..opts() });
         r.accel = Some(g);
         r.cache = Some(cache);
@@ -1442,14 +1439,14 @@ fn upload_budget_bounds_the_layer_textures_kept() {
         let img = g.render(&r, s.cid, Tick::from_seconds_f64(k as f64 / 30.0)).expect("the GPU renders the frame");
         (img.data, g.ctx.transfer_stats().upload_bytes - before)
     };
-    let fits = effectcraft_render::cache::LayerCache::new(64 << 20);
+    let fits = pulso_render::cache::LayerCache::new(64 << 20);
     let (a, _) = frame(&fits, 0);
     let (b, up) = frame(&fits, 1);
     assert_eq!(up, 0, "static layers re-uploaded within the default budget");
     // A budget smaller than the two 640 KB footprints: each upload evicts the other.
     let default = g.ctx.upload_budget();
     g.ctx.set_upload_budget(1 << 20);
-    let tight = effectcraft_render::cache::LayerCache::new(64 << 20);
+    let tight = pulso_render::cache::LayerCache::new(64 << 20);
     let _ = frame(&tight, 0);
     let (c, up) = frame(&tight, 1);
     g.ctx.set_upload_budget(default);
@@ -1501,14 +1498,14 @@ fn static_effect_layers_draw_from_the_cache() {
     let mut l = s.solid([0.6, 0.4, 0.2], 80, 50);
     s.effect(&mut l, "ec.blur.gaussian", &[("blurriness", n(3.0))]);
     s.push(l);
-    let cache = effectcraft_render::cache::LayerCache::new(64 << 20);
+    let cache = pulso_render::cache::LayerCache::new(64 << 20);
     let mut r = Renderer::new(&s.p, &Pattern, RenderOpts { backend: Backend::Gpu, ..opts() });
     r.accel = Some(g);
     r.cache = Some(&cache);
     let comp = s.p.comp(s.cid).expect("the scene's comp");
     let layer = comp.layers.last().expect("the layer");
     let t = |k: u64| Tick::from_seconds_f64(k as f64 / 30.0);
-    assert!(r.layer_is_static(&effectcraft_render::EvalCtx::new(&s.p, s.cid, comp, t(2)), layer));
+    assert!(r.layer_is_static(&pulso_render::EvalCtx::new(&s.p, s.cid, comp, t(2)), layer));
     let mut frames = Vec::new();
     for k in 0..3 {
         let before = g.ctx.transfer_stats().upload_bytes;
@@ -1527,10 +1524,10 @@ fn static_effect_layers_draw_from_the_cache() {
 #[test]
 fn upload_cache_drops_textures_of_freed_buffers() {
     let Some(g) = gpu() else { return };
-    let img = effectcraft_raster::Image::new(256, 256);
+    let img = pulso_raster::Image::new(256, 256);
     let before = g.ctx.upload_entries();
     for _ in 0..6 {
-        let buf = std::sync::Arc::new(effectcraft_effects::Buf { img: img.clone(), offset: [0.0; 2], scale: 1.0 });
+        let buf = std::sync::Arc::new(pulso_effects::Buf { img: img.clone(), offset: [0.0; 2], scale: 1.0 });
         let up = g.ctx.upload_buf(&buf).expect("upload");
         drop((up, buf));
     }
@@ -1544,7 +1541,7 @@ fn upload_cache_drops_textures_of_freed_buffers() {
 fn owned_devices_favour_memory_usage() {
     let d = crate::context::device_descriptor(wgpu::Limits::default());
     assert!(matches!(d.memory_hints, wgpu::MemoryHints::MemoryUsage));
-    assert_eq!(d.label, Some("effectcraft gpu"));
+    assert_eq!(d.label, Some("pulso gpu"));
     assert_eq!(d.required_limits.max_texture_dimension_2d, wgpu::Limits::default().max_texture_dimension_2d);
 }
 
@@ -1552,9 +1549,9 @@ fn owned_devices_favour_memory_usage() {
 /// CPU: both compositors agree, and the frame is the Clip frame with its over-range values.
 #[test]
 fn skipping_the_hdr_step_on_the_gpu_matches_clip() {
-    use effectcraft_project::HdrMode;
+    use pulso_project::HdrMode;
     let Some(g) = gpu() else {
-        // Visible skip (EFFECTCRAFT_REQUIRE_GPU=1 makes a missing adapter fail instead).
+        // Visible skip (PULSO_REQUIRE_GPU=1 makes a missing adapter fail instead).
         eprintln!("skipping_the_hdr_step_on_the_gpu_matches_clip: skipped: no GPU adapter");
         return;
     };
@@ -1662,7 +1659,7 @@ fn idle_effect_calls_share_one_pool_budget() {
     let (hits, _) = ctx.pool_stats();
     drop(crate::context::Enc::lent(ctx).image(256, 256));
     assert_eq!(ctx.pool_stats().0, hits + 1, "a later effect call reuses a kept texture");
-    effectcraft_render::Accelerator::render_end(&g);
+    pulso_render::Accelerator::render_end(&g);
     assert_eq!(ctx.pool_retained_bytes(), 0, "the end of a render drops the kept textures");
 }
 
@@ -1797,12 +1794,11 @@ fn effect_calls_on_16_threads_keep_one_pool_budget() {
     let Some(g) = private_gpu(budget) else { return };
     let g = &g;
     let ctx = g.context();
-    let spec = effectcraft_effects::find("ec.blur.gaussian").unwrap();
+    let spec = pulso_effects::find("ec.blur.gaussian").unwrap();
     let size = [240.0, 240.0];
-    let mut params =
-        effectcraft_effects::Params { values: spec.params.iter().map(|ps| (ps.id.to_string(), effectcraft_effects::default_value(ps, size))).collect() };
+    let mut params = pulso_effects::Params { values: spec.params.iter().map(|ps| (ps.id.to_string(), pulso_effects::default_value(ps, size))).collect() };
     params.values.insert("blurriness".into(), Value::Scalar(6.0));
-    let buf = effectcraft_effects::Buf { img: pattern(3, 240, 240), offset: [0.0, 0.0], scale: 1.0 };
+    let buf = pulso_effects::Buf { img: pattern(3, 240, 240), offset: [0.0, 0.0], scale: 1.0 };
     let go = std::sync::Barrier::new(16);
     std::thread::scope(|s| {
         for i in 0..16 {
@@ -1810,21 +1806,21 @@ fn effect_calls_on_16_threads_keep_one_pool_budget() {
             s.spawn(move || {
                 go.wait();
                 for _ in 0..3 {
-                    let fx = effectcraft_effects::EffectCtx { params, time: 0.0, layer_size: size, seed: i, adjustment: false, env: Default::default() };
-                    effectcraft_render::Accelerator::effects(g, &[effectcraft_render::FxStep { spec, ctx: fx }], buf, None).expect("the GPU runs the effect");
+                    let fx = pulso_effects::EffectCtx { params, time: 0.0, layer_size: size, seed: i, adjustment: false, env: Default::default() };
+                    pulso_render::Accelerator::effects(g, &[pulso_render::FxStep { spec, ctx: fx }], buf, None).expect("the GPU runs the effect");
                 }
             });
         }
     });
     let kept = ctx.pool_retained_bytes();
     assert!(kept <= budget, "16 threads of effect calls keep {} MB, budget {} MB", kept >> 20, budget >> 20);
-    effectcraft_render::Accelerator::render_end(g);
+    pulso_render::Accelerator::render_end(g);
     assert_eq!(ctx.pool_retained_bytes(), 0, "the end of a render drops the kept textures");
 }
 
 /// Sceptic r2 of #1523: only the export pipeline ended frames, so off export (preview, remote
 /// frames) the pool's clock stood still, no size ever went stale and a full free list dropped
-/// every newcomer again. Frames rendered through [`effectcraft_render::passes::comp_frame`]
+/// every newcomer again. Frames rendered through [`pulso_render::passes::comp_frame`]
 /// (no explicit `pool_frame_end`) must age the sizes they did not ask for.
 #[test]
 fn frames_outside_the_export_pipeline_age_the_pool() {
@@ -1841,7 +1837,7 @@ fn frames_outside_the_export_pipeline_age_the_pool() {
     let mut r = Renderer::new(&s.p, &Pattern, opts());
     r.accel = Some(&g);
     for _ in 0..3 {
-        effectcraft_render::passes::block_on(effectcraft_render::passes::comp_frame(&r, s.cid, Tick::ZERO));
+        pulso_render::passes::block_on(pulso_render::passes::comp_frame(&r, s.cid, Tick::ZERO));
     }
     for _ in 0..4 {
         let mut e = crate::context::Enc::lent(ctx);
@@ -1851,7 +1847,7 @@ fn frames_outside_the_export_pipeline_age_the_pool() {
     assert!(ctx.pool_evictions() > evicted0, "rendered frames did not age the pool: stale sizes were never evicted");
 }
 
-/// #1550: with a small `EFFECTCRAFT_GPU_MEMCAP_MB` on a backend that reports allocator usage
+/// #1550: with a small `PULSO_GPU_MEMCAP_MB` on a backend that reports allocator usage
 /// (Vulkan, DX12), `Enc::mem_gate` stays quiet when the bytes over the cap are non-reclaimable
 /// (live uploads), submits and waits when dropped working textures push reclaimable bytes over
 /// the cap, carries on without retiring the context if a wait times out, warns once when a
@@ -1859,13 +1855,13 @@ fn frames_outside_the_export_pipeline_age_the_pool() {
 /// time, and recovers budget when a frame is dropped unfinished.
 #[test]
 fn mem_gate_reclaims_over_cap_and_tolerates_timeout() {
-    const ENV: &str = "EFFECTCRAFT_GPU_MEMCAP_TEST_CHILD";
+    const ENV: &str = "PULSO_GPU_MEMCAP_TEST_CHILD";
     const SKIP: &str = "mem_gate_reclaims_over_cap_and_tolerates_timeout: skipped";
     if std::env::var_os(ENV).is_none() {
         let exe = std::env::current_exe().expect("test binary path");
         let out = std::process::Command::new(exe)
             .env(ENV, "1")
-            .env("EFFECTCRAFT_GPU_MEMCAP_MB", "8")
+            .env("PULSO_GPU_MEMCAP_MB", "8")
             .args(["--exact", "tests::mem_gate_reclaims_over_cap_and_tolerates_timeout", "--nocapture"])
             .output()
             .expect("spawn child test process");
@@ -1881,7 +1877,7 @@ fn mem_gate_reclaims_over_cap_and_tolerates_timeout() {
         return;
     }
 
-    // EFFECTCRAFT_REQUIRE_GPU=1 (inherited from the parent) fails on a GPU that didn't start.
+    // PULSO_REQUIRE_GPU=1 (inherited from the parent) fails on a GPU that didn't start.
     let g = Gpu::try_headless();
     let Some(g) = require_gpu("mem_gate child", g.as_ref()) else {
         eprintln!("{SKIP}: no GPU ({})", g.as_ref().err().map_or("", String::as_str));
@@ -1898,7 +1894,7 @@ fn mem_gate_reclaims_over_cap_and_tolerates_timeout() {
     let img = pattern(7, 512, 512); // 4 MiB in RGBA f32
     let held: Vec<_> = (0..3)
         .map(|i| {
-            let b = std::sync::Arc::new(effectcraft_effects::Buf { img: img.clone(), offset: [i as f64, 0.0], scale: 1.0 });
+            let b = std::sync::Arc::new(pulso_effects::Buf { img: img.clone(), offset: [i as f64, 0.0], scale: 1.0 });
             ctx.upload_buf(&b).expect("upload");
             b
         })

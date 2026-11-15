@@ -1,6 +1,6 @@
 use super::*;
 use crate::{EvalCtx, Image, NoFootage, RenderOpts, Renderer};
-use effectcraft_effects::Buf;
+use pulso_effects::Buf;
 
 // A synthetic painted source avoids installed-font dependencies and the multi-gigabyte
 // allocation in #3357 while exercising the same text/shape effect-stack bounds.
@@ -101,7 +101,7 @@ fn drop_shadow_with_glow_stays_local_but_other_effects_keep_cover() {
 fn parented_text_and_shape_keep_small_working_images_at_2200_percent() {
     for text in [false, true] {
         let mut p = Project::default();
-        p.settings.bit_depth = effectcraft_project::BitDepth::Bpc32;
+        p.settings.bit_depth = pulso_project::BitDepth::Bpc32;
         let comp = Comp::new(80, 40, FrameRate::FPS_30, Tick::from_seconds_f64(1.0));
         let cid = p.add_item("Comp", Label::Sandstone, None, ItemKind::Comp(comp.clone().into()));
         let mut parent = build::layer(&mut p, &comp, "Null", LayerSource::Null, (100, 100), None);

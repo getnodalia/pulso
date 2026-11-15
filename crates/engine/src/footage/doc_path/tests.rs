@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use effectcraft_project::{Footage, ItemId, ItemKind};
+use pulso_project::{Footage, ItemId, ItemKind};
 use serde_json::json;
 
 use crate::{Event, Services, Session};
@@ -44,7 +44,7 @@ impl crate::Importer for Stills {
         if !std::path::Path::new(path).is_file() {
             return Err(format!("{path}: no such file"));
         }
-        Ok(Footage { path: path.into(), kind: effectcraft_project::FootageKind::Still, width: 64, height: 32, has_video: true, ..Default::default() })
+        Ok(Footage { path: path.into(), kind: pulso_project::FootageKind::Still, width: 64, height: 32, has_video: true, ..Default::default() })
     }
 }
 
@@ -199,10 +199,8 @@ fn relative_proxy_is_resolved_and_checked_next_to_the_project() {
         None,
         ItemKind::Footage(Footage { path: dir.join("proxy.png").to_string_lossy().into_owned(), width: 64, height: 32, ..Default::default() }),
     );
-    Arc::make_mut(&mut s.project).item_mut(id).unwrap().proxy = Some(Box::new(effectcraft_project::Proxy {
-        footage: Footage { path: "proxy.png".into(), width: 32, height: 16, ..Default::default() },
-        enabled: true,
-    }));
+    Arc::make_mut(&mut s.project).item_mut(id).unwrap().proxy =
+        Some(Box::new(pulso_project::Proxy { footage: Footage { path: "proxy.png".into(), width: 32, height: 16, ..Default::default() }, enabled: true }));
     let project = dir.join("project.ecproj");
     s.execute("file.saveAs", json!({"path": project})).unwrap();
     let mut reopened = Session::default();

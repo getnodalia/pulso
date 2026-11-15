@@ -504,7 +504,7 @@ pub fn umeyama(src: &[V3], dst: &[V3]) -> Option<Similarity> {
 }
 
 /// Euler angles (degrees) `[x, y, z]` with `m = Rx(x) Ry(y) Rz(z)`: After Effects' Orientation
-/// order (Z is applied to the vector first, then Y, then X; see `effectcraft_geom::Mat4::orientation`).
+/// order (Z is applied to the vector first, then Y, then X; see `pulso_geom::Mat4::orientation`).
 pub fn euler_xyz(m: &M3) -> V3 {
     let sy = m[0][2].clamp(-1.0, 1.0);
     let y = sy.asin();

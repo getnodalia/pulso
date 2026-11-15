@@ -1,15 +1,15 @@
 //! Footage items and layers: projects with every footage kind the exporter writes are exported
-//! and parsed back with `effectcraft-aep` (type tag, size, duration, rate, numbering, alias path,
+//! and parsed back with `pulso-aep` (type tag, size, duration, rate, numbering, alias path,
 //! the name), the footage fixtures go through import, export and import, and what cannot be
 //! written is reported.
 
 use crate::export::helpers::*;
-use effectcraft_aep::export::LossCategory;
-use effectcraft_aep::import::{ImportOptions, import};
-use effectcraft_aep::{PropNode, parse};
-use effectcraft_color::Label;
-use effectcraft_project::{Footage, FootageKind, ItemId, ItemKind, LayerSource, Project};
-use effectcraft_time::FrameRate;
+use pulso_aep::export::LossCategory;
+use pulso_aep::import::{ImportOptions, import};
+use pulso_aep::{PropNode, parse};
+use pulso_color::Label;
+use pulso_project::{Footage, FootageKind, ItemId, ItemKind, LayerSource, Project};
+use pulso_time::FrameRate;
 
 fn still(path: &str, w: u32, h: u32) -> Footage {
     Footage { path: path.to_string(), kind: FootageKind::Still, width: w, height: h, has_video: true, ..Footage::default() }
@@ -25,7 +25,7 @@ fn seq(dir: &str, prefix: &str, start: u32, n: u32, digits: usize, suffix: &str,
 /// Adds the footage and a layer showing it, as long as the footage (stills: the composition).
 fn add_footage(p: &mut Project, comp: ItemId, name: &str, f: Footage) -> ItemId {
     let size = (f.width.max(1), f.height.max(1));
-    let timed = f.kind != FootageKind::Still && f.duration > effectcraft_time::Tick::ZERO;
+    let timed = f.kind != FootageKind::Still && f.duration > pulso_time::Tick::ZERO;
     let duration = f.duration;
     let id = p.add_item(name, Label::Lavender, None, ItemKind::Footage(f));
     add_layer(p, comp, name, LayerSource::Footage { item: id }, size);
@@ -85,8 +85,8 @@ fn every_kind_is_written_with_its_fields() {
     assert!(r.report.is_lossless(), "{:?}", r.report.losses);
     assert_eq!((r.report.exported.footage, r.report.exported.footage_layers), (15, 15));
     let file = parse(&r.bytes).expect("parse");
-    assert_eq!(effectcraft_aep::write(&file).expect("write"), r.bytes);
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    assert_eq!(pulso_aep::write(&file).expect("write"), r.bytes);
+    let view = pulso_aep::Project::new(&file).expect("project");
     let items = view.all_items();
     let by_path = |end: &str| items.iter().find(|i| i.footage().and_then(|f| f.path).is_some_and(|p| p.ends_with(end))).copied().expect(end);
     // (path end, tag, w, h, duration num / den, fps, sequence)
@@ -150,7 +150,7 @@ fn the_alias_holds_the_path_escaped() {
     add_footage(&mut p, c, "mac", still("/Volumes/Media/a.jpg", 8, 8));
     let r = export_all(&p);
     let file = parse(&r.bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let paths: Vec<String> = view.all_items().iter().filter_map(|i| i.footage()).filter_map(|f| f.path).collect();
     assert!(paths.contains(&"C:\\a \"quoted\" dir\\Ünïcödé\\x.png".to_string()), "{paths:?}");
     assert!(paths.contains(&"/Volumes/Media/a.jpg".to_string()), "{paths:?}");
@@ -205,7 +205,7 @@ fn footage_survives_import_export_import() {
 /// The stored folder time (`sspc@118`) of the sequence item, big-endian.
 fn sequence_folder_time(bytes: &[u8]) -> u32 {
     let file = parse(bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let item = view.all_items().into_iter().find(|i| i.footage().is_some_and(|f| f.is_sequence)).expect("sequence");
     let sspc = item.chunk().child_list(b"Pin ").and_then(|pin| pin.child(b"sspc")).and_then(|c| c.bytes()).expect("sspc");
     u32::from_be_bytes(sspc[118..122].try_into().expect("4 bytes"))
@@ -228,24 +228,24 @@ fn a_sequence_stores_its_folder_time() {
         asked.borrow_mut().push(dir.to_string());
         Some(1_792_381_882)
     };
-    let opts = effectcraft_aep::export::ExportOptions { allow_losses: true };
-    let r = effectcraft_aep::export::export_with(&p, &opts, &time).expect("export");
+    let opts = pulso_aep::export::ExportOptions { allow_losses: true };
+    let r = pulso_aep::export::export_with(&p, &opts, &time).expect("export");
     assert_eq!(sequence_folder_time(&r.bytes), 0xe6fb_443a);
     // The caller is asked with the sequence's first file as stored (it checks that path before it
     // looks at the folder), and only for the sequence.
     assert_eq!(*asked.borrow(), [r"C:\media\sparse\sp_0001.png"], "only the sequence is asked for");
     // Without a time (plain `export`, or an unknown folder) the template's value stays.
     let plain = export_all(&p);
-    let unknown = effectcraft_aep::export::export_with(&p, &opts, &|_| None).expect("export");
+    let unknown = pulso_aep::export::export_with(&p, &opts, &|_| None).expect("export");
     assert_eq!(sequence_folder_time(&unknown.bytes), sequence_folder_time(&plain.bytes));
     assert_ne!(sequence_folder_time(&plain.bytes), 0xe6fb_443a);
     // A time beyond the field (after 2040) is not written either.
-    let late = effectcraft_aep::export::export_with(&p, &opts, &|_| Some(u64::MAX)).expect("export");
+    let late = pulso_aep::export::export_with(&p, &opts, &|_| Some(u64::MAX)).expect("export");
     assert_eq!(sequence_folder_time(&late.bytes), sequence_folder_time(&plain.bytes));
     // The stills stay byte for byte as without times.
     let still_bytes = |bytes: &[u8]| {
         let file = parse(bytes).expect("parse");
-        let view = effectcraft_aep::Project::new(&file).expect("project");
+        let view = pulso_aep::Project::new(&file).expect("project");
         let item = view.all_items().into_iter().find(|i| i.footage().is_some_and(|f| !f.is_sequence)).expect("still");
         item.chunk().child_list(b"Pin ").and_then(|pin| pin.child(b"sspc")).and_then(|c| c.bytes()).expect("sspc").to_vec()
     };
@@ -265,7 +265,7 @@ fn a_sparse_sequence_keeps_its_range() {
     let r = export_all(&p);
     assert!(r.report.is_lossless(), "{:?}", r.report.losses);
     let file = parse(&r.bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let item = view.all_items().into_iter().find(|i| i.footage().is_some()).expect("footage");
     assert_eq!(item.footage().and_then(|f| f.path).as_deref(), Some(r"C:\media\sparse"), "the alias is the folder");
     let s = item.sequence_info().expect("numbering");
@@ -330,9 +330,9 @@ fn hostile_footage_never_panics() {
     nod.kind = FootageKind::Sequence;
     add_footage(&mut p, c, "plain-seq", nod);
     add_footage(&mut p, c, "zero-rate", Footage { kind: FootageKind::Video, frame_rate: FrameRate::new(0, 1), ..still(r"C:\m\z.mp4", 8, 8) });
-    add_footage(&mut p, c, "long", Footage { kind: FootageKind::Audio, duration: effectcraft_time::Tick(i64::MAX), ..still(r"C:\m\l.wav", 0, 0) });
+    add_footage(&mut p, c, "long", Footage { kind: FootageKind::Audio, duration: pulso_time::Tick(i64::MAX), ..still(r"C:\m\l.wav", 0, 0) });
     let r = export_all(&p);
     let file = parse(&r.bytes).expect("parse");
-    assert_eq!(effectcraft_aep::write(&file).expect("write"), r.bytes);
+    assert_eq!(pulso_aep::write(&file).expect("write"), r.bytes);
     let _ = reimport(&r.bytes);
 }

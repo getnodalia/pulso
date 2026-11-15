@@ -5,13 +5,13 @@
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use effectcraft_color::Label;
-use effectcraft_export::render_queue::{ColorDepth, OutputFormat, OutputModule, RenderSettings, TimeSpan};
-use effectcraft_export::{Job, export};
-use effectcraft_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid, build};
-use effectcraft_raster::Image;
-use effectcraft_render::{Accelerator, NoFootage, Renderer};
-use effectcraft_time::{FrameRate, Tick};
+use pulso_color::Label;
+use pulso_export::render_queue::{ColorDepth, OutputFormat, OutputModule, RenderSettings, TimeSpan};
+use pulso_export::{Job, export};
+use pulso_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid, build};
+use pulso_raster::Image;
+use pulso_render::{Accelerator, NoFootage, Renderer};
+use pulso_time::{FrameRate, Tick};
 
 /// Renders on the CPU; converts to 4:2:0 with the export's own function when `yuv` is set.
 /// `deferred`: claims deferred readbacks (a browser worker's GPU), whose frames render in passes.
@@ -62,7 +62,7 @@ impl Accelerator for Fake {
             self.asking.fetch_sub(1, Ordering::SeqCst);
             return None;
         }
-        Some(effectcraft_raster::yuv::yuv420_over(&r.comp_frame_cpu(comp, t), bg))
+        Some(pulso_raster::yuv::yuv420_over(&r.comp_frame_cpu(comp, t), bg))
     }
     fn frame_end(&self) {
         self.frame_ends.fetch_add(1, Ordering::SeqCst);
@@ -76,7 +76,7 @@ impl Accelerator for Fake {
     fn supports_effect(&self, _id: &str) -> bool {
         false
     }
-    fn effects(&self, _chain: &[effectcraft_render::FxStep], _buf: &effectcraft_effects::Buf, _levels: Option<f32>) -> Option<effectcraft_effects::Buf> {
+    fn effects(&self, _chain: &[pulso_render::FxStep], _buf: &pulso_effects::Buf, _levels: Option<f32>) -> Option<pulso_effects::Buf> {
         None
     }
 }
@@ -105,7 +105,7 @@ fn run(p: &Project, cid: ItemId, accel: Option<&dyn Accelerator>, s: &RenderSett
     let om = OutputModule { bitrate_kbps: 4000, ..OutputModule::for_format(OutputFormat::H264) };
     let path = path.to_string_lossy().to_string();
     // These tests are about the accelerator's own path: no measuring against the CPU (#3335).
-    let gpu = std::sync::Mutex::new(Some(effectcraft_render::Backend::Gpu));
+    let gpu = std::sync::Mutex::new(Some(pulso_render::Backend::Gpu));
     let job = Job {
         project: p,
         footage: &NoFootage,
@@ -116,7 +116,7 @@ fn run(p: &Project, cid: ItemId, accel: Option<&dyn Accelerator>, s: &RenderSett
         output: &om,
         path: &path,
         sink: None,
-        options: effectcraft_export::JobOptions { renderer: Some(&gpu), ..Default::default() },
+        options: pulso_export::JobOptions { renderer: Some(&gpu), ..Default::default() },
         nested_switches: true,
     };
     export(&job, &mut |_| true).expect("export");
@@ -140,10 +140,10 @@ fn accelerator_planes_encode_like_the_cpu_conversion() {
     assert_eq!(yuv.frame_ends.load(Ordering::SeqCst), 20, "every planes frame ends once");
     assert_eq!(rgba.frame_ends.load(Ordering::SeqCst), 20, "every RGBA frame ends once");
     assert!(a == b && b == c, "the three files differ");
-    let f = effectcraft_media::probe(&yuv_mp4).expect("probe yuv.mp4");
+    let f = pulso_media::probe(&yuv_mp4).expect("probe yuv.mp4");
     assert_eq!((f.width, f.height), (64, 48));
     assert_eq!(f.frame_rate.frame_at(f.duration - Tick(1)) + 1, 20);
-    let pool = effectcraft_media::MediaPool::new();
+    let pool = pulso_media::MediaPool::new();
     for k in 0..20 {
         let img = pool.frame_at(&f, f.frame_rate.tick_of(k)).expect("decode frame");
         assert_eq!((img.width, img.height), (64, 48));

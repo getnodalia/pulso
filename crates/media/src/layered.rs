@@ -1,16 +1,16 @@
-//! Layered and vector stills: Photoshop documents (`effectcraft-psd`: the merged image, or one
+//! Layered and vector stills: Photoshop documents (`pulso-psd`: the merged image, or one
 //! layer for footage imported as a composition) and vector files rasterised at any scale: SVG
-//! (`effectcraft-svg`), PDF / Illustrator / EPS (`effectcraft-pdf`; one layer of the file for
+//! (`pulso-svg`), PDF / Illustrator / EPS (`pulso-pdf`; one layer of the file for
 //! footage imported as a composition).
 
-use effectcraft_project::{AlphaMode, Footage};
-use effectcraft_raster::Image;
+use pulso_project::{AlphaMode, Footage};
+use pulso_raster::Image;
 
 use crate::convert::{AlphaOp, straight_to_image};
 use crate::{MediaError, Result};
 
 fn is_svg(path: &str, bytes: &[u8]) -> bool {
-    path.to_ascii_lowercase().ends_with(".svg") || effectcraft_svg::looks_like_svg(bytes)
+    path.to_ascii_lowercase().ends_with(".svg") || pulso_svg::looks_like_svg(bytes)
 }
 
 /// The vector document of an SVG / PDF / AI / EPS file (`None` for other formats): page
@@ -18,18 +18,18 @@ fn is_svg(path: &str, bytes: &[u8]) -> bool {
 pub fn vector_doc(
     path: &str,
     bytes: &[u8],
-    layer: Option<&effectcraft_project::SourceLayer>,
+    layer: Option<&pulso_project::SourceLayer>,
     page: u32,
-    framing: effectcraft_pdf::Framing,
-) -> Option<std::result::Result<effectcraft_svg::Doc, String>> {
+    framing: pulso_pdf::Framing,
+) -> Option<std::result::Result<pulso_svg::Doc, String>> {
     if is_svg(path, bytes) {
-        return Some(effectcraft_svg::parse(bytes).map_err(|e| format!("{path}: {e}")));
+        return Some(pulso_svg::parse(bytes).map_err(|e| format!("{path}: {e}")));
     }
-    effectcraft_pdf::sniff(bytes)?;
+    pulso_pdf::sniff(bytes)?;
     Some(
-        effectcraft_pdf::parse_page_framed(bytes, page as usize, framing)
+        pulso_pdf::parse_page_framed(bytes, page as usize, framing)
             .map(|d| match layer {
-                Some(l) => effectcraft_pdf::layer_doc_with_sizes(&d, l.index as usize, l.layer_size).0,
+                Some(l) => pulso_pdf::layer_doc_with_sizes(&d, l.index as usize, l.layer_size).0,
                 None => d,
             })
             .map_err(|e| format!("{path}: {e}")),
@@ -38,26 +38,26 @@ pub fn vector_doc(
 
 fn is_pdf_like(path: &str, bytes: &[u8]) -> bool {
     let ext = std::path::Path::new(path).extension().and_then(std::ffi::OsStr::to_str).unwrap_or("").to_ascii_lowercase();
-    effectcraft_pdf::sniff(bytes).is_some() && (effectcraft_pdf::EXTENSIONS.contains(&ext.as_str()) || bytes.starts_with(b"%PDF"))
+    pulso_pdf::sniff(bytes).is_some() && (pulso_pdf::EXTENSIONS.contains(&ext.as_str()) || bytes.starts_with(b"%PDF"))
 }
 
 /// Whether `bytes` (the first 64 KiB suffice) are a Photoshop or vector file [`probe`] handles.
 #[cfg_attr(not(any(unix, windows)), allow(dead_code))]
 pub(crate) fn sniff(path: &str, bytes: &[u8]) -> bool {
-    effectcraft_psd::is_psd(bytes) || is_svg(path, bytes) || is_pdf_like(path, bytes)
+    pulso_psd::is_psd(bytes) || is_svg(path, bytes) || is_pdf_like(path, bytes)
 }
 
 /// Footage for a Photoshop or vector file (`None` for other formats).
 pub(crate) fn probe(path: &str, bytes: &[u8]) -> Result<Option<Footage>> {
-    if effectcraft_psd::is_psd(bytes) {
-        let psd = effectcraft_psd::Psd::parse(bytes.to_vec()).map_err(|e| MediaError::Decode(format!("{path}: {e}")))?;
+    if pulso_psd::is_psd(bytes) {
+        let psd = pulso_psd::Psd::parse(bytes.to_vec()).map_err(|e| MediaError::Decode(format!("{path}: {e}")))?;
         let mut f = crate::probe::still_footage(path, psd.width, psd.height, image::ImageFormat::Png, true);
         f.codec = if psd.psb { "PSB".into() } else { "PSD".into() };
         f.alpha = if psd.merged_alpha || !psd.layers.is_empty() { AlphaMode::Straight } else { AlphaMode::Ignore };
         return Ok(Some(f));
     }
     if is_svg(path, bytes) {
-        let doc = effectcraft_svg::parse(bytes).map_err(|e| MediaError::Decode(format!("{path}: {e}")))?;
+        let doc = pulso_svg::parse(bytes).map_err(|e| MediaError::Decode(format!("{path}: {e}")))?;
         let (w, h) = doc.pixel_size();
         let mut f = crate::probe::still_footage(path, w, h, image::ImageFormat::Png, true);
         f.codec = "SVG".into();
@@ -65,10 +65,10 @@ pub(crate) fn probe(path: &str, bytes: &[u8]) -> Result<Option<Footage>> {
         return Ok(Some(f));
     }
     if is_pdf_like(path, bytes) {
-        let doc = effectcraft_pdf::parse(bytes).map_err(|e| MediaError::Decode(format!("{path}: {e}")))?;
+        let doc = pulso_pdf::parse(bytes).map_err(|e| MediaError::Decode(format!("{path}: {e}")))?;
         let (w, h) = doc.pixel_size();
         let mut f = crate::probe::still_footage(path, w, h, image::ImageFormat::Png, true);
-        f.codec = effectcraft_pdf::codec(path, bytes).unwrap_or("PDF").into();
+        f.codec = pulso_pdf::codec(path, bytes).unwrap_or("PDF").into();
         f.alpha = AlphaMode::Straight;
         return Ok(Some(f));
     }
@@ -77,20 +77,20 @@ pub(crate) fn probe(path: &str, bytes: &[u8]) -> Result<Option<Footage>> {
 
 /// Decode a Photoshop or SVG still (`None` for other formats).
 pub(crate) fn decode(path: &str, bytes: &[u8], footage: &Footage, op: AlphaOp) -> Result<Option<Image>> {
-    if effectcraft_psd::is_psd(bytes) {
-        let psd = effectcraft_psd::Psd::parse(bytes.to_vec()).map_err(|e| MediaError::Decode(format!("{path}: {e}")))?;
+    if pulso_psd::is_psd(bytes) {
+        let psd = pulso_psd::Psd::parse(bytes.to_vec()).map_err(|e| MediaError::Decode(format!("{path}: {e}")))?;
         // A smart object's embedded file: an embedded document's merged image, or an image.
         if let Some(l) = footage.layer.as_ref()
             && let Some(uuid) = l.embedded.as_deref()
         {
             let data = psd.linked_data(uuid).ok_or_else(|| MediaError::Decode(format!("{path}: no embedded file {uuid}")))?;
-            let px = if effectcraft_psd::is_psd(data) {
-                let inner = effectcraft_psd::Psd::parse(data.to_vec()).map_err(|e| MediaError::Decode(format!("{path} (smart object): {e}")))?;
+            let px = if pulso_psd::is_psd(data) {
+                let inner = pulso_psd::Psd::parse(data.to_vec()).map_err(|e| MediaError::Decode(format!("{path} (smart object): {e}")))?;
                 inner.composite().map_err(|e| MediaError::Decode(format!("{path} (smart object): {e}")))?
             } else {
                 let img = crate::probe::load_oriented(data, None).map_err(|e| MediaError::Decode(format!("{path} (smart object): {e}")))?;
                 let rgba = img.to_rgba32f();
-                effectcraft_psd::Pixels { width: rgba.width(), height: rgba.height(), data: rgba.pixels().map(|p| p.0).collect() }
+                pulso_psd::Pixels { width: rgba.width(), height: rgba.height(), data: rgba.pixels().map(|p| p.0).collect() }
             };
             // A perspective quad or a warp: baked as placed.
             if l.placed
@@ -119,7 +119,7 @@ pub(crate) fn decode(path: &str, bytes: &[u8], footage: &Footage, op: AlphaOp) -
         if u64::from(w) * u64::from(h) > u64::from(MAX_VECTOR_SIDE) * u64::from(MAX_VECTOR_SIDE) {
             return Err(MediaError::Decode(format!("{path}: {w}×{h} pixels is larger than vector footage can be drawn ({MAX_VECTOR_SIDE}×{MAX_VECTOR_SIDE})")));
         }
-        let img = effectcraft_svg::rasterize_with(&doc, w, h, to_image);
+        let img = pulso_svg::rasterize_with(&doc, w, h, to_image);
         // The rasteriser produces premultiplied pixels already.
         let _ = op;
         return Ok(Some(img));
@@ -131,28 +131,28 @@ pub(crate) fn decode(path: &str, bytes: &[u8], footage: &Footage, op: AlphaOp) -
 const MAX_VECTOR_SIDE: u32 = 16384;
 
 /// The vector footage `footage` (of the file `path` with these `bytes`) rasterised at `scale` ×
-/// its size as [`effectcraft_render::vector_fit`] draws it (Continuously Rasterize).
+/// its size as [`pulso_render::vector_fit`] draws it (Continuously Rasterize).
 pub(crate) fn rasterize_vector(path: &str, bytes: &[u8], footage: &Footage, scale: f64) -> Option<Image> {
     let doc = footage_doc(path, bytes, footage)?.ok()?;
     let ((sw, sh), to_image) = fit(&doc, footage, scale);
-    Some(effectcraft_svg::rasterize_with(&doc, sw.clamp(1, MAX_VECTOR_SIDE), sh.clamp(1, MAX_VECTOR_SIDE), to_image))
+    Some(pulso_svg::rasterize_with(&doc, sw.clamp(1, MAX_VECTOR_SIDE), sh.clamp(1, MAX_VECTOR_SIDE), to_image))
 }
 
 /// The page framing of vector footage: as After Effects places it for footage from an After
 /// Effects project ([`Footage::placed_page`]), as a PDF viewer shows it otherwise.
-fn framing(footage: &Footage) -> effectcraft_pdf::Framing {
-    if footage.placed_page { effectcraft_pdf::Framing::Placed } else { effectcraft_pdf::Framing::Viewer }
+fn framing(footage: &Footage) -> pulso_pdf::Framing {
+    if footage.placed_page { pulso_pdf::Framing::Placed } else { pulso_pdf::Framing::Viewer }
 }
 
 /// [`vector_doc`] of `footage`'s page, layer and framing.
-fn footage_doc(path: &str, bytes: &[u8], footage: &Footage) -> Option<std::result::Result<effectcraft_svg::Doc, String>> {
+fn footage_doc(path: &str, bytes: &[u8], footage: &Footage) -> Option<std::result::Result<pulso_svg::Doc, String>> {
     vector_doc(path, bytes, footage.layer.as_ref(), footage.page, framing(footage))
 }
 
 /// The image size and document → image mapping of `doc` drawn for `footage` at `scale`.
-fn fit(doc: &effectcraft_svg::Doc, footage: &Footage, scale: f64) -> ((u32, u32), effectcraft_svg::Affine) {
-    let (size, [sx, sy]) = effectcraft_render::vector_fit(footage, [doc.width, doc.height], doc.pixel_size(), scale);
-    (size, effectcraft_svg::Affine::scale_non_uniform(sx, sy))
+fn fit(doc: &pulso_svg::Doc, footage: &Footage, scale: f64) -> ((u32, u32), pulso_svg::Affine) {
+    let (size, [sx, sy]) = pulso_render::vector_fit(footage, [doc.width, doc.height], doc.pixel_size(), scale);
+    (size, pulso_svg::Affine::scale_non_uniform(sx, sy))
 }
 
 #[cfg(test)]
@@ -175,7 +175,7 @@ mod tests {
 
     /// A 200 × 100 pt page: red left half, blue right half.
     fn halves_pdf() -> Vec<u8> {
-        effectcraft_pdf::write::pdf(
+        pulso_pdf::write::pdf(
             &[
                 (1, "<< /Type /Catalog /Pages 2 0 R >>".into(), None),
                 (2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(), None),

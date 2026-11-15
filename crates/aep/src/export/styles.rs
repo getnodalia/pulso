@@ -18,10 +18,10 @@ use std::collections::HashMap;
 
 use crate::Chunk;
 use crate::style_map::{self as sm, StyleConv, StyleParam};
-use effectcraft_keyframe::{Interp, Value};
-use effectcraft_project::build::Ids;
-use effectcraft_project::styles::{self as st, STYLE_BLEND_MODES};
-use effectcraft_project::{Comp, Layer, PropGroup, Property};
+use pulso_keyframe::{Interp, Value};
+use pulso_project::build::Ids;
+use pulso_project::styles::{self as st, STYLE_BLEND_MODES};
+use pulso_project::{Comp, Layer, PropGroup, Property};
 
 use crate::export::plan::{CompPlan, EaseSlot, KeyPlan};
 use crate::export::report::{Collector, LossCategory};
@@ -59,7 +59,7 @@ fn sane(v: f64) -> Option<f64> {
     (v.is_finite() && v.abs() <= crate::export::plan::LIMIT).then_some(v)
 }
 
-/// An EffectCraft value in the file's units.
+/// An Pulso value in the file's units.
 pub(crate) fn stored(conv: StyleConv, v: &Value) -> Option<Vec<f64>> {
     let out = match (conv, v) {
         (StyleConv::Number, Value::Scalar(x)) => vec![sane(*x)?],
@@ -78,8 +78,8 @@ pub(crate) fn stored(conv: StyleConv, v: &Value) -> Option<Vec<f64>> {
 
 /// Whether an expression on a style popup would mean something else in After Effects. Both
 /// programs count popup items from 1 in expressions, so only a popup whose stored item numbers are
-/// not EffectCraft's items in the same order (Inner Glow Source is stored reversed) or a blend
-/// mode whose After Effects item number differs from its place in EffectCraft's list is reported.
+/// not Pulso's items in the same order (Inner Glow Source is stored reversed) or a blend
+/// mode whose After Effects item number differs from its place in Pulso's list is reported.
 fn popup_expression_differs(conv: StyleConv) -> bool {
     match conv {
         StyleConv::Popup(map) => map.iter().enumerate().any(|(i, m)| usize::try_from(*m).ok() != Some(i)),
@@ -128,7 +128,7 @@ fn plan_record(spec: &StyleParam, full: String, prop: &Property, cp: &CompPlan, 
 /// The keys of a scalar in the layer's time base: linear, hold and bezier sides with the ease in
 /// stored units per second (the plain template of 976).
 fn plan_number_keys(prop: &Property, cp: &CompPlan, what: &str, col: &mut Collector) -> Vec<KeyPlan> {
-    let mut timed: Vec<(i64, &effectcraft_keyframe::Keyframe)> = Vec::with_capacity(prop.keys.len());
+    let mut timed: Vec<(i64, &pulso_keyframe::Keyframe)> = Vec::with_capacity(prop.keys.len());
     for k in &prop.keys {
         let (u, inexact) = cp.tb.units(k.time);
         if inexact {
@@ -163,7 +163,7 @@ fn plan_number_keys(prop: &Property, cp: &CompPlan, what: &str, col: &mut Collec
             }
         };
         let (in_i, out_i) = (side(k.in_interp), side(k.out_interp));
-        let ease = |eases: &[effectcraft_keyframe::Ease], on: bool| -> Vec<EaseSlot> {
+        let ease = |eases: &[pulso_keyframe::Ease], on: bool| -> Vec<EaseSlot> {
             if !on {
                 return vec![EaseSlot::default()];
             }
@@ -196,7 +196,7 @@ fn plan_number_keys(prop: &Property, cp: &CompPlan, what: &str, col: &mut Collec
     out
 }
 
-/// EffectCraft's default of a style parameter (to tell an edited gradient).
+/// Pulso's default of a style parameter (to tell an edited gradient).
 fn model_default(style: &str, id: &str) -> Option<Value> {
     let mut next = 1;
     let g = st::style(&mut Ids(&mut next), style)?;

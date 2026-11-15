@@ -4,7 +4,7 @@
 
 use std::sync::{Arc, Mutex, OnceLock};
 
-pub use effectcraft_gpu::{ScopedError, ScopedErrorObserver};
+pub use pulso_gpu::{ScopedError, ScopedErrorObserver};
 
 type Notifier = Arc<dyn Fn(String) + Send + Sync>;
 

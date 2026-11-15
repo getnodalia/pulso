@@ -13,7 +13,7 @@
 //! on Direct3D 12 and Linux/Mesa Vulkan), so the default cap is conservative per device type,
 //! and lower on a discrete card whose memory the OS reports without `unsafe` (Linux's amdgpu
 //! driver, in sysfs: a 2–4 GB card ran out of memory and took the system down, #1487);
-//! `EFFECTCRAFT_GPU_MEMCAP_MB` overrides it (0 = off). Backends without an allocator report
+//! `PULSO_GPU_MEMCAP_MB` overrides it (0 = off). Backends without an allocator report
 //! (Metal, WebGPU, GL) are never gated.
 
 use std::path::Path;
@@ -28,7 +28,7 @@ const GIB: u64 = 1 << 30;
 const MIB: u64 = 1 << 20;
 
 /// Overrides the default cap: whole MiB, 0 turns the gate off.
-const MEMCAP_ENV: &str = "EFFECTCRAFT_GPU_MEMCAP_MB";
+const MEMCAP_ENV: &str = "PULSO_GPU_MEMCAP_MB";
 
 pub(crate) struct MemCap {
     cap: u64,
@@ -115,7 +115,7 @@ impl MemCap {
         }
         if kept > self.cap && !self.warned.swap(true, Relaxed) {
             log::warn!(
-                target: "effectcraft_gpu",
+                target: "pulso_gpu",
                 "gpu: {} MiB held by live frames, the upload cache and the texture pool is over the {} MiB memory cap: waiting cannot free it, so frames are not held back for it ({MEMCAP_ENV} sets the cap)",
                 kept >> 20,
                 self.cap >> 20,
@@ -165,7 +165,7 @@ impl MemCap {
     }
 }
 
-/// The cap from the `EFFECTCRAFT_GPU_MEMCAP_MB` value: whole MiB (0 turns the gate off), or the
+/// The cap from the `PULSO_GPU_MEMCAP_MB` value: whole MiB (0 turns the gate off), or the
 /// default for `device_type` when unset, or (with a warning) when not a number or too large.
 fn cap_from_env(var: Option<&str>, device_type: wgpu::DeviceType, vram: Option<u64>) -> u64 {
     let Some(v) = var else { return default_cap(device_type, vram) };
@@ -173,7 +173,7 @@ fn cap_from_env(var: Option<&str>, device_type: wgpu::DeviceType, vram: Option<u
         Some(cap) => cap,
         None => {
             let cap = default_cap(device_type, vram);
-            log::warn!(target: "effectcraft_gpu", "{MEMCAP_ENV}={v:?} is not a whole number of MiB that fits in 64 bits: using {} MiB", cap / MIB);
+            log::warn!(target: "pulso_gpu", "{MEMCAP_ENV}={v:?} is not a whole number of MiB that fits in 64 bits: using {} MiB", cap / MIB);
             cap
         }
     }
@@ -181,7 +181,7 @@ fn cap_from_env(var: Option<&str>, device_type: wgpu::DeviceType, vram: Option<u
 
 /// Discrete cards: 3 GiB, low enough to fire on 4–8 GB cards with headroom for the driver and
 /// desktop while leaving ~1 GiB above the default 1.5 GiB upload cache + 256 MB pool (larger
-/// cards can raise it with `EFFECTCRAFT_GPU_MEMCAP_MB`), and at most three quarters of the card's
+/// cards can raise it with `PULSO_GPU_MEMCAP_MB`), and at most three quarters of the card's
 /// memory when it is known (`vram`), so a 2 GB card gets 1.5 GiB (#1487). Integrated and software
 /// adapters share system memory: 2 GiB, whatever their carve-out.
 fn default_cap(t: wgpu::DeviceType, vram: Option<u64>) -> u64 {
@@ -198,7 +198,7 @@ fn vram(info: &wgpu::AdapterInfo) -> Option<u64> {
     }
     let bytes = vram_in_sysfs(Path::new("/sys/class/drm"), info.vendor, info.device, &info.device_pci_bus_id);
     if let Some(b) = bytes {
-        log::info!(target: "effectcraft_gpu", "gpu {}: {} MiB of video memory (sysfs)", info.name, b >> 20);
+        log::info!(target: "pulso_gpu", "gpu {}: {} MiB of video memory (sysfs)", info.name, b >> 20);
     }
     bytes
 }
@@ -316,7 +316,7 @@ mod tests {
 
     #[test]
     fn video_memory_is_read_from_the_matching_drm_card() {
-        let dir = std::env::temp_dir().join(format!("effectcraft-memcap-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("pulso-memcap-{}", std::process::id()));
         let card = |name: &str, vendor: &str, device: &str, vram: Option<&str>| {
             let dev = dir.join(name).join("device");
             std::fs::create_dir_all(&dev).unwrap();

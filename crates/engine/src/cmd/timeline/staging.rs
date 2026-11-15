@@ -21,8 +21,7 @@ impl Movie {
             let path = std::path::Path::new(path);
             let parent = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(std::path::Path::new("."));
             std::fs::create_dir_all(parent).map_err(|e| format!("cannot create pre-render folder {}: {e}", parent.display()))?;
-            let directory =
-                tempfile::Builder::new().prefix(".effectcraft-prerender-").tempdir_in(parent).map_err(|e| format!("cannot stage pre-render: {e}"))?;
+            let directory = tempfile::Builder::new().prefix(".pulso-prerender-").tempdir_in(parent).map_err(|e| format!("cannot stage pre-render: {e}"))?;
             let name = path.file_name().ok_or_else(|| format!("pre-render has no file name: {}", path.display()))?;
             let staged = directory.path().join(name).to_string_lossy().into_owned();
             Ok(Self { path: staged, directory, destination: parent.to_path_buf() })

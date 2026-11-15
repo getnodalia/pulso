@@ -15,7 +15,7 @@
   timestamp server, ...). Optional overrides: WINDOWS_TIMESTAMP_URL, SIGNTOOL (path to signtool.exe).
 
 .EXAMPLE
-  pwsh packaging/windows/sign.ps1 dist/effectcraft.exe dist/Effectcraft.msi
+  pwsh packaging/windows/sign.ps1 dist/pulso.exe dist/Pulso.msi
 #>
 param(
   [Parameter(Mandatory = $true, ValueFromRemainingArguments = $true)]
@@ -55,8 +55,8 @@ if (-not $haveCert -and -not $haveAzure) {
 }
 
 $script:SignTool = Find-SignTool
-$common = @('sign', '/v', '/fd', 'SHA256', '/td', 'SHA256', '/d', 'EffectCraft', '/du', 'https://github.com/storytold/effectcraft')
-$tmp = Join-Path ([IO.Path]::GetTempPath()) "effectcraft-sign-$([IO.Path]::GetRandomFileName())"
+$common = @('sign', '/v', '/fd', 'SHA256', '/td', 'SHA256', '/d', 'Pulso', '/du', 'https://github.com/getnodalia/pulso')
+$tmp = Join-Path ([IO.Path]::GetTempPath()) "pulso-sign-$([IO.Path]::GetRandomFileName())"
 New-Item -ItemType Directory -Path $tmp | Out-Null
 
 try {

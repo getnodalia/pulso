@@ -1,12 +1,12 @@
-//! The importer against the synthetic fixtures of `effectcraft-aep` (one change per file on top of
+//! The importer against the synthetic fixtures of `pulso-aep` (one change per file on top of
 //! composition `C`: 1920x1080 at 25 fps, 5 s, with one red solid layer `L`).
 
 use crate::import::helpers::comp;
-use effectcraft_aep::import::{AepImportError, ImportReport, LossCategory, analyze};
-use effectcraft_color::{BlendMode, Label};
-use effectcraft_keyframe::{Ease, Interp, Value};
-use effectcraft_project::{Comp, FootageKind, ItemKind, Layer, LayerSource, Project, Quality, Renderer};
-use effectcraft_time::{FrameRate, TICKS_PER_SECOND, Tick};
+use pulso_aep::import::{AepImportError, ImportReport, LossCategory, analyze};
+use pulso_color::{BlendMode, Label};
+use pulso_keyframe::{Ease, Interp, Value};
+use pulso_project::{Comp, FootageKind, ItemKind, Layer, LayerSource, Project, Quality, Renderer};
+use pulso_time::{FrameRate, TICKS_PER_SECOND, Tick};
 
 const SEC: i64 = TICKS_PER_SECOND;
 
@@ -18,7 +18,7 @@ fn layer<'c>(c: &'c Comp, name: &str) -> &'c Layer {
     c.layers.iter().find(|l| l.name == name).unwrap_or_else(|| panic!("no layer {name}"))
 }
 
-fn only_layer(project: &Project, r: &effectcraft_aep::import::ImportResult) -> Layer {
+fn only_layer(project: &Project, r: &pulso_aep::import::ImportResult) -> Layer {
     let (_, c) = comp(project, r, "C");
     layer(c, "L").clone()
 }
@@ -306,8 +306,8 @@ fn footage_is_a_placeholder_unless_the_file_exists() {
     let mut project = Project::default();
     let bytes = fixture!("126-footage-png-layer.aep");
     let exists = |path: &str| path.ends_with("test8x8.png");
-    let opts = effectcraft_aep::import::ImportOptions::new(&exists);
-    let r = effectcraft_aep::import::import(&mut project, &bytes, &opts).unwrap();
+    let opts = pulso_aep::import::ImportOptions::new(&exists);
+    let r = pulso_aep::import::import(&mut project, &bytes, &opts).unwrap();
     assert!(r.report.missing_footage.is_empty());
     let item = project.items.values().find(|i| i.name == "test8x8.png").unwrap();
     assert!(matches!(&item.kind, ItemKind::Footage(f) if !f.missing));
@@ -515,8 +515,8 @@ fn files_that_are_not_projects_are_errors() {
     let mut p = Project::default();
     for bytes in [&b""[..], b"RIFX", b"hello world, not an aep", b"RIFX\0\0\0\x04Egg!"] {
         let none = |_: &str| false;
-        let opts = effectcraft_aep::import::ImportOptions::new(&none);
-        assert!(effectcraft_aep::import::import(&mut p, bytes, &opts).is_err());
+        let opts = pulso_aep::import::ImportOptions::new(&none);
+        assert!(pulso_aep::import::import(&mut p, bytes, &opts).is_err());
     }
     assert!(p.items.is_empty());
 }
@@ -613,12 +613,12 @@ fn an_image_sequence_becomes_a_sequence_of_its_files() {
 
 #[test]
 fn project_settings_come_with_the_result_not_into_the_project() {
-    use effectcraft_project::{BitDepth, ProjectSettings, TimeDisplayStyle};
+    use pulso_project::{BitDepth, ProjectSettings, TimeDisplayStyle};
     let def = ProjectSettings::default();
     // The base: 32 bpc, sRGB, gamma 2.2, timecode, frames from 0.
     let (p, r) = load!("000-base.aep");
     assert_eq!(p.settings, def, "import leaves the project's settings alone");
-    assert_eq!((r.settings.bit_depth, r.settings.working_space), (BitDepth::Bpc32, Some(effectcraft_color::ColorSpace::Srgb)));
+    assert_eq!((r.settings.bit_depth, r.settings.working_space), (BitDepth::Bpc32, Some(pulso_color::ColorSpace::Srgb)));
     assert_eq!((r.settings.working_gamma, r.settings.linearize, r.settings.blend_linear), (2.2, false, false));
     assert!(r.report.is_lossless());
     let s = |name: &str| crate::import::helpers::try_load(name).map(|(_, r)| r.settings);
@@ -628,7 +628,7 @@ fn project_settings_come_with_the_result_not_into_the_project() {
     // After Effects renders in the working space, so a Rec.709 project is also output in Rec.709
     // (902); an sRGB one keeps the default output (sRGB).
     let rec709 = skip!(s("902-settings-rec709-16bpc-steps-png-grey-solid.aep"));
-    assert_eq!((rec709.working_space, rec709.output_space), (Some(effectcraft_color::ColorSpace::Rec709), Some(effectcraft_color::ColorSpace::Rec709)));
+    assert_eq!((rec709.working_space, rec709.output_space), (Some(pulso_color::ColorSpace::Rec709), Some(pulso_color::ColorSpace::Rec709)));
     assert_eq!(rec709.bit_depth, BitDepth::Bpc16);
     assert_eq!(skip!(s("000-base.aep")).output_space, None);
     assert_eq!(skip!(s("625-settings-gamma-2.4.aep")).working_gamma, 2.4);
@@ -638,7 +638,7 @@ fn project_settings_come_with_the_result_not_into_the_project() {
     assert_eq!(skip!(s("633-settings-feet-frames-35.aep")).time_display, TimeDisplayStyle::Feet35);
     assert_eq!(skip!(s("634-settings-feet-frames-16.aep")).time_display, TimeDisplayStyle::Feet16);
     assert_eq!(skip!(s("630-settings-frame-start-1.aep")).frame_start, 1);
-    // Settings EffectCraft does not keep (scene-referred compensation) change nothing: 628 shares
+    // Settings Pulso does not keep (scene-referred compensation) change nothing: 628 shares
     // its file with 621, 623, 625, 629 and 630 (one value per project), and reads as their changes.
     let base = skip!(s("000-base.aep"));
     let others =
@@ -657,21 +657,18 @@ fn a_working_space_without_a_counterpart_is_reported() {
     edited[at..at + from.len()].copy_from_slice(to);
     let mut p = Project::default();
     let none = |_: &str| false;
-    let r = effectcraft_aep::import::import(
-        &mut p,
-        &edited,
-        &effectcraft_aep::import::ImportOptions { allow_losses: true, ..effectcraft_aep::import::ImportOptions::new(&none) },
-    )
-    .expect("import");
+    let r =
+        pulso_aep::import::import(&mut p, &edited, &pulso_aep::import::ImportOptions { allow_losses: true, ..pulso_aep::import::ImportOptions::new(&none) })
+            .expect("import");
     assert_eq!(r.report.count(LossCategory::ProjectSettings), 1, "{:?}", r.report.losses);
-    assert_eq!(r.settings.working_space, effectcraft_project::ProjectSettings::default().working_space);
+    assert_eq!(r.settings.working_space, pulso_project::ProjectSettings::default().working_space);
     // Refused without allowLosses.
     let mut q = Project::default();
-    assert!(effectcraft_aep::import::import(&mut q, &edited, &effectcraft_aep::import::ImportOptions::new(&none)).is_err());
+    assert!(pulso_aep::import::import(&mut q, &edited, &pulso_aep::import::ImportOptions::new(&none)).is_err());
     // Into a project whose settings stay (the caller does not take the file's over), nothing is
     // lost: the import goes through without allowLosses.
-    let keep = effectcraft_aep::import::ImportOptions { settings: false, ..effectcraft_aep::import::ImportOptions::new(&none) };
-    let r = effectcraft_aep::import::import(&mut q, &edited, &keep).expect("settings are not taken over");
+    let keep = pulso_aep::import::ImportOptions { settings: false, ..pulso_aep::import::ImportOptions::new(&none) };
+    let r = pulso_aep::import::import(&mut q, &edited, &keep).expect("settings are not taken over");
     assert!(r.report.is_lossless(), "{:?}", r.report.losses);
 }
 
@@ -690,15 +687,15 @@ fn a_clip_with_sound_has_audio() {
     // The sample rate (`sspc` f64 at byte 160) is stored for a clip that carries sound (read back
     // from After Effects with a 48 kHz and a 44.1 kHz mp4) and absent for one that does not (the
     // 645 clip has none): the importer reads the clip's audio from it.
-    fn set_rate(chunks: &mut [effectcraft_aep::Chunk<'_>], rate: f64) -> usize {
+    fn set_rate(chunks: &mut [pulso_aep::Chunk<'_>], rate: f64) -> usize {
         let mut n = 0;
         for c in chunks {
             if c.id == *b"sspc" && c.bytes().is_some_and(|b| b.get(22..26) == Some(b"XCEX".as_slice())) {
                 let mut data = c.bytes().unwrap_or_default().to_vec();
                 data[160..168].copy_from_slice(&rate.to_be_bytes());
-                *c = effectcraft_aep::Chunk::data(*b"sspc", data);
+                *c = pulso_aep::Chunk::data(*b"sspc", data);
                 n += 1;
-            } else if let effectcraft_aep::Body::List { children, .. } | effectcraft_aep::Body::Chunks(children) = &mut c.body {
+            } else if let pulso_aep::Body::List { children, .. } | pulso_aep::Body::Chunks(children) = &mut c.body {
                 n += set_rate(children, rate);
             }
         }
@@ -708,14 +705,14 @@ fn a_clip_with_sound_has_audio() {
     let clip = |bytes: &[u8]| {
         let mut p = Project::default();
         let none = |_: &str| false;
-        let options = effectcraft_aep::import::ImportOptions { allow_losses: true, ..effectcraft_aep::import::ImportOptions::new(&none) };
-        effectcraft_aep::import::import(&mut p, bytes, &options).expect("import");
+        let options = pulso_aep::import::ImportOptions { allow_losses: true, ..pulso_aep::import::ImportOptions::new(&none) };
+        pulso_aep::import::import(&mut p, bytes, &options).expect("import");
         p.items.values().find_map(|i| if let ItemKind::Footage(f) = &i.kind { Some(f.clone()) } else { None }).expect("clip")
     };
     assert!(!clip(&bytes).has_audio);
-    let mut file = effectcraft_aep::parse(&bytes).expect("parse");
+    let mut file = pulso_aep::parse(&bytes).expect("parse");
     assert_eq!(set_rate(&mut file.chunks, 48_000.0), 1);
-    let loud = clip(&effectcraft_aep::write(&file).expect("write"));
+    let loud = clip(&pulso_aep::write(&file).expect("write"));
     assert_eq!((loud.kind, loud.has_video, loud.has_audio), (FootageKind::Video, true, true));
 }
 

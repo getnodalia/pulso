@@ -1,4 +1,4 @@
-//! The EffectCraft engine façade.
+//! The Pulso engine façade.
 //!
 //! Every user-visible action is a command with a stable id (`layer.newSolid`, `prop.set`,
 //! `keys.easyEase`…) and JSON parameters, dispatched through [`Session::execute`]. The egui UI,
@@ -29,10 +29,10 @@ pub mod viewer;
 
 use std::sync::Arc;
 
-use effectcraft_project::{Comp, ItemId, Layer, LayerId, Project, Uid};
-use effectcraft_raster::Image;
-use effectcraft_render::{ExprHost, FootageSource, LayerCache, NoFootage, RenderOpts, Renderer};
-use effectcraft_time::Tick;
+use pulso_project::{Comp, ItemId, Layer, LayerId, Project, Uid};
+use pulso_raster::Image;
+use pulso_render::{ExprHost, FootageSource, LayerCache, NoFootage, RenderOpts, Renderer};
+use pulso_time::Tick;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -47,17 +47,6 @@ pub use background::offload;
 pub use background::remote;
 pub use cmd as commands;
 pub use cmd::{CommandSpec, command_specs, find as find_command};
-pub use effectcraft_color as color;
-pub use effectcraft_effects as effects;
-pub use effectcraft_geom as geom;
-pub use effectcraft_keyframe as keyframe;
-pub use effectcraft_project as project;
-pub use effectcraft_raster as raster;
-pub use effectcraft_render as render;
-pub use effectcraft_segment as segment;
-pub use effectcraft_text as text;
-pub use effectcraft_time as time;
-pub use effectcraft_track as track;
 pub use footage::doc_path;
 pub use footage::footage_check;
 pub use footage::footage_reload;
@@ -73,6 +62,17 @@ pub use interchange::psd_import;
 pub use interchange::vector;
 pub use interchange::xml_project;
 use interchange::{keyframe_text, keyframe_text_effects};
+pub use pulso_color as color;
+pub use pulso_effects as effects;
+pub use pulso_geom as geom;
+pub use pulso_keyframe as keyframe;
+pub use pulso_project as project;
+pub use pulso_raster as raster;
+pub use pulso_render as render;
+pub use pulso_segment as segment;
+pub use pulso_text as text;
+pub use pulso_time as time;
+pub use pulso_track as track;
 pub use render_queue::{ExportJob, ExportResult, Exporter, JobState};
 pub use settings::autosave;
 pub use settings::config;
@@ -123,9 +123,9 @@ pub struct Session {
     pub footage: Arc<dyn FootageSource>,
     pub expr: Option<Arc<dyn ExprHost>>,
     /// GPU compositor (Mercury GPU Acceleration), when the frontend has one: used by renders
-    /// that ask for [`effectcraft_render::Backend::Gpu`]/`Auto`, and by Render Queue exports
+    /// that ask for [`pulso_render::Backend::Gpu`]/`Auto`, and by Render Queue exports
     /// when the project's renderer is the GPU.
-    pub accel: Option<Arc<dyn effectcraft_render::Accelerator>>,
+    pub accel: Option<Arc<dyn pulso_render::Accelerator>>,
     /// Why there is no [`Session::accel`] (`render.backend`'s `why`): the host's reason, e.g. a
     /// headless start without `--gpu` or the compositor's setup error.
     pub accel_note: Option<String>,
@@ -138,7 +138,7 @@ pub struct Session {
     /// Render Queue encoder (the export layer); `None` = export unavailable.
     pub exporter: Option<Arc<dyn Exporter>>,
     /// Free-space hook for Render Settings ▸ Use Storage Overflow (`None`: never full).
-    pub storage_quota: Option<Arc<dyn effectcraft_project::render_queue::StorageQuota>>,
+    pub storage_quota: Option<Arc<dyn pulso_project::render_queue::StorageQuota>>,
     /// The running (or finished, not yet polled) render.
     pub render_job: Option<render_queue::RenderJob>,
     /// The running (or finished, not yet polled) track analysis.
@@ -171,7 +171,7 @@ pub struct Session {
     #[doc(hidden)]
     pub crypto_probe: Arc<std::sync::Mutex<commands::CryptoProbeSlot>>,
     /// The persistent disk cache (Settings ▸ Media & Disk Cache), when enabled.
-    pub disk_cache: Option<Arc<effectcraft_render::disk_cache::DiskCache>>,
+    pub disk_cache: Option<Arc<pulso_render::disk_cache::DiskCache>>,
     /// Files File ▸ Reload Footage reloaded while the disk cache was off: their entries are
     /// dropped when it is switched on ([`Session::configure_disk_cache`]), before it is used.
     pub pending_disk_drops: std::collections::BTreeSet<String>,
@@ -198,13 +198,13 @@ pub struct Session {
     pub autosave_folder_override: Option<std::path::PathBuf>,
     /// The viewer snapshot (Take Snapshot / Show Snapshot).
     pub snapshot: Option<viewer::Snapshot>,
-    /// The JavaScript scripting engine (set by the host that links `effectcraft-script`):
+    /// The JavaScript scripting engine (set by the host that links `pulso-script`):
     /// `script.run`, File ▸ Scripts ▸ Run Script File… (`.jsx`/`.js`) and the Script Console.
     pub script: Option<ScriptRunner>,
-    /// Loads WebAssembly effect plug-ins (set by the host that links `effectcraft-plugin` with
+    /// Loads WebAssembly effect plug-ins (set by the host that links `pulso-plugin` with
     /// its runtime): `effect.plugins.load`.
     pub plugin_loader: Option<PluginLoader>,
-    /// External effect helpers (native hosts link `effectcraft-helper-host`):
+    /// External effect helpers (native hosts link `pulso-helper-host`):
     /// `effect.helpers.list`, `effect.helpers.scan`, `effect.helpers.load`.
     pub helpers: Option<HelperHooks>,
     /// Renders a module without registering it (`library.preview`; set with `plugin_loader`).

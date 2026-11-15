@@ -7,7 +7,7 @@
 //! `rate x frame duration >= 24 576` (25 fps: 1024 and 25 600; 12 fps: 2048 and 24 576; 1 fps:
 //! 32 768 and 32 768; 240 fps: 128 and 30 720).
 
-use effectcraft_time::{FrameRate, TICKS_PER_SECOND, Tick};
+use pulso_time::{FrameRate, TICKS_PER_SECOND, Tick};
 
 /// Frame duration and time scale in units; one frame lasts `frame_duration` units and a second
 /// has `timescale` units.

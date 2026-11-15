@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use effectcraft_engine::config::ConfigStore;
+use pulso_engine::config::ConfigStore;
 use serde::{Deserialize, Serialize};
 
 use crate::dock::{PanelKind, Workspace};

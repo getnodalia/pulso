@@ -2,9 +2,9 @@
 //! PS Arbitrary Map and Color Grading (Basic Correction, Creative, Curves, Color Wheels,
 //! Vignette).
 
-use effectcraft_color::{hsl_to_rgb, luminance, rgb_to_hsl};
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
+use pulso_color::{hsl_to_rgb, luminance, rgb_to_hsl};
+use pulso_keyframe::Value;
+use pulso_project::ParamUi;
 use rayon::prelude::*;
 
 use crate::util::{Plane, gauss_plane, layer_rect, lerp, premul, smoothstep, unpremul};
@@ -868,7 +868,7 @@ pub fn specs() -> Vec<EffectSpec> {
 mod tests {
     use super::*;
     use crate::{EffectEnv, run_fx};
-    use effectcraft_raster::Image;
+    use pulso_raster::Image;
 
     fn ramp() -> Image {
         let mut img = Image::new(16, 8);

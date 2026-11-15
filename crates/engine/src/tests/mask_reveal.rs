@@ -1,5 +1,5 @@
 use crate::{Event, Session};
-use effectcraft_project::{LayerId, Project};
+use pulso_project::{LayerId, Project};
 use serde_json::json;
 
 /// The frontend notification must remain separate from document history and saved mask values.
@@ -54,7 +54,7 @@ fn mask_reveal_failed_creation_emits_no_notice_and_keeps_document() {
 /// Mask creation must use the same notification contract for still and video footage.
 #[test]
 fn mask_reveal_image_and_video_layers_keep_their_source_and_mask() {
-    use effectcraft_project::{Footage, FootageKind, ItemKind, LayerSource};
+    use pulso_project::{Footage, FootageKind, ItemKind, LayerSource};
     for kind in [FootageKind::Still, FootageKind::Video] {
         for command in ["layer.addMask", "mask.new"] {
             let mut s = Session::default();

@@ -44,7 +44,7 @@ fn local(s: &Session, comp: ItemId, t: Tick, opts: RenderOpts) -> Vec<u8> {
 /// worker's mid-render lookups find them and the pixels match.
 #[test]
 fn layer_buffers_go_through_the_disk_store() {
-    use effectcraft_render::disk_cache::{DiskIndex, Kind, LayerPrefetch};
+    use pulso_render::disk_cache::{DiskIndex, Kind, LayerPrefetch};
     let mut s = Session::default();
     s.execute("file.openDemoProject", json!({})).unwrap();
     let comp = s.active_comp_id().unwrap();
@@ -70,7 +70,7 @@ fn layer_buffers_go_through_the_disk_store() {
     let writes = store_a.take_writes();
     assert!(!writes.is_empty());
     // Sealed with the files each buffer was made of (none here: the demo reads no footage).
-    assert!(writes.iter().all(|(_, e)| effectcraft_render::disk_cache::read_layer_entry(e).is_some_and(|(_, f)| f.is_empty())));
+    assert!(writes.iter().all(|(_, e)| pulso_render::disk_cache::read_layer_entry(e).is_some_and(|(_, f)| f.is_empty())));
     let mut index = DiskIndex::default();
     let mut disk = std::collections::HashMap::new();
     for (k, e) in writes {
@@ -195,7 +195,7 @@ struct Deferred {
     chains: std::sync::atomic::AtomicUsize,
     begins: std::sync::atomic::AtomicUsize,
     ends: std::sync::atomic::AtomicUsize,
-    auto: effectcraft_render::AutoPick,
+    auto: pulso_render::AutoPick,
 }
 
 impl Deferred {
@@ -213,9 +213,9 @@ impl Accelerator for Deferred {
         None
     }
     fn supports_effect(&self, id: &str) -> bool {
-        effectcraft_effects::GPU_EFFECTS.contains(&id)
+        pulso_effects::GPU_EFFECTS.contains(&id)
     }
-    fn effects(&self, chain: &[effectcraft_render::FxStep], buf: &effectcraft_effects::Buf, levels: Option<f32>) -> Option<effectcraft_effects::Buf> {
+    fn effects(&self, chain: &[pulso_render::FxStep], buf: &pulso_effects::Buf, levels: Option<f32>) -> Option<pulso_effects::Buf> {
         use std::hash::{Hash, Hasher};
         let mut h = std::collections::hash_map::DefaultHasher::new();
         for s in chain {
@@ -237,14 +237,14 @@ impl Accelerator for Deferred {
         self.chains.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let mut b = buf.clone();
         for s in chain {
-            b = effectcraft_effects::apply(s.spec, &s.ctx, b);
+            b = pulso_effects::apply(s.spec, &s.ctx, b);
             if let Some(l) = levels {
-                effectcraft_render::color::quantize(&mut b.img, l);
+                pulso_render::color::quantize(&mut b.img, l);
             }
         }
         Some(b)
     }
-    fn auto_pick(&self) -> Option<&effectcraft_render::AutoPick> {
+    fn auto_pick(&self) -> Option<&pulso_render::AutoPick> {
         Some(&self.auto)
     }
     fn frame_begin(&self) {
@@ -320,7 +320,7 @@ fn deferred_readbacks_render_in_passes() {
         }
         assert_eq!(out[0].1.as_deref(), Some(&px[..]), "frame {id}");
     }
-    let st = acc.auto.stats(effectcraft_render::AutoKey::new(comp, opts.scale, false)).unwrap();
+    let st = acc.auto.stats(pulso_render::AutoKey::new(comp, opts.scale, false)).unwrap();
     assert!(st.cpu_frames > 0 && st.gpu_frames > 0, "{st:?}");
 }
 
@@ -384,12 +384,12 @@ struct OneVirtualFile {
 }
 
 impl FootageSource for OneVirtualFile {
-    fn frame(&self, _: ItemId, _: &effectcraft_project::Footage, _: Tick) -> Option<Arc<Image>> {
+    fn frame(&self, _: ItemId, _: &pulso_project::Footage, _: Tick) -> Option<Arc<Image>> {
         Some(Arc::new(Image::filled(4, 4, [1.0, 0.5, 0.0, 1.0])))
     }
     fn recording(&self, reads: &ReadLog, f: &mut dyn FnMut()) {
         if self.records {
-            reads.note(effectcraft_render::reads::ReadFile::new("/clip.png", effectcraft_render::reads::FileStamp::Virtual));
+            reads.note(pulso_render::reads::ReadFile::new("/clip.png", pulso_render::reads::FileStamp::Virtual));
         } else {
             reads.mark_incomplete();
         }
@@ -402,15 +402,15 @@ impl FootageSource for OneVirtualFile {
 /// all be named is not stored (#3184).
 #[test]
 fn the_worker_reports_the_files_of_each_frame_for_its_disk_entry() {
-    use effectcraft_project::{Comp, Footage, ItemKind, LayerSource, Project, build};
-    use effectcraft_render::disk_cache::{frame_entry, read_frame_entry};
-    use effectcraft_time::FrameRate;
+    use pulso_project::{Comp, Footage, ItemKind, LayerSource, Project, build};
+    use pulso_render::disk_cache::{frame_entry, read_frame_entry};
+    use pulso_time::FrameRate;
     let mut p = Project::default();
     let f = Footage { path: "/clip.png".into(), width: 4, height: 4, duration: Tick::from_seconds_f64(1.0), has_video: true, ..Default::default() };
-    let fid = p.add_item("clip.png", effectcraft_color::Label::None, None, ItemKind::Footage(f));
+    let fid = p.add_item("clip.png", pulso_color::Label::None, None, ItemKind::Footage(f));
     let mut comp = Comp::new(4, 4, FrameRate::FPS_30, Tick::from_seconds_f64(1.0));
     comp.layers = vec![build::layer(&mut p, &comp, "clip", LayerSource::Footage { item: fid }, (4, 4), None)].into();
-    let cid = p.add_item("C", effectcraft_color::Label::None, None, ItemKind::Comp(comp.into()));
+    let cid = p.add_item("C", pulso_color::Label::None, None, ItemKind::Comp(comp.into()));
     let id = |mark: u64| move |path: &str| (path == "/clip.png").then_some((10, mark));
     let (one, two) = (id(1), id(2));
     for records in [true, false] {
@@ -452,12 +452,12 @@ fn the_worker_reports_the_files_of_each_frame_for_its_disk_entry() {
 /// check it before the buffer from the store is used.
 #[test]
 fn the_worker_asks_only_about_the_files_its_buffers_read() {
-    use effectcraft_project::{Comp, Footage, FootageKind, ItemKind, LayerSource, Project, build};
-    use effectcraft_time::FrameRate;
+    use pulso_project::{Comp, Footage, FootageKind, ItemKind, LayerSource, Project, build};
+    use pulso_time::FrameRate;
     use std::sync::Mutex;
     let mut p = Project::default();
     let f = Footage { path: "/clip.png".into(), width: 4, height: 4, has_video: true, ..Default::default() };
-    let fid = p.add_item("clip.png", effectcraft_color::Label::None, None, ItemKind::Footage(f));
+    let fid = p.add_item("clip.png", pulso_color::Label::None, None, ItemKind::Footage(f));
     let seq = Footage {
         kind: FootageKind::Sequence,
         path: "/seq/f_00000.png".into(),
@@ -467,10 +467,10 @@ fn the_worker_asks_only_about_the_files_its_buffers_read() {
         has_video: true,
         ..Default::default()
     };
-    p.add_item("seq", effectcraft_color::Label::None, None, ItemKind::Footage(seq));
+    p.add_item("seq", pulso_color::Label::None, None, ItemKind::Footage(seq));
     let mut comp = Comp::new(4, 4, FrameRate::FPS_30, Tick::from_seconds_f64(1.0));
     comp.layers = vec![build::layer(&mut p, &comp, "clip", LayerSource::Footage { item: fid }, (4, 4), None)].into();
-    let cid = p.add_item("C", effectcraft_color::Label::None, None, ItemKind::Comp(comp.into()));
+    let cid = p.add_item("C", pulso_color::Label::None, None, ItemKind::Comp(comp.into()));
     let asked: Arc<Mutex<Vec<String>>> = Arc::default();
     let worker = || {
         let mut w = FrameServer::new(Arc::new(OneVirtualFile { records: true }), None);

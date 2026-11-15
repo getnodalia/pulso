@@ -3,13 +3,13 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-use effectcraft_color::{BlendMode, Label};
-use effectcraft_keyframe::{Keyframe, Value};
-use effectcraft_project::build::Ids;
-use effectcraft_project::{AlphaMode, Comp, Footage, FootageKind, ItemId, ItemKind, Layer, LayerSource, Marker, Node, ParamUi, Project, Property, Solid};
-use effectcraft_time::{FrameRate, Tick};
 use filmcraft_media::{Generator, MediaKind};
 use filmcraft_project as fp;
+use pulso_color::{BlendMode, Label};
+use pulso_keyframe::{Keyframe, Value};
+use pulso_project::build::Ids;
+use pulso_project::{AlphaMode, Comp, Footage, FootageKind, ItemId, ItemKind, Layer, LayerSource, Marker, Node, ParamUi, Project, Property, Solid};
+use pulso_time::{FrameRate, Tick};
 use serde::{Deserialize, Serialize};
 
 use crate::{Error, Result, TimelineFormat, rate_in, tick_in};
@@ -143,7 +143,7 @@ pub fn import(
     if depth > MAX_DEPTH {
         return Err(Error::TooDeep(MAX_DEPTH));
     }
-    // FilmCraft's parser expands internal entities without a node limit (#2129); Final Cut Pro
+    // Toma's parser expands internal entities without a node limit (#2129); Final Cut Pro
     // and FCPXML exports never declare any.
     if matches!(format, TimelineFormat::Fcp7Xml | TimelineFormat::Fcpxml) && bytes.windows(8).any(|w| w == b"<!ENTITY") {
         return Err(Error::XmlEntities);
@@ -191,11 +191,11 @@ pub fn import(
     Ok(im.res)
 }
 
-/// The start of the note FilmCraft's EDL reader adds when source timecodes look like real
+/// The start of the note Toma's EDL reader adds when source timecodes look like real
 /// timecode (an hour or more) and it has kept them as media time.
 const EDL_MEDIA_TIME_NOTE: &str = "EDL source timecodes were imported as media time";
 
-/// An EDL's source times are its source timecodes, which FilmCraft's reader keeps as media time.
+/// An EDL's source times are its source timecodes, which Toma's reader keeps as media time.
 /// The largest start timecode, in frames, a file may have: a day at 1000 fps.
 const MAX_FILE_TIMECODE: i64 = 24 * 3600 * 1000;
 
@@ -228,7 +228,7 @@ fn guessed_outside(project: &fp::Project, base_dir: Option<&str>) -> HashSet<Str
     guessed
 }
 
-/// Put the clips of each file that has a start timecode on the file's own time, as FilmCraft does
+/// Put the clips of each file that has a start timecode on the file's own time, as Toma does
 /// when it links the media of an imported EDL. Returns the names of the media that stay on
 /// timecode though their clips use an hour or more of it (the file is missing or has none).
 fn rebase_to_file_timecode(project: &mut fp::Project, probe: &mut dyn FnMut(&str) -> Option<Footage>) -> Vec<String> {
@@ -281,7 +281,7 @@ struct Importer<'a> {
     /// Folder of each source item (from the bins).
     bins: HashMap<fp::ItemId, ItemId>,
     /// Probe media the reader flags offline too. An EDL line without `SOURCE FILE` names its clip and
-    /// FilmCraft guesses the path beside the list; other readers flag media offline for other reasons
+    /// Toma guesses the path beside the list; other readers flag media offline for other reasons
     /// (an OTIO missing reference also gets a guessed path), and a same-named file there is not
     /// the intended clip.
     probe_offline: bool,
@@ -515,7 +515,7 @@ impl Importer<'_> {
         if audio_track && !has_audio {
             return None;
         }
-        let mut l = effectcraft_project::build::layer(self.project, comp, &ti.name, source.clone(), size, None);
+        let mut l = pulso_project::build::layer(self.project, comp, &ti.name, source.clone(), size, None);
         if is_adjustment {
             l.switches.adjustment = true;
         }
@@ -534,7 +534,7 @@ impl Importer<'_> {
             }
             (1.0, 100.0)
         } else {
-            let stretch = effectcraft_project::limits::stretch(100.0 / raw);
+            let stretch = pulso_project::limits::stretch(100.0 / raw);
             if stretch.to_bits() == (100.0 / raw).to_bits() {
                 (raw, stretch)
             } else {
@@ -759,14 +759,14 @@ fn interp_in(k: Keyframe, i: fp::Interpolation) -> Keyframe {
         fp::Interpolation::Linear => k,
         fp::Interpolation::Hold => {
             let mut k = k;
-            k.out_interp = effectcraft_keyframe::Interp::Hold;
+            k.out_interp = pulso_keyframe::Interp::Hold;
             k
         }
         _ => k.eased(),
     }
 }
 
-/// Copy a FilmCraft parameter (static value or clip-time keyframes) to a property.
+/// Copy a Toma parameter (static value or clip-time keyframes) to a property.
 fn set_prop(
     dp: &mut Property,
     p: &fp::Param,

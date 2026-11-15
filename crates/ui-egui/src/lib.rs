@@ -1,21 +1,21 @@
-//! The EffectCraft egui frontend (swappable): docking panels, the Composition viewer, the
+//! The Pulso egui frontend (swappable): docking panels, the Composition viewer, the
 //! Timeline with property twirl-downs and keyframes, Effect Controls, Effects & Presets, Preview,
 //! Info, Character/Paragraph/Align, menus, dialogs and the control channel.
 //!
-//! Everything goes through `effectcraft_engine::Session::execute` (or `menus::invoke` for
+//! Everything goes through `pulso_engine::Session::execute` (or `menus::invoke` for
 //! frontend-only commands) so every gesture is also available to agents.
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
 pub(crate) mod a11y;
 
-/// EffectCraft as craft-update knows it, with its 128 px icon and accent colour: the update
+/// Pulso as craft-update knows it, with its 128 px icon and accent colour: the update
 /// prompt shows both, and an AppImage's menu entry gets the icon.
 #[cfg(not(target_arch = "wasm32"))]
 pub const UPDATE_APP: craft_update::app::App = craft_update::app::App {
-    icon_png: Some(include_bytes!("../../../assets/app-icon/hicolor/128x128/apps/ai.storyteller.effectcraft.png")),
+    icon_png: Some(include_bytes!("../../../assets/app-icon/hicolor/128x128/apps/dev.danielmiguelt.Pulso.png")),
     accent: Some([0xe0, 0x36, 0x8f]),
-    ..craft_update::suite::EFFECTCRAFT
+    ..craft_update::suite::PULSO
 };
 
 pub mod audio;
@@ -50,11 +50,11 @@ use std::sync::mpsc::{Receiver, Sender};
 
 pub use control::ControlRequest;
 use dock::{PanelKind, WorkspaceExt as _};
-use effectcraft_engine::Session;
-use effectcraft_engine::project::ItemId;
-use effectcraft_engine::render::RenderOpts;
-use effectcraft_engine::time::Tick;
 use frames::{FrameKey, Frames, RenderSource};
+use pulso_engine::Session;
+use pulso_engine::project::ItemId;
+use pulso_engine::render::RenderOpts;
+use pulso_engine::time::Tick;
 use serde_json::json;
 use state::UiState;
 use theme::Tokens;
@@ -103,7 +103,7 @@ struct PendingShot {
     issued: Option<DrawGeometry>,
     /// The shared completion slot; dropping it cancels a late callback.
     slot: Option<craft_ui::capture::CaptureSlot>,
-    /// Bytes reserved against [`EffectcraftApp::shot_bytes`].
+    /// Bytes reserved against [`PulsoApp::shot_bytes`].
     reserved_bytes: usize,
     /// Geometry retries used.
     attempts: u32,
@@ -139,7 +139,7 @@ pub enum Dialog {
     TrackTarget,
     /// Tracker ▸ Apply (Transform / Stabilize): Apply Dimensions.
     TrackApply,
-    /// Crash recovery: offer the latest auto-save (`EffectcraftApp::recovery`).
+    /// Crash recovery: offer the latest auto-save (`PulsoApp::recovery`).
     Recovery,
     /// Composition/Layer Marker (double-click a marker).
     Marker,
@@ -184,8 +184,8 @@ pub struct Playback {
     pub waiting: bool,
     pub fps: f64,
     /// The Preview panel shortcut that started this preview and what it plays.
-    pub shortcut: effectcraft_engine::preview::PreviewShortcut,
-    pub plan: Option<effectcraft_engine::preview::PreviewPlan>,
+    pub shortcut: pulso_engine::preview::PreviewShortcut,
+    pub plan: Option<pulso_engine::preview::PreviewPlan>,
     /// Cache Before Playback: rendering the range before the clock starts.
     pub caching: bool,
     /// Resolution override while playing (pixel step), `None` = the viewer's.
@@ -204,7 +204,7 @@ pub struct Playback {
     /// follow it (#2473).
     pub audio_held: bool,
     /// The project last checked for a silent preview that became audible (#2104).
-    pub silent_project: Option<Arc<effectcraft_engine::project::Project>>,
+    pub silent_project: Option<Arc<pulso_engine::project::Project>>,
     /// Starting a preview with sound (#947): the playhead stays on the first frame while the
     /// frames ahead render (the prefetch window, at most what fits in the RAM preview), then
     /// sound and picture start together from it. Without this the picture played on silently
@@ -255,7 +255,7 @@ impl Playback {
     }
 }
 
-pub struct EffectcraftApp {
+pub struct PulsoApp {
     pub session: Session,
     pub ui: UiState,
     workspace_store: workspace_state::WorkspaceStore,
@@ -266,7 +266,7 @@ pub struct EffectcraftApp {
     pub dialog: Option<Dialog>,
     pub hooks: Hooks,
     pub fps: f32,
-    /// The app clock and the value it had at the last [`EffectcraftApp::tick`].
+    /// The app clock and the value it had at the last [`PulsoApp::tick`].
     clock: AppClock,
     now: f64,
     last_time: f64,
@@ -320,14 +320,14 @@ pub struct EffectcraftApp {
     /// The frames the other (passive) Composition viewers show, by viewer id.
     pub(crate) passive_tex: std::collections::HashMap<u32, (FrameKey, panels::viewers::PassiveTexture)>,
     /// The last GPU frame shown: its egui texture id (registered with egui-wgpu), key and texture.
-    pub(crate) viewer_native: Option<(egui::TextureId, FrameKey, Arc<effectcraft_gpu::DisplayFrame>)>,
+    pub(crate) viewer_native: Option<(egui::TextureId, FrameKey, Arc<pulso_gpu::DisplayFrame>)>,
     /// The texture the viewer draws and its frame key (CPU or GPU frame).
     /// (`None` texture: a half-float frame, drawn by the display pass.)
     pub(crate) viewer_shown: Option<(Option<egui::TextureId>, FrameKey)>,
     /// A Cryptomatte eyedropper probe is being built (one at a time, re-arming included).
     pub(crate) crypto_probe_busy: Arc<std::sync::atomic::AtomicBool>,
     /// Last displayed image (Info panel colour, eyedroppers, histograms). GPU frames and
-    /// half-float frames fill it on demand ([`EffectcraftApp::viewer_pixels`]).
+    /// half-float frames fill it on demand ([`PulsoApp::viewer_pixels`]).
     pub(crate) viewer_image: Option<Arc<egui::ColorImage>>,
     /// The half-float frame on screen (32 bpc projects; its key is `viewer_shown`'s).
     pub(crate) viewer_f16: Option<Arc<frames::F16Frame>>,
@@ -343,13 +343,13 @@ pub struct EffectcraftApp {
     pub(crate) snapshot_bake: display_gpu::Bake,
     /// The snapshot in half floats for the display pass (the image it was made from, not kept
     /// alive by this).
-    pub(crate) snapshot_f16: Option<(std::sync::Weak<effectcraft_engine::render::Image>, Arc<frames::F16Frame>)>,
+    pub(crate) snapshot_f16: Option<(std::sync::Weak<pulso_engine::render::Image>, Arc<frames::F16Frame>)>,
     /// wasm32: an asynchronous readback of a GPU viewer frame (key asked for, result).
     viewer_readback: (Option<FrameKey>, Arc<std::sync::Mutex<Option<(FrameKey, Arc<egui::ColorImage>)>>>),
     /// egui-wgpu's device, once the first frame arrives (desktop and WebGPU).
     pub(crate) wgpu: Option<eframe::egui_wgpu::RenderState>,
     /// The GPU compositor on that device (None: no usable adapter → CPU only).
-    pub(crate) gpu: Option<effectcraft_gpu::Gpu>,
+    pub(crate) gpu: Option<pulso_gpu::Gpu>,
     gpu_checked: bool,
     /// The GPU compositor being built on a worker thread (desktop): the window opens at once and
     /// composites on the CPU until the worker's result lands ([`Self::init_gpu`]).
@@ -359,7 +359,7 @@ pub struct EffectcraftApp {
     gpu_failure_applied: Option<bool>,
     /// Settings ▸ Import ▸ Reload Footage Changed on Disk: the worker that stamps the footage
     /// files, started with the first project that has items ([`Self::tick_footage_reload`]).
-    footage_watcher: Option<effectcraft_engine::footage_reload::Watcher>,
+    footage_watcher: Option<pulso_engine::footage_reload::Watcher>,
     /// The project revision and preference the watched set was last computed for.
     footage_watch_key: Option<(u64, String, bool)>,
     /// The graphics device was lost and the window is closing (see `close_after_device_loss`);
@@ -391,7 +391,7 @@ pub struct EffectcraftApp {
     /// The settings revision and system appearance (light?) last applied.
     applied_prefs: Option<(u64, Option<bool>)>,
     /// A previous run that didn't exit cleanly (shown by `Dialog::Recovery`).
-    pub recovery: Option<effectcraft_engine::autosave::Recovery>,
+    pub recovery: Option<pulso_engine::autosave::Recovery>,
     /// Docked groups laid out last frame: (active panel, group rect) — `~` maximizes the one
     /// under the pointer.
     pub(crate) dock_rects: Vec<(PanelKind, egui::Rect)>,
@@ -411,10 +411,10 @@ pub struct EffectcraftApp {
     /// Home ▸ Templates: thumbnail textures by template id (None = not renderable).
     pub(crate) template_thumbs: std::collections::HashMap<String, Option<egui::TextureHandle>>,
     /// Home ▸ Templates: the gallery, and the user template files it was listed from.
-    pub(crate) template_list: Option<(Vec<String>, Vec<effectcraft_engine::templates::TemplateInfo>)>,
+    pub(crate) template_list: Option<(Vec<String>, Vec<pulso_engine::templates::TemplateInfo>)>,
 }
 
-/// The saved workspaces in the settings store ([`effectcraft_engine::config::ConfigStore`]).
+/// The saved workspaces in the settings store ([`pulso_engine::config::ConfigStore`]).
 pub const WORKSPACES_FILE: &str = "workspaces.json";
 
 /// Non-blocking file dialogs ([`Hooks::file_dialog_async`]) that are up. While one is, the dock
@@ -479,9 +479,9 @@ pub(crate) struct ForwardedInput {
 
 /// Record the scale the viewer drew at (called by the viewer panel each pass).
 ///
-/// Playback itself advances in [`EffectcraftApp::tick`], so it keeps running while the window is
+/// Playback itself advances in [`PulsoApp::tick`], so it keeps running while the window is
 /// hidden; using the last drawn scale keeps prefetch keys consistent with the visible viewer.
-pub(crate) fn note_viewer_scale(app: &mut EffectcraftApp, scale: f64) {
+pub(crate) fn note_viewer_scale(app: &mut PulsoApp, scale: f64) {
     app.last_viewer_scale = Some(scale);
 }
 

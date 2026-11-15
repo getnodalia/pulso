@@ -3,25 +3,25 @@
 
 use std::path::PathBuf;
 
-use effectcraft_engine::Session;
-use effectcraft_engine::color::Label;
-use effectcraft_engine::project::{Footage, FootageKind, ItemKind};
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::control::{self, ControlRequest, Outcome};
 use egui_kittest::Harness;
+use pulso_engine::Session;
+use pulso_engine::color::Label;
+use pulso_engine::project::{Footage, FootageKind, ItemKind};
+use pulso_ui_egui::PulsoApp;
+use pulso_ui_egui::control::{self, ControlRequest, Outcome};
 use serde_json::{Value, json};
 
 const SOURCE: &[u8] = b"SOURCE FOOTAGE";
 
 struct Rig {
-    h: Harness<'static, EffectcraftApp>,
+    h: Harness<'static, PulsoApp>,
     dir: PathBuf,
 }
 
 impl Rig {
     /// A project saved as `Project.ecproj` in a fresh folder, reading `clip.png` beside it.
     fn new(name: &str) -> Rig {
-        let dir = std::env::temp_dir().join("effectcraft-ui-export-overwrite").join(format!("{}-{name}", std::process::id()));
+        let dir = std::env::temp_dir().join("pulso-ui-export-overwrite").join(format!("{}-{name}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("clip.png"), SOURCE).unwrap();
@@ -37,7 +37,7 @@ impl Rig {
             ..Default::default()
         };
         std::sync::Arc::make_mut(&mut s.project).add_item("clip.png", Label::Aqua, None, ItemKind::Footage(clip));
-        let mut app = Some(EffectcraftApp::new(s));
+        let mut app = Some(PulsoApp::new(s));
         let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| app.take().expect("app"));
         h.run_steps(2);
         Rig { h, dir }

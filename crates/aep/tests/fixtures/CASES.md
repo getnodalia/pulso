@@ -1,8 +1,8 @@
 # The test cases and the files that hold them
 
-The tests of `effectcraft-aep` (and the After Effects import tests of `effectcraft-engine`) address
+The tests of `pulso-aep` (and the After Effects import tests of `pulso-engine`) address
 a case by the name of the single-case file it was first written against. The cases live in the
-combined projects of the corpus (in the folder named by `EFFECTCRAFT_AEP_FIXTURES`): each case is the composition named like the case without its
+combined projects of the corpus (in the folder named by `PULSO_AEP_FIXTURES`): each case is the composition named like the case without its
 extension, built like the single-case file's composition `C` (1920x1080, 25 fps, 5 s, black, one
 red 1920x1080 solid `L`) plus the case's change (and the compositions that change uses). A test
 gets the case as a project of its own, cut from the combined file (`tests/it/common/mod.rs`).

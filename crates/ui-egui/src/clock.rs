@@ -52,7 +52,7 @@ impl Default for AppClock {
     }
 }
 
-impl EffectcraftApp {
+impl PulsoApp {
     /// The app clock's value at the last tick.
     pub fn now(&self) -> f64 {
         self.now

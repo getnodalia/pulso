@@ -1,7 +1,7 @@
 //! OpenEXR sequence frames: one single-part scan-line file per frame, RGBA, with the Output
 //! Module's compression and sample type (#2911).
 //!
-//! Scan lines, not tiles: `image`'s encoder wrote 64×64 RLE tiles, which FilmCraft and other
+//! Scan lines, not tiles: `image`'s encoder wrote 64×64 RLE tiles, which Toma and other
 //! scan-line readers refuse (#2805). Each compression keeps its own block height (1 line for
 //! None, RLE and ZIPS; 16 for ZIP and PXR24; 32 for PIZ, B44, B44A and DWAA; 256 for DWAB) and the
 //! `exr` crate's default levels for ZIP and DWA. Half-float samples are rounded from the 32-bit
@@ -12,9 +12,9 @@
 
 use std::io::{Seek, Write};
 
-use effectcraft_project::render_queue::{ExrBitDepth, ExrCompression};
 use exr::meta::attribute::Chromaticities;
 use exr::prelude::{Blocks, Compression, Encoding, Image, Layer, LayerAttributes, LineOrder, SpecificChannels, Vec2, WritableImage, f16};
+use pulso_project::render_queue::{ExrBitDepth, ExrCompression};
 
 /// The largest finite half float.
 const HALF_MAX: f32 = 65_504.0;

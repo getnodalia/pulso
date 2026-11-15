@@ -51,14 +51,14 @@ Dependencies and assets use SPDX identifiers. An expression is allowed when ever
 `LicenseRef-Storyteller-Trademark` is not in this list. It covers Storyteller brand marks only, where a repository already says so.
 <!-- craft-house-rules:end -->
 
-# EffectCraft — rules for agents and contributors
+# Pulso — rules for agents and contributors
 
 These rules apply to every human and AI contributor. `CLAUDE.md` holds the working instructions; this
 file holds the rules that must never be broken. When the two disagree, this file wins.
 
 ## Never crash
 
-People trust EffectCraft with hours of work. A malformed project, PSD, SVG, Lottie or media file, a bad
+People trust Pulso with hours of work. A malformed project, PSD, SVG, Lottie or media file, a bad
 expression or script, a broken plug-in, a bad control-channel or MCP argument, a corrupt preferences file
 or a full disk must produce an error the user (or agent) can act on, never a crash and never lost work.
 **This rule outranks feature work:** don't ship a feature by adding a panic path, and fix a crash before
@@ -121,7 +121,7 @@ reproduce an image (for example, point lists traced from someone else's icon).
    ```
    Also add one line for the asset to [`ATTRIBUTION.md`](ATTRIBUTION.md). `cargo xtask assets` (part of
    `cargo xtask ci`) fails if any asset lacks a sidecar or index entry.
-4. **Screenshots** in the repo may show only EffectCraft (or other open projects), with media we generated
+4. **Screenshots** in the repo may show only Pulso (or other open projects), with media we generated
    or media that is itself openly licensed. Never commit screenshots of Adobe products.
 5. **Local reference material stays local.** After Effects reference screenshots and notes live only in
    `plan/aftereffects/` (gitignored). They must never be committed, bundled, embedded, traced or shipped.
@@ -129,10 +129,10 @@ reproduce an image (for example, point lists traced from someone else's icon).
    `crates/engine/src/demo.rs`, generators in `crates/effects`) are original work under the project licence
    and are listed in `ATTRIBUTION.md`.
 7. **When in doubt, leave it out** and draw or generate it yourself.
-8. **The one exception: first-party ArtCraft brand marks.** The ArtCraft name and logos in `docs/brand/`
+8. **The one exception: first-party Nodalia brand marks.** The Nodalia name and logos in `docs/brand/`
    are trademarks of the ArtCraft Team, not open source, usable only unmodified and only in the context of
-   EffectCraft under `docs/brand/LICENSE-brand.txt` (forks and modified versions must remove them). They still
-   need a sidecar and an `ATTRIBUTION.md` row (licence `LicenseRef-ArtCraft-Trademark`). No other
+   Pulso under `docs/brand/LICENSE-brand.txt` (forks and modified versions must remove them). They still
+   need a sidecar and an `ATTRIBUTION.md` row (licence `LicenseRef-Nodalia-Trademark`). No other
    non-open asset is allowed, and this exception never covers third-party marks (Adobe, Discord, GitHub
    and other logos stay out; draw a generic icon instead).
 
@@ -156,15 +156,15 @@ reproduce an image (for example, point lists traced from someone else's icon).
 ## 3. Engineering rules
 
 - **Layering** (`cargo xtask layers`): nothing below L5 depends on egui/eframe/winit/rfd/cpal; L0–L4 build for wasm32.
-- **Exact time:** `effectcraft_time::Tick` (254 016 000 000/s). Keyframe times are layer time.
+- **Exact time:** `pulso_time::Tick` (254 016 000 000/s). Keyframe times are layer time.
 - **Property tree:** everything animatable is a `Property` in the layer's `PropGroup` tree, addressed by paths (`transform/position`, `effects/#1/blurriness`, `@uid`).
 - **Everything is a command** (`crates/engine`): id, label, menu path, shortcut, params, enabled(), run(). UI, CLI, control channel and MCP dispatch by id.
 - **Everything is agent-drivable:** every interactive widget registers an automation id; UI state is serde.
-- **Community links** (Help menu, About, header Discord button): https://discord.gg/artcraft, https://getartcraft.com, https://getartcraft.com/apps/effectcraft, https://github.com/storytold/effectcraft.
+- **Community links** (Help menu, About, header Discord button): https://github.com/getnodalia/pulso/issues, https://getnodalia.com, https://getnodalia.com/pulso, https://github.com/getnodalia/pulso.
 - **Quality gates** before every commit: `cargo xtask ci` (fmt, clippy -D warnings, tests, layers, assets, wasm).
 - New workspace crates include `[lints] workspace = true` in `Cargo.toml`. Production crate roots declare the crate-level lint attributes before modules; crate-level `//!` documentation may precede them.
 - **Commits:** one task id per commit (`M6.3: trim paths`). Only green states.
-- `cargo run -p effectcraft -- --control 9877` opens the desktop app with the JSON-lines control server (`docs/control-protocol.md`). For UI work, look at the result, including the headless `snapshot` example.
+- `cargo run -p pulso -- --control 9877` opens the desktop app with the JSON-lines control server (`docs/control-protocol.md`). For UI work, look at the result, including the headless `snapshot` example.
 - `plan/` is an optional gitignored notebook (`plan/aftereffects/` may hold reference notes and captures). Do not ask for it, do not stop when it is absent, and never commit those captures.
 - Read [`docs/gaps.md`](docs/gaps.md) and [`docs/target-app-parity.md`](docs/target-app-parity.md) before choosing work. Fidelity, reliability and stability (G1–G3) come before new features.
 - Some workflow files still run their own jobs. Don't add to them. Moving a job into craft-common-actions is its own task.
@@ -173,7 +173,7 @@ reproduce an image (for example, point lists traced from someone else's icon).
 Shared real-file test corpora (Photoshop-authored PSDs, etc.) live in
 [`storytold/photocraft-corpus`](https://github.com/storytold/photocraft-corpus).
 Never commit large binary fixtures to this repo; fetch them pinned by commit and sha256-verified,
-as PhotoCraft does with `cargo xtask corpus`.
+as Lienzo does with `cargo xtask corpus`.
 
 
 ## See also
@@ -184,7 +184,7 @@ as PhotoCraft does with `cargo xtask corpus`.
 - [CONTRIBUTING.md](CONTRIBUTING.md): setup, gates, commits, how to add things
 - [docs/architecture.md](docs/architecture.md): layers, data model, commands, pipeline
 - [docs/testing.md](docs/testing.md): oracle tests, criteria, benchmarks
-- [docs/agents.md](docs/agents.md): driving EffectCraft over MCP / the control channel, and the agent work loop
+- [docs/agents.md](docs/agents.md): driving Pulso over MCP / the control channel, and the agent work loop
 - [docs/control-protocol.md](docs/control-protocol.md): control-channel method reference
 - [docs/contributors.md](docs/contributors.md): the About window's contributor and model credits
 - [ATTRIBUTION.md](ATTRIBUTION.md): asset index

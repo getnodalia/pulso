@@ -4,7 +4,7 @@
 
 use std::collections::BTreeMap;
 
-use effectcraft_aep::{AepFile, Body, parse, write};
+use pulso_aep::{AepFile, Body, parse, write};
 
 /// The binary files of the fixture directory (the `.aepx` has its own tests).
 fn files() -> Vec<&'static str> {

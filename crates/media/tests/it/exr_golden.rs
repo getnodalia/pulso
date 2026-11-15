@@ -12,11 +12,11 @@
 
 use std::sync::Arc;
 
-use effectcraft_media::{MediaPool, probe_bytes};
-use effectcraft_project::{AlphaMode, Footage, ItemId};
-use effectcraft_render::{FloatCurve, FootageSource};
-use effectcraft_time::Tick;
 use exr::prelude::*;
+use pulso_media::{MediaPool, probe_bytes};
+use pulso_project::{AlphaMode, Footage, ItemId};
+use pulso_render::{FloatCurve, FootageSource};
+use pulso_time::Tick;
 
 const W: usize = 37;
 const H: usize = 23;

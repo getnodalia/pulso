@@ -25,7 +25,7 @@ use std::sync::mpsc::{Receiver, RecvTimeoutError, SyncSender};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Duration;
 
-use effectcraft_project::{Footage, FootageKind, ItemId, ItemKind, SourceLayer};
+use pulso_project::{Footage, FootageKind, ItemId, ItemKind, SourceLayer};
 use serde_json::{Value, json};
 
 use crate::{Services, Session};
@@ -64,7 +64,7 @@ fn automatic_paths(s: &Session) -> BTreeSet<String> {
 
 /// Embedded data is excluded from availability warnings, but its external file can still be
 /// reloaded. Compare these paths without cloning sequences during unrelated project edits.
-fn data_paths(project: &effectcraft_project::Project) -> impl Iterator<Item = (ItemId, &str, &[String])> {
+fn data_paths(project: &pulso_project::Project) -> impl Iterator<Item = (ItemId, &str, &[String])> {
     project.items.values().filter_map(|item| match &item.kind {
         ItemKind::Footage(f) if f.kind == FootageKind::Data => Some((item.id, f.path.as_str(), f.sequence.as_slice())),
         _ => None,
@@ -76,7 +76,7 @@ fn data_paths(project: &effectcraft_project::Project) -> impl Iterator<Item = (I
 pub struct Watched {
     reload: BTreeSet<String>,
     sources: Arc<Vec<Source>>,
-    project: Option<Arc<effectcraft_project::Project>>,
+    project: Option<Arc<pulso_project::Project>>,
     reload_mode: String,
     stored_paths: crate::doc_path::StoredPaths,
 }
@@ -170,7 +170,7 @@ impl Scan {
 /// Size and position in the stack of Photoshop layer `l` in the file at `path` now: the layer
 /// at its recorded index when the name still matches, else the first layer with its name.
 fn psd_layer(s: &Session, path: &str, l: &SourceLayer) -> Option<(u32, Option<(u32, u32)>)> {
-    let psd = effectcraft_psd::Psd::parse(s.services.read_file(path).ok()?).ok()?;
+    let psd = pulso_psd::Psd::parse(s.services.read_file(path).ok()?).ok()?;
     let found = psd.layers.get(l.index as usize).filter(|x| x.name == l.name).or_else(|| psd.layers.iter().find(|x| x.name == l.name))?;
     let size = (!found.rect.is_empty()).then(|| (found.rect.width(), found.rect.height()));
     Some((u32::try_from(found.index).ok()?, size))

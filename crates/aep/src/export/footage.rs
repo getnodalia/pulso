@@ -16,7 +16,7 @@
 //! After Effects reads the format options of the other kinds from the file (their `opti` beyond
 //! the header can be zero: read-backs v-fN-zoptiA).
 
-use effectcraft_project::{Footage, FootageKind};
+use pulso_project::{Footage, FootageKind};
 
 use crate::export::report::{Collector, LossCategory};
 

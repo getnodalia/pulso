@@ -13,10 +13,10 @@
 
 use std::f64::consts::PI;
 
-use effectcraft_color::{BlendMode, blend_pixel, luminance};
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
-use effectcraft_raster::{Image, Px};
+use pulso_color::{BlendMode, blend_pixel, luminance};
+use pulso_keyframe::Value;
+use pulso_project::ParamUi;
+use pulso_raster::{Image, Px};
 use rayon::prelude::*;
 
 use crate::generate::value_noise;

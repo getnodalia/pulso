@@ -1,7 +1,7 @@
-use super::{EffectcraftApp, FrameKey, FrameWindow, ItemId, PlaybackPass, frames};
+use super::{FrameKey, FrameWindow, ItemId, PlaybackPass, PulsoApp, frames};
 
 /// Seconds without a project change before paused prefetch resumes (see
-/// [`EffectcraftApp::editing`]).
+/// [`PulsoApp::editing`]).
 const EDIT_QUIET: f64 = 0.3;
 
 /// Longest a preview with sound holds its first frame, once that frame is cached, waiting for the
@@ -35,7 +35,7 @@ fn between_picture_and_sound(cur: i64, f: i64, target: i64, looping: bool) -> bo
     if target >= cur || !looping { cur < f && f < target } else { f > cur || f < target }
 }
 
-impl EffectcraftApp {
+impl PulsoApp {
     /// RAM preview: advance at the preview's frame rate when frames are cached; otherwise hold
     /// and keep rendering ahead (the green cache bar fills, then playback runs in real time).
     pub(super) fn advance_playback(&mut self, ctx: &egui::Context, scale: f64, now: f64, input_active: bool, cid: ItemId) {
@@ -347,7 +347,7 @@ impl EffectcraftApp {
 
     /// The frame under the audible sample while the sound drives the preview, kept in the
     /// preview's range and on its frame step; `None` without sound.
-    fn sound_frame(&self, fr: effectcraft_engine::time::FrameRate, wa: i64, wb: i64, step: i64) -> Option<i64> {
+    fn sound_frame(&self, fr: pulso_engine::time::FrameRate, wa: i64, wb: i64, step: i64) -> Option<i64> {
         let a = self.audio.as_ref()?;
         let step = step.max(1);
         Some(wa + (fr.frame_at(a.clock_time()).clamp(wa, wb) - wa).div_euclid(step) * step)
@@ -447,7 +447,7 @@ impl EffectcraftApp {
     fn cache_when_idle(
         &mut self,
         ctx: &egui::Context,
-        comp: &effectcraft_engine::project::Comp,
+        comp: &pulso_engine::project::Comp,
         series: &FrameKey,
         now: f64,
         input_active: bool,
@@ -505,18 +505,18 @@ impl EffectcraftApp {
     /// at least one).
     /// The frames of `plan` from `cur` to its end, or as many as fit in the RAM preview, are
     /// cached: sound can play from `cur` in real time.
-    fn cached_ahead(&self, plan: &effectcraft_engine::preview::PreviewPlan, series: &FrameKey, cur: i64, fit: i64) -> bool {
+    fn cached_ahead(&self, plan: &pulso_engine::preview::PreviewPlan, series: &FrameKey, cur: i64, fit: i64) -> bool {
         let cached = self.frames.cached_frames(series);
         (0..fit).map_while(|k| plan.frame_after(cur, k)).take_while(|f| *f >= cur).all(|f| cached.binary_search(&f).is_ok())
     }
 
-    fn frames_that_fit(&self, comp: &effectcraft_engine::project::Comp, scale: f64) -> i64 {
+    fn frames_that_fit(&self, comp: &pulso_engine::project::Comp, scale: f64) -> i64 {
         ((self.frames.budget() as f64 * 0.9 / self.frame_bytes(comp, scale)) as i64).max(1)
     }
 
     /// Bytes of one comp-sized viewer frame at `scale` (Extended Viewer frames are larger; 32 bpc
     /// frames are half floats, twice the bytes of 8-bit ones).
-    fn frame_bytes(&self, comp: &effectcraft_engine::project::Comp, scale: f64) -> f64 {
+    fn frame_bytes(&self, comp: &pulso_engine::project::Comp, scale: f64) -> f64 {
         let side = |n: u32| (n as f64 * scale).ceil().max(1.0);
         side(comp.width) * side(comp.height) * frames::frame_pixel_bytes(&self.session.project.settings) as f64
     }

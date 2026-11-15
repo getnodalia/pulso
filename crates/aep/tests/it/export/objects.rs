@@ -1,16 +1,16 @@
 //! Track mattes, markers, cameras, lights and shape layers: written from projects built in code
-//! and read back with `effectcraft-aep`.
+//! and read back with `pulso-aep`.
 
 use crate::export::helpers::*;
-use effectcraft_aep::export::LossCategory;
-use effectcraft_aep::parse;
-use effectcraft_project::{LayerSource, MatteKind, Project, TrackMatte};
-use effectcraft_time::FrameRate;
+use pulso_aep::export::LossCategory;
+use pulso_aep::parse;
+use pulso_project::{LayerSource, MatteKind, Project, TrackMatte};
+use pulso_time::FrameRate;
 
 /// `ldta` of every layer of the first composition, top first.
 fn ldtas(bytes: &[u8]) -> Vec<Vec<u8>> {
     let file = parse(bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let comp = view.all_items().into_iter().find_map(|i| i.comp()).expect("comp");
     comp.layers().map(|l| l.chunk().child(b"ldta").and_then(|c| c.bytes()).expect("ldta").to_vec()).collect()
 }
@@ -19,7 +19,7 @@ fn u32_at(b: &[u8], at: usize) -> u32 {
     u32::from_be_bytes(b[at..at + 4].try_into().expect("4"))
 }
 
-fn two_solids() -> (Project, effectcraft_project::ItemId) {
+fn two_solids() -> (Project, pulso_project::ItemId) {
     let mut p = Project::default();
     let c = add_comp(&mut p, "C", 640, 360, FrameRate::new(25, 1), 2.0, None);
     let s = add_solid(&mut p, "S", 640, 360, [1.0, 0.0, 0.0], None);
@@ -51,14 +51,14 @@ fn track_mattes_are_written_with_mode_and_layer() {
     let l = ldtas(&export_all(&p).bytes);
     assert_eq!((l[0][107], u32_at(&l[0], 160)), (1, u32_at(&l[1], 0)));
     let (mut p, c) = two_solids();
-    with_layer(&mut p, c, 1, |l| l.track_matte = Some(TrackMatte { layer: effectcraft_project::LayerId(987_654), kind: MatteKind::Luma }));
+    with_layer(&mut p, c, 1, |l| l.track_matte = Some(TrackMatte { layer: pulso_project::LayerId(987_654), kind: MatteKind::Luma }));
     let r = export_all(&p);
     assert_eq!(r.report.count(LossCategory::TrackMattes), 1);
     assert_eq!(ldtas(&r.bytes)[1][107], 0);
 }
 
-fn marker(t: f64, comment: &str) -> effectcraft_project::Marker {
-    effectcraft_project::Marker { time: secs(t), comment: comment.into(), ..Default::default() }
+fn marker(t: f64, comment: &str) -> pulso_project::Marker {
+    pulso_project::Marker { time: secs(t), comment: comment.into(), ..Default::default() }
 }
 
 #[test]
@@ -66,26 +66,26 @@ fn markers_are_written_like_after_effects_stores_them() {
     let (mut p, c) = two_solids();
     with_comp(&mut p, c, |cc| {
         cc.markers = vec![
-            effectcraft_project::Marker { label: effectcraft_color::Label::Yellow, ..marker(1.0, "M1") },
-            effectcraft_project::Marker { duration: secs(0.5), ..marker(2.5, "M2") },
+            pulso_project::Marker { label: pulso_color::Label::Yellow, ..marker(1.0, "M1") },
+            pulso_project::Marker { duration: secs(0.5), ..marker(2.5, "M2") },
         ];
     });
     with_layer(&mut p, c, 0, |l| {
         l.markers = vec![
-            effectcraft_project::Marker {
+            pulso_project::Marker {
                 duration: secs(1.0),
                 chapter: "Chap".into(),
                 url: "http://a.example/u".into(),
                 frame_target: "_blank".into(),
-                cue_point: Some(effectcraft_project::CuePoint {
+                cue_point: Some(pulso_project::CuePoint {
                     name: "CueX".into(),
                     navigation: false,
                     params: vec![("speaker".into(), "A".into()), ("n".into(), "2".into())],
                 }),
                 ..marker(1.0, "LM")
             },
-            effectcraft_project::Marker {
-                cue_point: Some(effectcraft_project::CuePoint { name: "CueN".into(), navigation: true, params: Vec::new() }),
+            pulso_project::Marker {
+                cue_point: Some(pulso_project::CuePoint { name: "CueN".into(), navigation: true, params: Vec::new() }),
                 ..marker(0.52, "Nav")
             },
         ];
@@ -94,15 +94,15 @@ fn markers_are_written_like_after_effects_stores_them() {
     assert!(r.report.is_lossless(), "{:?}", r.report.losses);
     assert_eq!(r.report.exported.markers, 4);
     let file = parse(&r.bytes).expect("parse");
-    assert_eq!(effectcraft_aep::write(&file).expect("write"), r.bytes);
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    assert_eq!(pulso_aep::write(&file).expect("write"), r.bytes);
+    let view = pulso_aep::Project::new(&file).expect("project");
     let comp = view.all_items().into_iter().find_map(|i| i.comp()).expect("comp");
     let cm = comp.markers();
     assert_eq!(
         cm.iter().map(|m| (m.time_units, m.comment.as_str(), m.duration_seconds, m.label)).collect::<Vec<_>>(),
         vec![
-            (25_600, "M1", Some(0.0), Some(effectcraft_color::Label::ALL.iter().position(|l| *l == effectcraft_color::Label::Yellow).expect("label") as u8)),
-            // EffectCraft's default marker label is Red, index 1 (After Effects' own default is 0, None).
+            (25_600, "M1", Some(0.0), Some(pulso_color::Label::ALL.iter().position(|l| *l == pulso_color::Label::Yellow).expect("label") as u8)),
+            // Pulso's default marker label is Red, index 1 (After Effects' own default is 0, None).
             (64_000, "M2", Some(0.5), Some(1)),
         ]
     );
@@ -112,17 +112,17 @@ fn markers_are_written_like_after_effects_stores_them() {
     // In time order: Nav at 0.52 s (13 312 units, 510), LM at 1 s.
     assert_eq!(
         (lm[0].time_units, lm[0].comment.as_str(), lm[0].cue_type, lm[0].cue_point_name.as_str()),
-        (13_312, "Nav", Some(effectcraft_aep::CueType::Navigation), "CueN")
+        (13_312, "Nav", Some(pulso_aep::CueType::Navigation), "CueN")
     );
     let m = &lm[1];
     assert_eq!(
         (m.time_units, m.comment.as_str(), m.chapter.as_str(), m.url.as_str(), m.frame_target.as_str(), m.cue_point_name.as_str()),
         (25_600, "LM", "Chap", "http://a.example/u", "_blank", "CueX")
     );
-    assert_eq!((m.duration_seconds, m.cue_type), (Some(1.0), Some(effectcraft_aep::CueType::Event)));
+    assert_eq!((m.duration_seconds, m.cue_type), (Some(1.0), Some(pulso_aep::CueType::Event)));
     assert_eq!(m.cue_params, vec![("speaker".to_string(), "A".to_string()), ("n".to_string(), "2".to_string())]);
     // A protected marker is reported (the switch is not decoded).
-    with_layer(&mut p, c, 1, |l| l.markers = vec![effectcraft_project::Marker { protected: true, ..marker(0.2, "P") }]);
+    with_layer(&mut p, c, 1, |l| l.markers = vec![pulso_project::Marker { protected: true, ..marker(0.2, "P") }]);
     assert_eq!(export_all(&p).report.count(LossCategory::Markers), 1);
 }
 
@@ -141,20 +141,20 @@ fn marker_fixtures_are_written_as_after_effects_wrote_them() {
     ] {
         let bytes = fixture!(name);
         let file = parse(&bytes).expect("parse");
-        let view = effectcraft_aep::Project::new(&file).expect("project");
+        let view = pulso_aep::Project::new(&file).expect("project");
         let comp = view.all_items().into_iter().find_map(|i| i.comp()).expect("comp");
-        let to_ec = |m: &effectcraft_aep::Marker| effectcraft_project::Marker {
+        let to_ec = |m: &pulso_aep::Marker| pulso_project::Marker {
             time: secs(m.seconds.unwrap_or(0.0)),
             duration: secs(m.duration_seconds.unwrap_or(0.0)),
             comment: m.comment.clone(),
-            label: effectcraft_color::Label::ALL.get(usize::from(m.label.unwrap_or(0))).copied().unwrap_or_default(),
+            label: pulso_color::Label::ALL.get(usize::from(m.label.unwrap_or(0))).copied().unwrap_or_default(),
             chapter: m.chapter.clone(),
             url: m.url.clone(),
             frame_target: m.frame_target.clone(),
-            cue_point: (!m.cue_point_name.is_empty() || m.cue_type == Some(effectcraft_aep::CueType::Navigation) || !m.cue_params.is_empty()).then(|| {
-                effectcraft_project::CuePoint {
+            cue_point: (!m.cue_point_name.is_empty() || m.cue_type == Some(pulso_aep::CueType::Navigation) || !m.cue_params.is_empty()).then(|| {
+                pulso_project::CuePoint {
                     name: m.cue_point_name.clone(),
-                    navigation: m.cue_type == Some(effectcraft_aep::CueType::Navigation),
+                    navigation: m.cue_type == Some(pulso_aep::CueType::Navigation),
                     params: m.cue_params.clone(),
                 }
             }),
@@ -164,25 +164,21 @@ fn marker_fixtures_are_written_as_after_effects_wrote_them() {
         let layer_markers: Vec<_> = comp.layers().next().map(|l| l.markers().iter().map(to_ec).collect()).unwrap_or_default();
         let mut p = Project::default();
         let none = |_: &str| false;
-        effectcraft_aep::import::import(
-            &mut p,
-            &bytes,
-            &effectcraft_aep::import::ImportOptions { allow_losses: true, ..effectcraft_aep::import::ImportOptions::new(&none) },
-        )
-        .expect(name);
+        pulso_aep::import::import(&mut p, &bytes, &pulso_aep::import::ImportOptions { allow_losses: true, ..pulso_aep::import::ImportOptions::new(&none) })
+            .expect(name);
         let cid = p.comps().next().map(|(id, _)| *id).expect("comp");
         with_comp(&mut p, cid, |c| c.markers = comp_markers);
         with_layer(&mut p, cid, 0, |l| l.markers = layer_markers);
         let r = export_all(&p);
         let out = parse(&r.bytes).expect("parse");
-        let oview = effectcraft_aep::Project::new(&out).expect("project");
+        let oview = pulso_aep::Project::new(&out).expect("project");
         let ocomp = oview.all_items().into_iter().find_map(|i| i.comp()).expect("comp");
         assert_eq!(ocomp.markers(), comp.markers(), "{name}");
         assert_eq!(ocomp.layers().next().map(|l| l.markers()), comp.layers().next().map(|l| l.markers()), "{name}");
     }
 }
 
-fn with_props(p: &mut Project, c: effectcraft_project::ItemId, idx: usize, set: &[(&str, effectcraft_keyframe::Value)]) {
+fn with_props(p: &mut Project, c: pulso_project::ItemId, idx: usize, set: &[(&str, pulso_keyframe::Value)]) {
     with_layer(p, c, idx, |l| {
         for (path, v) in set {
             l.props.prop_mut(path).unwrap_or_else(|| panic!("{path}")).value = v.clone();
@@ -190,10 +186,10 @@ fn with_props(p: &mut Project, c: effectcraft_project::ItemId, idx: usize, set: 
     });
 }
 
-fn first_comp_layers(bytes: &[u8], mut f: impl FnMut(&effectcraft_aep::Layer<'_, '_>)) {
+fn first_comp_layers(bytes: &[u8], mut f: impl FnMut(&pulso_aep::Layer<'_, '_>)) {
     let file = parse(bytes).expect("parse");
-    assert_eq!(effectcraft_aep::write(&file).expect("write"), bytes);
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    assert_eq!(pulso_aep::write(&file).expect("write"), bytes);
+    let view = pulso_aep::Project::new(&file).expect("project");
     let comp = view.all_items().into_iter().find_map(|i| i.comp()).expect("comp");
     for l in comp.layers() {
         f(&l);
@@ -202,7 +198,7 @@ fn first_comp_layers(bytes: &[u8], mut f: impl FnMut(&effectcraft_aep::Layer<'_,
 
 #[test]
 fn cameras_are_written_with_position_point_of_interest_and_options() {
-    use effectcraft_keyframe::Value;
+    use pulso_keyframe::Value;
     let mut p = Project::default();
     let c = add_comp(&mut p, "C", 1920, 1080, FrameRate::new(25, 1), 2.0, None);
     add_layer(&mut p, c, "Cam", LayerSource::Camera, (1920, 1080));
@@ -225,7 +221,7 @@ fn cameras_are_written_with_position_point_of_interest_and_options() {
     assert_eq!(r.report.exported.cameras, 1);
     first_comp_layers(&r.bytes, |l| {
         let h = l.header().expect("header");
-        assert_eq!(h.layer_type, effectcraft_aep::LayerType::Camera);
+        assert_eq!(h.layer_type, pulso_aep::LayerType::Camera);
         assert!(h.is_three_d() && h.is_auto_oriented(), "two-node camera");
         let pos = l.camera_position().expect("position");
         assert_eq!((pos.stored, pos.auto_state), ([100.0, 200.0, -1000.0], false));
@@ -236,14 +232,14 @@ fn cameras_are_written_with_position_point_of_interest_and_options() {
         assert_eq!(l.camera_zoom().map(|t| t.value), Some(1500.0));
     });
     // One-node (auto-orient off): bit 0x40 clear (251).
-    with_layer(&mut p, c, 0, |l| l.auto_orient = effectcraft_project::AutoOrient::Off);
+    with_layer(&mut p, c, 0, |l| l.auto_orient = pulso_project::AutoOrient::Off);
     first_comp_layers(&export_all(&p).bytes, |l| assert!(!l.header().expect("h").is_auto_oriented()));
 }
 
 #[test]
 fn spot_and_point_lights_are_written_with_their_options() {
-    use effectcraft_keyframe::Value;
-    use effectcraft_project::LightKind;
+    use pulso_keyframe::Value;
+    use pulso_project::LightKind;
     let mut p = Project::default();
     let c = add_comp(&mut p, "C", 1920, 1080, FrameRate::new(25, 1), 2.0, None);
     add_layer(&mut p, c, "Spot", LayerSource::Light { kind: LightKind::Spot }, (1920, 1080));
@@ -267,10 +263,10 @@ fn spot_and_point_lights_are_written_with_their_options() {
     let mut seen = Vec::new();
     first_comp_layers(&r.bytes, |l| {
         let h = l.header().expect("header");
-        assert_eq!(h.layer_type, effectcraft_aep::LayerType::Light);
+        assert_eq!(h.layer_type, pulso_aep::LayerType::Light);
         seen.push(h.light_type());
         match h.light_type() {
-            Some(effectcraft_aep::LightType::Spot) => {
+            Some(pulso_aep::LightType::Spot) => {
                 assert_eq!(l.light_intensity().map(|t| t.value), Some(50.0));
                 assert_eq!(l.light_color().map(|t| t.value), Some([1.0, 1.0, 0.0, 0.0]));
                 assert_eq!(l.light_cone_angle().map(|t| t.value), Some(60.0));
@@ -278,7 +274,7 @@ fn spot_and_point_lights_are_written_with_their_options() {
                 assert_eq!(l.camera_position().map(|p| p.stored), Some([100.0, 50.0, -500.0]));
                 assert_eq!(l.camera_point_of_interest(), Some([960.0, 540.0, 0.0]));
             }
-            Some(effectcraft_aep::LightType::Point) => {
+            Some(pulso_aep::LightType::Point) => {
                 assert_eq!(l.light_intensity().map(|t| t.value), Some(100.0));
             }
             other => panic!("{other:?}"),
@@ -296,8 +292,8 @@ fn spot_and_point_lights_are_written_with_their_options() {
 
 #[test]
 fn shape_layers_are_written_with_their_items() {
-    use effectcraft_keyframe::{ShapePath, Value};
-    use effectcraft_project::build;
+    use pulso_keyframe::{ShapePath, Value};
+    use pulso_project::build;
     let mut p = Project::default();
     let c = add_comp(&mut p, "C", 1920, 1080, FrameRate::new(25, 1), 2.0, None);
     add_layer(&mut p, c, "S", LayerSource::Shape, (1920, 1080));
@@ -349,7 +345,7 @@ fn shape_layers_are_written_with_their_items() {
     assert_eq!(r.report.count(LossCategory::ShapeLayers), 0, "{:?}", r.report.losses);
     assert_eq!(r.report.exported.shape_layers, 1);
     first_comp_layers(&r.bytes, |l| {
-        assert_eq!(l.header().expect("h").layer_type, effectcraft_aep::LayerType::Shape);
+        assert_eq!(l.header().expect("h").layer_type, pulso_aep::LayerType::Shape);
         let groups = l.shape_groups();
         assert_eq!(groups.len(), 2, "{groups:?}");
         let names: Vec<_> = groups.iter().map(|g| g.name.clone()).collect();
@@ -371,8 +367,8 @@ fn shape_layers_are_written_with_their_items() {
 
 #[test]
 fn hostile_objects_never_panic() {
-    use effectcraft_keyframe::Value;
-    use effectcraft_project::{LightKind, build};
+    use pulso_keyframe::Value;
+    use pulso_project::{LightKind, build};
     let mut p = Project::default();
     let c = add_comp(&mut p, "C", 640, 360, FrameRate::new(25, 1), 2.0, None);
     add_layer(&mut p, c, "S", LayerSource::Shape, (640, 360));
@@ -385,7 +381,7 @@ fn hostile_objects_never_panic() {
         for i in 0..200 {
             inner = build::shape_group(&mut ids, &format!("g{i}"), vec![inner]);
         }
-        let empty = build::shape_path(&mut ids, effectcraft_keyframe::ShapePath::default());
+        let empty = build::shape_path(&mut ids, pulso_keyframe::ShapePath::default());
         with_layer(&mut p, c, 0, |l| l.props.sub_mut("contents").expect("contents").children = vec![inner.into(), empty.into()]);
     }
     p.next_id = next;
@@ -399,7 +395,7 @@ fn hostile_objects_never_panic() {
     });
     let r = export_all(&p);
     let file = parse(&r.bytes).expect("parse");
-    assert_eq!(effectcraft_aep::write(&file).expect("write"), r.bytes);
+    assert_eq!(pulso_aep::write(&file).expect("write"), r.bytes);
     assert!(r.report.count(LossCategory::ShapeLayers) >= 2, "{:?}", r.report.losses);
     assert!(r.report.count(LossCategory::TrackMattes) == 1);
 }
@@ -408,7 +404,7 @@ fn hostile_objects_never_panic() {
 fn camera_fixtures_come_back_without_a_loss() {
     // The exporter writes every camera option, Blur Level 100 too; importing the export must not
     // report it (it was reported as "not imported" before the importer and exporter lines met).
-    use effectcraft_aep::import::{ImportOptions, import};
+    use pulso_aep::import::{ImportOptions, import};
     let none = |_: &str| false;
     for name in ["251-camera-one-node.aep", "256-camera-two-node-default.aep", "342-camera-dof-800-30.aep", "537-camera-default-on-3d-rotx.aep"] {
         let bytes = fixture!(name);
@@ -426,13 +422,13 @@ fn camera_fixtures_come_back_without_a_loss() {
 
 /// The static value records below the shape contents of every layer, by (layer index, path of
 /// item match names, record match name).
-fn shape_records(bytes: &[u8]) -> std::collections::BTreeMap<(usize, String), effectcraft_aep::Chunk<'static>> {
+fn shape_records(bytes: &[u8]) -> std::collections::BTreeMap<(usize, String), pulso_aep::Chunk<'static>> {
     fn walk(
-        cs: &[effectcraft_aep::Chunk<'_>],
+        cs: &[pulso_aep::Chunk<'_>],
         path: &str,
         li: usize,
         inside: bool,
-        out: &mut std::collections::BTreeMap<(usize, String), effectcraft_aep::Chunk<'static>>,
+        out: &mut std::collections::BTreeMap<(usize, String), pulso_aep::Chunk<'static>>,
     ) {
         let mut seen: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
         for (i, c) in cs.iter().enumerate() {
@@ -449,8 +445,8 @@ fn shape_records(bytes: &[u8]) -> std::collections::BTreeMap<(usize, String), ef
                 // Header bytes 76 and 77 next to an expression vary between saves (see
                 // `keyed_shape_records`).
                 if has_expression
-                    && let effectcraft_aep::Body::List { children, .. } = &mut node.body
-                    && let Some(effectcraft_aep::Body::Data(d)) = children.iter_mut().find(|x| x.is(b"tdb4")).map(|x| &mut x.body)
+                    && let pulso_aep::Body::List { children, .. } = &mut node.body
+                    && let Some(pulso_aep::Body::Data(d)) = children.iter_mut().find(|x| x.is(b"tdb4")).map(|x| &mut x.body)
                     && let Some(b) = d.to_mut().get_mut(76..78)
                 {
                     b.fill(0);
@@ -464,7 +460,7 @@ fn shape_records(bytes: &[u8]) -> std::collections::BTreeMap<(usize, String), ef
     }
     let f = parse(bytes).expect("parse");
     let mut out = std::collections::BTreeMap::new();
-    let view = effectcraft_aep::Project::new(&f).expect("project");
+    let view = pulso_aep::Project::new(&f).expect("project");
     for item in view.all_items() {
         let Some(comp) = item.comp() else { continue };
         for (li, layer) in comp.layers().enumerate() {
@@ -487,13 +483,10 @@ fn every_shape_value_record_is_written_as_after_effects_wrote_it() {
         let bytes = fixture!(name);
         let mut p = Project::default();
         let none = |_: &str| false;
-        let imported = effectcraft_aep::import::import(
-            &mut p,
-            &bytes,
-            &effectcraft_aep::import::ImportOptions { allow_losses: true, ..effectcraft_aep::import::ImportOptions::new(&none) },
-        )
-        .expect("import");
-        if imported.report.count(effectcraft_aep::import::LossCategory::ShapeLayers) > 0 {
+        let imported =
+            pulso_aep::import::import(&mut p, &bytes, &pulso_aep::import::ImportOptions { allow_losses: true, ..pulso_aep::import::ImportOptions::new(&none) })
+                .expect("import");
+        if imported.report.count(pulso_aep::import::LossCategory::ShapeLayers) > 0 {
             continue;
         }
         let r = export_all(&p);
@@ -506,7 +499,7 @@ fn every_shape_value_record_is_written_as_after_effects_wrote_it() {
                 [("ADBE Vector Stroke Miter Limit#0", 4.0), ("ADBE Vector Grad HiLite Angle#0", 0.0), ("ADBE Vector Grad HiLite Length#0", 0.0)]
                     .iter()
                     .any(|(n, v)| k.1.ends_with(n) && first == Some(*v));
-            // A polygon has no inner radius or roundness in EffectCraft (After Effects keeps their
+            // A polygon has no inner radius or roundness in Pulso (After Effects keeps their
             // records, 331; a polygon ignores them).
             let polygon_inner = name.contains("polygon") && k.1.contains("ADBE Vector Star Inner");
             let Some(got) = b.get(k) else {
@@ -526,7 +519,7 @@ fn every_shape_value_record_is_written_as_after_effects_wrote_it() {
 /// The keyed (or expression) records below the shape contents of the first layer: `(path,
 /// tdb4, lhd3, ldat with spatial arc lengths zeroed, expression)`.
 fn keyed_shape_records(bytes: &[u8]) -> Vec<(String, Vec<u8>, Vec<u8>, Vec<u8>, Option<Vec<u8>>)> {
-    fn walk(cs: &[effectcraft_aep::Chunk<'_>], path: &str, inside: bool, out: &mut Vec<(String, Vec<u8>, Vec<u8>, Vec<u8>, Option<Vec<u8>>)>) {
+    fn walk(cs: &[pulso_aep::Chunk<'_>], path: &str, inside: bool, out: &mut Vec<(String, Vec<u8>, Vec<u8>, Vec<u8>, Option<Vec<u8>>)>) {
         for (i, c) in cs.iter().enumerate() {
             let Some(name) = c.bytes().filter(|_| c.is(b"tdmn")).map(|b| String::from_utf8_lossy(b.split(|x| *x == 0).next().unwrap_or(b"")).to_string())
             else {
@@ -588,7 +581,7 @@ fn keyed_shape_records(bytes: &[u8]) -> Vec<(String, Vec<u8>, Vec<u8>, Vec<u8>, 
         }
     }
     let f = parse(bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&f).expect("project");
+    let view = pulso_aep::Project::new(&f).expect("project");
     let mut out = Vec::new();
     for item in view.all_items() {
         let Some(comp) = item.comp() else { continue };
@@ -617,12 +610,8 @@ fn keyed_shape_properties_are_written_as_after_effects_wrote_them() {
         let bytes = fixture!(name);
         let mut p = Project::default();
         let none = |_: &str| false;
-        effectcraft_aep::import::import(
-            &mut p,
-            &bytes,
-            &effectcraft_aep::import::ImportOptions { allow_losses: true, ..effectcraft_aep::import::ImportOptions::new(&none) },
-        )
-        .expect("import");
+        pulso_aep::import::import(&mut p, &bytes, &pulso_aep::import::ImportOptions { allow_losses: true, ..pulso_aep::import::ImportOptions::new(&none) })
+            .expect("import");
         let r = export_all(&p);
         assert_eq!(r.report.count(LossCategory::ShapeLayers), 0, "{name}: {:?}", r.report.losses);
         let (a, b) = (keyed_shape_records(&bytes), keyed_shape_records(&r.bytes));
@@ -635,8 +624,8 @@ fn keyed_shape_properties_are_written_as_after_effects_wrote_them() {
 fn shape_operators_and_keys_built_in_code_come_back() {
     // Polystar, gradient fill / stroke, trim paths with keys, round corners, merge / offset paths
     // and a repeater with a transform: exported, imported again, the same values and keys.
-    use effectcraft_keyframe::{Gradient, Keyframe, Value};
-    use effectcraft_project::build;
+    use pulso_keyframe::{Gradient, Keyframe, Value};
+    use pulso_project::build;
     let mut p = Project::default();
     let c = add_comp(&mut p, "C", 1920, 1080, FrameRate::new(25, 1), 2.0, None);
     add_layer(&mut p, c, "S", LayerSource::Shape, (1920, 1080));
@@ -652,7 +641,7 @@ fn shape_operators_and_keys_built_in_code_come_back() {
         let mut trim = build::shape_trim(&mut ids, 10.0, 90.0, 30.0);
         trim.get_mut("end").unwrap().keys = vec![
             key(0.0, Value::Scalar(0.0)),
-            Keyframe { out_interp: effectcraft_keyframe::Interp::Hold, ..key(1.0, Value::Scalar(60.0)) },
+            Keyframe { out_interp: pulso_keyframe::Interp::Hold, ..key(1.0, Value::Scalar(60.0)) },
             key(1.5, Value::Scalar(100.0)),
         ];
         let mut round = build::shape_simple_op(&mut ids, "round").unwrap();
@@ -677,30 +666,27 @@ fn shape_operators_and_keys_built_in_code_come_back() {
     let r = export_all(&p);
     assert_eq!(r.report.count(LossCategory::ShapeLayers), 0, "{:?}", r.report.losses);
     let file = parse(&r.bytes).expect("parse");
-    assert_eq!(effectcraft_aep::write(&file).expect("write"), r.bytes);
+    assert_eq!(pulso_aep::write(&file).expect("write"), r.bytes);
     let mut q = Project::default();
     let none = |_: &str| false;
-    let back = effectcraft_aep::import::import(
-        &mut q,
-        &r.bytes,
-        &effectcraft_aep::import::ImportOptions { allow_losses: true, ..effectcraft_aep::import::ImportOptions::new(&none) },
-    )
-    .expect("import");
+    let back =
+        pulso_aep::import::import(&mut q, &r.bytes, &pulso_aep::import::ImportOptions { allow_losses: true, ..pulso_aep::import::ImportOptions::new(&none) })
+            .expect("import");
     assert!(back.report.losses.is_empty(), "{:?}", back.report.losses);
     // Every property of the contents: value and key count (ids differ).
     let flat = |p: &Project| -> Vec<(String, String, usize)> {
         let mut out = Vec::new();
         for item in p.items.values() {
-            let effectcraft_project::ItemKind::Comp(c) = &item.kind else { continue };
+            let pulso_project::ItemKind::Comp(c) = &item.kind else { continue };
             for l in &c.layers {
                 let Some(contents) = l.props.sub("contents") else { continue };
                 let mut stack = vec![(contents, String::new())];
                 while let Some((g, pre)) = stack.pop() {
                     for n in &g.children {
                         match n {
-                            effectcraft_project::Node::Group(s) => stack.push((s, format!("{pre}{}/", s.match_id))),
+                            pulso_project::Node::Group(s) => stack.push((s, format!("{pre}{}/", s.match_id))),
                             // A keyed property's static value is its first key's in the file.
-                            effectcraft_project::Node::Prop(pr) => out.push((
+                            pulso_project::Node::Prop(pr) => out.push((
                                 format!("{pre}{}", pr.match_id),
                                 if pr.keys.is_empty() {
                                     format!("{:?}", pr.value)
@@ -722,8 +708,8 @@ fn shape_operators_and_keys_built_in_code_come_back() {
 
 #[test]
 fn hostile_shape_keys_never_panic() {
-    use effectcraft_keyframe::Value;
-    use effectcraft_project::build;
+    use pulso_keyframe::Value;
+    use pulso_project::build;
     let mut p = Project::default();
     let c = add_comp(&mut p, "C", 640, 360, FrameRate::new(25, 1), 2.0, None);
     add_layer(&mut p, c, "S", LayerSource::Shape, (640, 360));
@@ -742,7 +728,7 @@ fn hostile_shape_keys_never_panic() {
     p.next_id = next;
     let r = export_all(&p);
     let file = parse(&r.bytes).expect("parse");
-    assert_eq!(effectcraft_aep::write(&file).expect("write"), r.bytes);
+    assert_eq!(pulso_aep::write(&file).expect("write"), r.bytes);
     assert!(r.report.count(LossCategory::InvalidValues) >= 1, "{:?}", r.report.losses);
 }
 
@@ -751,8 +737,8 @@ fn hostile_shape_keys_never_panic() {
 /// inside the range stays lossless.
 #[test]
 fn a_shape_colour_outside_the_range_is_clamped_and_reported() {
-    use effectcraft_keyframe::Value;
-    use effectcraft_project::build;
+    use pulso_keyframe::Value;
+    use pulso_project::build;
     let shape = |fill_color: [f64; 4], key_color: Option<[f64; 4]>| {
         let mut p = Project::default();
         let c = add_comp(&mut p, "C", 640, 360, FrameRate::new(25, 1), 2.0, None);
@@ -771,7 +757,7 @@ fn a_shape_colour_outside_the_range_is_clamped_and_reported() {
         p.next_id = next;
         p
     };
-    let strict = |p: &Project| effectcraft_aep::export::export(p, &effectcraft_aep::export::ExportOptions { allow_losses: false }).is_ok();
+    let strict = |p: &Project| pulso_aep::export::export(p, &pulso_aep::export::ExportOptions { allow_losses: false }).is_ok();
     let inside = shape([0.25, 0.5, 1.0, 1.0], None);
     assert_eq!(export_all(&inside).report.count(LossCategory::ShapeLayers), 0);
     assert!(strict(&inside));
@@ -786,18 +772,18 @@ fn a_shape_colour_outside_the_range_is_clamped_and_reported() {
         // Every stored colour channel is within 0 to 255.
         let mut q = Project::default();
         let none = |_: &str| false;
-        let opts = effectcraft_aep::import::ImportOptions { allow_losses: true, ..effectcraft_aep::import::ImportOptions::new(&none) };
-        effectcraft_aep::import::import(&mut q, &r.bytes, &opts).expect("import");
+        let opts = pulso_aep::import::ImportOptions { allow_losses: true, ..pulso_aep::import::ImportOptions::new(&none) };
+        pulso_aep::import::import(&mut q, &r.bytes, &opts).expect("import");
         let mut colours = Vec::new();
         for item in q.items.values() {
-            let effectcraft_project::ItemKind::Comp(c) = &item.kind else { continue };
+            let pulso_project::ItemKind::Comp(c) = &item.kind else { continue };
             for l in &c.layers {
-                let mut stack: Vec<&effectcraft_project::PropGroup> = l.props.sub("contents").into_iter().collect();
+                let mut stack: Vec<&pulso_project::PropGroup> = l.props.sub("contents").into_iter().collect();
                 while let Some(g) = stack.pop() {
                     for n in &g.children {
                         match n {
-                            effectcraft_project::Node::Group(s) => stack.push(s),
-                            effectcraft_project::Node::Prop(pr) => {
+                            pulso_project::Node::Group(s) => stack.push(s),
+                            pulso_project::Node::Prop(pr) => {
                                 for v in std::iter::once(&pr.value).chain(pr.keys.iter().map(|k| &k.value)) {
                                     if let Value::Color(c) = v {
                                         colours.push(*c);
@@ -818,19 +804,18 @@ fn a_shape_colour_outside_the_range_is_clamped_and_reported() {
 /// sorts before it (review finding: an unlisted record used to sort after the end marker).
 #[test]
 fn a_camera_transform_group_ends_with_its_group_end() {
-    use effectcraft_keyframe::Value;
+    use pulso_keyframe::Value;
     let mut p = Project::default();
     let c = add_comp(&mut p, "C", 1920, 1080, FrameRate::new(25, 1), 2.0, None);
     add_layer(&mut p, c, "Cam", LayerSource::Camera, (1920, 1080));
     with_props(&mut p, c, 0, &[("transform/position", Value::Vec3([100.0, 200.0, -1000.0]))]);
     let bytes = export_all(&p).bytes;
     let file = parse(&bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let comp = view.all_items().into_iter().find_map(|i| i.comp()).expect("comp");
     let layer = comp.layers().next().expect("camera");
     let root = layer.chunk().child_list(b"tdgp").expect("tree").children();
-    let name =
-        |c: &effectcraft_aep::Chunk<'_>| String::from_utf8_lossy(c.bytes().unwrap_or_default().split(|b| *b == 0).next().unwrap_or_default()).into_owned();
+    let name = |c: &pulso_aep::Chunk<'_>| String::from_utf8_lossy(c.bytes().unwrap_or_default().split(|b| *b == 0).next().unwrap_or_default()).into_owned();
     let at = root.iter().position(|c| c.is(b"tdmn") && name(c) == "ADBE Transform Group").expect("transform");
     let names: Vec<String> = root[at + 1].children().iter().filter(|c| c.is(b"tdmn")).map(name).collect();
     assert_eq!(names.last().map(String::as_str), Some("ADBE Group End"), "{names:?}");
@@ -843,7 +828,7 @@ fn a_camera_transform_group_ends_with_its_group_end() {
 /// unanimated layer with no loss (review finding). The default layer stays lossless.
 #[test]
 fn animated_camera_and_light_options_that_are_not_written_are_reported() {
-    use effectcraft_project::{Expression, LightKind};
+    use pulso_project::{Expression, LightKind};
     let camera_ids = [
         "irisShape",
         "irisRotation",
@@ -872,7 +857,7 @@ fn animated_camera_and_light_options_that_are_not_written_are_reported() {
         }
         p
     };
-    let strict = |p: &Project| effectcraft_aep::export::export(p, &effectcraft_aep::export::ExportOptions { allow_losses: false }).is_ok();
+    let strict = |p: &Project| pulso_aep::export::export(p, &pulso_aep::export::ExportOptions { allow_losses: false }).is_ok();
     let cam = make(LayerSource::Camera, None, true);
     assert!(export_all(&cam).report.is_lossless() && strict(&cam));
     let light = make(LayerSource::Light { kind: LightKind::Spot }, None, true);

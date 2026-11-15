@@ -1,12 +1,12 @@
 //! Nested compositions: Preserve frame rate when nested or in render queue, Preserve resolution
 //! when nested.
 
-use effectcraft_color::Label;
-use effectcraft_keyframe::{Keyframe, Value};
-use effectcraft_project::build;
-use effectcraft_project::render_queue::RenderSettings;
-use effectcraft_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid};
-use effectcraft_time::{FrameRate, Tick};
+use pulso_color::Label;
+use pulso_keyframe::{Keyframe, Value};
+use pulso_project::build;
+use pulso_project::render_queue::RenderSettings;
+use pulso_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid};
+use pulso_time::{FrameRate, Tick};
 
 use crate::render_frame;
 

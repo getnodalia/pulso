@@ -52,7 +52,7 @@ pub enum Item {
     BrowserStorage,
     /// A task's trained models (`roto.models`, `face.models`): authors, licence, size, install,
     /// choose.
-    Models(effectcraft_segment::Task),
+    Models(pulso_segment::Task),
     /// The Plug-in Library (`library.*`): the community catalog's packages, installed ones,
     /// install / update / remove.
     PluginLibrary,
@@ -99,7 +99,7 @@ pub fn pages() -> Vec<Page> {
                 s("general.expressionPickWhipCompact", "Expression Pick Whip Writes Compact English", B, true),
                 s("general.createSplitLayersAbove", "Create Split Layers Above Original Layer", B, true),
                 s("general.useSystemColorPicker", "Use System Color Picker", B, false),
-                Note("EffectCraft always uses its own colour picker (the same on every platform and the web)."),
+                Note("Pulso always uses its own colour picker (the same on every platform and the web)."),
             ],
         },
         Page {
@@ -111,7 +111,7 @@ pub fn pages() -> Vec<Page> {
                 s("startup.offerCrashRecovery", "Offer to Open the Latest Auto-Save After a Crash", B, true),
                 s("startup.windowGraphics", "Window Graphics", Kind::Choice(WINDOW_GRAPHICS), true),
                 Note(
-                    "Window Graphics applies from the next launch. When the graphics driver stops EffectCraft as its window opens, the next launch switches to OpenGL.",
+                    "Window Graphics applies from the next launch. When the graphics driver stops Pulso as its window opens, the next launch switches to OpenGL.",
                 ),
                 Section("Repair"),
                 Button { label: "Reset Settings", command: "prefs.reset", params: "{}" },
@@ -361,7 +361,7 @@ pub fn pages() -> Vec<Page> {
                 Note(
                     "Roto Brush 2.0 and 3.0 use the model chosen here (Version 1.0 always uses the classic engine). Models are open source, downloaded only when you ask, and checked against their published SHA-256.",
                 ),
-                Models(effectcraft_segment::Task::Mask),
+                Models(pulso_segment::Task::Mask),
             ],
         },
         Page {
@@ -372,7 +372,7 @@ pub fn pages() -> Vec<Page> {
                 Note(
                     "Face tracking in the Tracker panel (Outline Only and Detailed Features) uses the model chosen here. Models are open source, downloaded only when you ask, and checked against their published SHA-256.",
                 ),
-                Models(effectcraft_segment::Task::Face),
+                Models(pulso_segment::Task::Face),
             ],
         },
         Page {
@@ -440,7 +440,7 @@ pub fn pages_json() -> Value {
                     Item::BrowserStorage => json!({"browserStorage": "storage.info / storage.persist / storage.clear (web app)"}),
                     Item::PluginLibrary => json!({"pluginLibrary": "library.list / library.refresh / library.install / library.update / library.uninstall"}),
                     Item::Models(task) => {
-                        let p = if *task == effectcraft_segment::Task::Face { "face" } else { "roto" };
+                        let p = if *task == pulso_segment::Task::Face { "face" } else { "roto" };
                         json!({"models": format!("{p}.models / {p}.model.select / {p}.model.download / {p}.model.install / {p}.model.remove"), "key": format!("{p}.model")})
                     }
                 })

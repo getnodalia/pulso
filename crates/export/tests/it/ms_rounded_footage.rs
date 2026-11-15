@@ -3,20 +3,20 @@
 //! imports at its true rate, a comp made from it (New Comp from Selection takes the footage's
 //! rate) renders every source frame once, and the H.264 output has that rate and frame count.
 //!
-//! The fixtures are written here with FilmCraft's own encoder and muxer: 128×32 frames showing
+//! The fixtures are written here with Toma's own encoder and muxer: 128×32 frames showing
 //! their index in binary (eight bars, white for a set bit).
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use effectcraft_color::Label;
-use effectcraft_export::render_queue::{OutputFormat, OutputModule, RenderSettings, TimeSpan};
-use effectcraft_export::{Job, export};
-use effectcraft_media::MediaPool;
-use effectcraft_project::{Comp, Footage, ItemKind, LayerSource, Project, build};
-use effectcraft_raster::Image;
-use effectcraft_time::{FrameRate, Tick};
 use filmcraft_isobmff::{AvcConfig, Brand, Mp4Writer, SampleEntry, TrackConfig, WriteSample, WriterOptions};
+use pulso_color::Label;
+use pulso_export::render_queue::{OutputFormat, OutputModule, RenderSettings, TimeSpan};
+use pulso_export::{Job, export};
+use pulso_media::MediaPool;
+use pulso_project::{Comp, Footage, ItemKind, LayerSource, Project, build};
+use pulso_raster::Image;
+use pulso_time::{FrameRate, Tick};
 
 const W: u32 = 128;
 const H: u32 = 32;
@@ -82,7 +82,7 @@ fn frames_of(f: &Footage) -> Vec<u32> {
 /// Import `path`, make a comp from it as New Comp from Selection does (the footage's size, rate
 /// and duration), render it to H.264 and return the output's footage.
 fn comp_from_footage(path: &Path, out: &Path) -> Footage {
-    let footage = effectcraft_media::probe(path).expect("probe");
+    let footage = pulso_media::probe(path).expect("probe");
     let mut p = Project::default();
     let fid = p.add_item("clip.mp4", Label::Aqua, None, ItemKind::Footage(footage.clone()));
     let rate = p.item(fid).and_then(|it| it.frame_rate()).expect("a movie has a rate");
@@ -108,7 +108,7 @@ fn comp_from_footage(path: &Path, out: &Path) -> Footage {
     };
     let r = export(&job, &mut |_| true).expect("export");
     assert_eq!(r.frames as i64, frame_count(&footage), "the render has the footage's frames");
-    effectcraft_media::probe(out).expect("probe the render")
+    pulso_media::probe(out).expect("probe the render")
 }
 
 #[test]
@@ -117,10 +117,10 @@ fn millisecond_rounded_footage_keeps_its_rate_through_comp_and_render() {
     for (rate, frames) in [(FrameRate::FPS_30, 120), (FrameRate::FPS_60, 240)] {
         let path = d.join(format!("ms-{}.mp4", rate.num));
         write_movie(&path, &ms_rounded(rate, frames));
-        let f = effectcraft_media::probe(&path).expect("probe");
+        let f = pulso_media::probe(&path).expect("probe");
         assert_eq!((f.frame_rate, frame_count(&f)), (rate, frames), "{rate:?} footage");
         let bytes: Arc<[u8]> = std::fs::read(&path).expect("read").into();
-        let from_bytes = effectcraft_media::probe_bytes(&path.to_string_lossy(), bytes).expect("probe bytes");
+        let from_bytes = pulso_media::probe_bytes(&path.to_string_lossy(), bytes).expect("probe bytes");
         assert_eq!(from_bytes.frame_rate, rate, "{rate:?} footage read from memory");
         let all: Vec<u32> = (0..frames as u32).collect();
         assert_eq!(frames_of(&f), all, "{rate:?} footage: each source frame once");
@@ -138,11 +138,11 @@ fn ntsc_and_variable_rate_footage_is_not_pulled_to_a_round_rate() {
     for rate in [FrameRate::FPS_23_976, FrameRate::FPS_29_97, FrameRate::FPS_59_94] {
         let path = d.join(format!("ms-{}.mp4", rate.num));
         write_movie(&path, &ms_rounded(rate, 60));
-        assert_eq!(effectcraft_media::probe(&path).expect("probe").frame_rate, rate);
+        assert_eq!(pulso_media::probe(&path).expect("probe").frame_rate, rate);
     }
     // Frames of 40, 45 and 50 ms: the reader's median (45 ms, 22.2 fps) stands.
     let path = d.join("variable.mp4");
     write_movie(&path, &[40, 45, 50].repeat(20));
-    let f = effectcraft_media::probe(&path).expect("probe");
+    let f = pulso_media::probe(&path).expect("probe");
     assert!(!FrameRate::COMMON.contains(&f.frame_rate) && (f.frame_rate.as_f64() - 1000.0 / 45.0).abs() < 0.01, "{:?}", f.frame_rate);
 }

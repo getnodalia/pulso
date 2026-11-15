@@ -1,15 +1,15 @@
 //! Effects: a table maps an After Effects effect (its match name) and its parameters (by their
-//! index in `parT`) to an EffectCraft effect, a parameter id and a unit conversion. Effects and
+//! index in `parT`) to an Pulso effect, a parameter id and a unit conversion. Effects and
 //! parameters outside the table are reported in [`LossCategory::Effects`] by match name, never
 //! dropped silently.
 //!
 //! Every conversion is backed by the corpus (`docs/aep-format.md` 3.7, cases 356-450, 511-516):
 //!
 //! * colour: ARGB 0..255 in the file (alpha first), straight RGBA 0..1 here. Both are values in the
-//!   project's working-space encoding (After Effects stores what its colour picker shows; EffectCraft
-//!   hands parameter colours to the effect as stored, `effectcraft-render`'s colour pipeline), so
+//!   project's working-space encoding (After Effects stores what its colour picker shows; Pulso
+//!   hands parameter colours to the effect as stored, `pulso-render`'s colour pipeline), so
 //!   the conversion is `/ 255` with no transfer curve. After Effects colour parameters
-//!   have no editable alpha and Tint's defaults store alpha 0 (356); EffectCraft's colour
+//!   have no editable alpha and Tint's defaults store alpha 0 (356); Pulso's colour
 //!   parameters are opaque, so alpha is 1.
 //! * point: a fraction of the layer (source) size in the file, layer pixels here (369, 374, 383).
 //! * slider: each slider has its own stored scale, told by its valid maximum in `pard` (Amount to
@@ -18,8 +18,8 @@
 //!   Midpoint a 0..0.99 fraction: 361, 378-381, 422, 429, 438). The table names the maximum it
 //!   expects; a file with another maximum is reported instead of guessed.
 //! * popup: 1-based in the file over all items, separators `(-` included (410); mapped to
-//!   EffectCraft's item **by name**, since the orders differ (Levels' clip popups are On, Off, ... in
-//!   After Effects and Off, On, ... here). An item EffectCraft does not have is reported.
+//!   Pulso's item **by name**, since the orders differ (Levels' clip popups are On, Off, ... in
+//!   After Effects and Off, On, ... here). An item Pulso does not have is reported.
 //! * float and integer sliders, angles: the stored number as it is (Exposure, Gaussian Blur 216,
 //!   Fast Box Blur's Iterations 414, Drop Shadow's Direction 423).
 //! * checkbox: stored 1.0 when on, 0.0 when off; without a record it has the `pard` default, which
@@ -39,9 +39,9 @@ use crate::{
     CryptomatteData, CurvesData, DefinitionSource, Effect as AepEffect, EffectDefinitions, EffectParam, ExtractorChannels, HueSaturationData,
     Layer as AepLayer, LayerRef, LevelsData, MeshData, ParamKind, ParamValue,
 };
-use effectcraft_keyframe::Value;
-use effectcraft_project::build::Ids;
-use effectcraft_project::{Node, ParamUi, PropGroup};
+use pulso_keyframe::Value;
+use pulso_project::build::Ids;
+use pulso_project::{Node, ParamUi, PropGroup};
 
 use crate::import::props::{Kind, import_expression, import_keys};
 use crate::import::report::{Collector, LossCategory};
@@ -58,7 +58,7 @@ pub(crate) struct LayerCtx<'c> {
     pub layer: &'c str,
     /// The layer's id in the file and in the project (layer parameters).
     pub aep_id: u32,
-    pub ec_id: effectcraft_project::LayerId,
+    pub ec_id: pulso_project::LayerId,
     /// The layer's source size in pixels (effect points are fractions of it).
     pub size: (u32, u32),
     pub tm: &'c TimeMap,
@@ -86,7 +86,7 @@ pub(crate) fn import_effects<'f, 'a>(
             col.lose(LossCategory::Effects, format!("{}: '{}' has the effect '{shown}' ({})", cx.comp, cx.layer, fx.match_name()));
             continue;
         };
-        let Some(spec) = effectcraft_effects::find(map.effect) else {
+        let Some(spec) = pulso_effects::find(map.effect) else {
             col.lose(LossCategory::Effects, format!("{}: '{}' has the effect '{shown}' ({})", cx.comp, cx.layer, fx.match_name()));
             continue;
         };
@@ -98,7 +98,7 @@ pub(crate) fn import_effects<'f, 'a>(
             continue;
         }
         let size = [f64::from(cx.size.0), f64::from(cx.size.1)];
-        let mut group = effectcraft_effects::instantiate(spec, ids, &shown, size);
+        let mut group = pulso_effects::instantiate(spec, ids, &shown, size);
         match fx.enabled() {
             Some(on) => group.enabled = on,
             None => col.lose(LossCategory::DamagedData, format!("{}: '{}': the fx switch of '{shown}' is unreadable, imported switched on", cx.comp, cx.layer)),
@@ -143,9 +143,9 @@ pub(crate) fn carries_nothing(p: &EffectParam<'_, '_>) -> bool {
 /// (the layer can sit below the effect's layer).
 pub(crate) struct PendingLayerRef {
     /// The layer that owns the effect.
-    pub layer: effectcraft_project::LayerId,
+    pub layer: pulso_project::LayerId,
     /// The parameter.
-    pub prop: effectcraft_project::Uid,
+    pub prop: pulso_project::Uid,
     /// The file's id of the named layer.
     pub target: u32,
     /// Where it is, for the report.
@@ -165,7 +165,7 @@ pub(crate) fn param_label(p: &EffectParam<'_, '_>) -> String {
     if p.name.trim().is_empty() { p.match_name.clone() } else { format!("{} ({})", p.name.trim(), p.match_name) }
 }
 
-/// Imports one parameter of `fx` into its EffectCraft property: its keyframes, the value in its
+/// Imports one parameter of `fx` into its Pulso property: its keyframes, the value in its
 /// record or the `pard` default, with a loss for what cannot be read or mapped.
 fn import_param(fx: &AepEffect<'_, '_>, map: &EffectMap, p: &EffectParam<'_, '_>, cx: &LayerCtx<'_>, shown: &str, out: ParamOut<'_>) {
     let ParamOut { group, refs, col } = out;
@@ -266,12 +266,12 @@ pub(crate) fn import_mapped(p: &EffectParam<'_, '_>, m: &ParamMap, cx: &LayerCtx
         col.lose(LossCategory::Effects, format!("{here}: parameter {label} has no counterpart '{}'", m.target));
         return;
     };
-    // For a popup: file item (0-based over all items) -> EffectCraft item, by name.
+    // For a popup: file item (0-based over all items) -> Pulso item, by name.
     let popup_map = match m.conv {
         Conv::Popup { .. } => match popup_mapping(&items, &prop.ui) {
             Some(map) => Some(map),
             None => {
-                col.lose(LossCategory::Effects, format!("{here}: parameter {label}: the popup items do not match EffectCraft's, not imported"));
+                col.lose(LossCategory::Effects, format!("{here}: parameter {label}: the popup items do not match Pulso's, not imported"));
                 return;
             }
         },
@@ -351,13 +351,13 @@ pub(crate) fn import_mapped(p: &EffectParam<'_, '_>, m: &ParamMap, cx: &LayerCtx
     }
 }
 
-/// Reports a value After Effects accepts but EffectCraft's effect limits (`ParamMap::limit`): it is
+/// Reports a value After Effects accepts but Pulso's effect limits (`ParamMap::limit`): it is
 /// imported as it is, and the effect renders it as the nearest end of its range.
 fn report_beyond_limit<'v>(limit: Option<(f64, f64)>, values: impl Iterator<Item = &'v Value>, here: &str, label: &str, col: &mut Collector) {
     let Some((lo, hi)) = limit else { return };
     let beyond: Vec<f64> = values.filter_map(|v| if let Value::Scalar(x) = v { Some(*x) } else { None }).filter(|x| *x < lo || *x > hi).collect();
     if let Some(x) = beyond.first() {
-        col.lose(LossCategory::Effects, format!("{here}: parameter {label} is {x}, EffectCraft's effect uses {lo} to {hi} (rendered as the nearest of them)"));
+        col.lose(LossCategory::Effects, format!("{here}: parameter {label} is {x}, Pulso's effect uses {lo} to {hi} (rendered as the nearest of them)"));
     }
 }
 
@@ -369,9 +369,9 @@ fn import_layer_ref(p: &EffectParam<'_, '_>, target: &str, own: bool, cx: &Layer
     let ParamOut { group, refs, col } = out;
     // After Effects hands the named layer's source to the effect, without its masks and effects
     // (904 E24: Set Matte's luminance from a grey solid that carries a Gradient Ramp is the grey's,
-    // 0.5 everywhere); EffectCraft's companion choice defaults to Effects & Masks. Where After
+    // 0.5 everywhere); Pulso's companion choice defaults to Effects & Masks. Where After
     // Effects stores another choice is not sampled.
-    if let Some(src) = group.prop_mut(&effectcraft_effects::layer_source_id(target)) {
+    if let Some(src) = group.prop_mut(&pulso_effects::layer_source_id(target)) {
         src.value = Value::Enum(0);
     }
     let Some(prop) = group.prop_mut(target) else {
@@ -385,7 +385,7 @@ fn import_layer_ref(p: &EffectParam<'_, '_>, target: &str, own: bool, cx: &Layer
     match p.layer_ref(cx.aep_id).unwrap_or(LayerRef::This) {
         // None: unset where unset means None (Layer Control), else the explicit None (fx27
         // `layer-none`: After Effects renders Set Matte None and self differently).
-        LayerRef::Nothing => prop.value = Value::Layer(if own { None } else { Some(effectcraft_project::NO_LAYER) }),
+        LayerRef::Nothing => prop.value = Value::Layer(if own { None } else { Some(pulso_project::NO_LAYER) }),
         LayerRef::This => prop.value = Value::Layer(own.then_some(cx.ec_id.0)),
         LayerRef::Layer(id) => {
             prop.value = Value::Layer(None);
@@ -397,9 +397,9 @@ fn import_layer_ref(p: &EffectParam<'_, '_>, target: &str, own: bool, cx: &Layer
 /// Sets the layer parameters that name another layer of the composition (`ids`: file id ->
 /// project layer); one whose layer was not imported stays unset and is reported.
 pub(crate) fn resolve_layer_refs(
-    comp: &mut effectcraft_project::Comp,
+    comp: &mut pulso_project::Comp,
     refs: &[PendingLayerRef],
-    ids: &std::collections::HashMap<u32, effectcraft_project::LayerId>,
+    ids: &std::collections::HashMap<u32, pulso_project::LayerId>,
     col: &mut Collector,
 ) {
     for r in refs {
@@ -413,7 +413,7 @@ pub(crate) fn resolve_layer_refs(
     }
 }
 
-/// The EffectCraft item of each file item (by name, ignoring case and separators); `None` when
+/// The Pulso item of each file item (by name, ignoring case and separators); `None` when
 /// the parameter here is not a popup.
 fn popup_mapping(file_items: &[String], ui: &ParamUi) -> Option<Vec<Option<u32>>> {
     let ParamUi::Popup { options } = ui else { return None };
@@ -431,8 +431,8 @@ fn popup_mapping(file_items: &[String], ui: &ParamUi) -> Option<Vec<Option<u32>>
     )
 }
 
-/// Keys of a popup were imported as file indices (0-based); maps them to EffectCraft's items.
-fn remap_popup_keys(prop: &mut effectcraft_project::Property, map: &[Option<u32>], here: &str, label: &str, col: &mut Collector) {
+/// Keys of a popup were imported as file indices (0-based); maps them to Pulso's items.
+fn remap_popup_keys(prop: &mut pulso_project::Property, map: &[Option<u32>], here: &str, label: &str, col: &mut Collector) {
     let before = prop.keys.len();
     prop.keys.retain_mut(|k| match k.value {
         Value::Enum(i) => match usize::try_from(i).ok().and_then(|i| map.get(i).copied().flatten()) {
@@ -501,8 +501,8 @@ fn import_extra(fx: &AepEffect<'_, '_>, extra: Extra, p: &EffectParam<'_, '_>, h
         },
         Extra::Curves => match CurvesData::parse(data) {
             Some(d) => {
-                // EffectCraft's curves are `x,y` points in 0..1 (the stored inputs and outputs /
-                // 255); EffectCraft interpolates them its own way (a renderer difference, the
+                // Pulso's curves are `x,y` points in 0..1 (the stored inputs and outputs /
+                // 255); Pulso interpolates them its own way (a renderer difference, the
                 // stored tables are After Effects' natural spline).
                 for (id, pts) in CURVE_IDS.iter().zip(&d.curves) {
                     if let Some(prop) = group.prop_mut(id) {
@@ -519,8 +519,8 @@ fn import_extra(fx: &AepEffect<'_, '_>, extra: Extra, p: &EffectParam<'_, '_>, h
         },
         Extra::Extractor => match ExtractorChannels::parse(data).map(|c| (c.sources(), c)) {
             // Each output channel reads the footage's channel of the stored name, which
-            // EffectCraft's EXtractoR finds by the same name (`Z`); After Effects' `(copy)` is the
-            // input's own channel, EffectCraft's `(copy)` (not `A`, which EffectCraft reads from an
+            // Pulso's EXtractoR finds by the same name (`Z`); After Effects' `(copy)` is the
+            // input's own channel, Pulso's `(copy)` (not `A`, which Pulso reads from an
             // OpenEXR footage's alpha plane, losing what earlier effects did to it).
             Some((Ok(names), _)) => {
                 for (id, name) in ["red", "green", "blue", "alpha"].into_iter().zip(names) {
@@ -544,7 +544,7 @@ fn import_extra(fx: &AepEffect<'_, '_>, extra: Extra, p: &EffectParam<'_, '_>, h
         },
         Extra::Identifier => match crate::identifier_channel_type(data) {
             // No channel chosen (the type's label): After Effects lists only the footage's integer
-            // (UINT) channels and, with none chosen, leaves the layer unchanged, where EffectCraft
+            // (UINT) channels and, with none chosen, leaves the layer unchanged, where Pulso
             // draws the footage's object ID channel.
             Some("Object ID") => {
                 if let Some(prop) = group.prop_mut("channelType") {
@@ -552,10 +552,10 @@ fn import_extra(fx: &AepEffect<'_, '_>, extra: Extra, p: &EffectParam<'_, '_>, h
                 }
                 col.lose(
                     LossCategory::Effects,
-                    format!("{here}: no ID channel is chosen (Channel Info), so After Effects leaves the layer unchanged; EffectCraft draws the footage's object ID channel"),
+                    format!("{here}: no ID channel is chosen (Channel Info), so After Effects leaves the layer unchanged; Pulso draws the footage's object ID channel"),
                 );
             }
-            // A chosen channel, by name. EffectCraft's IDentifier has no channel of its own: it
+            // A chosen channel, by name. Pulso's IDentifier has no channel of its own: it
             // reads the footage's first `ObjectID` (`MaterialID`) channel, names compared without
             // regard to case, so a channel of that name is the one After Effects reads.
             Some(name) => match IDENTIFIER_OWN.iter().position(|own| own.eq_ignore_ascii_case(name.trim())) {
@@ -566,7 +566,7 @@ fn import_extra(fx: &AepEffect<'_, '_>, extra: Extra, p: &EffectParam<'_, '_>, h
                 }
                 None => col.lose(
                     LossCategory::Effects,
-                    format!("{here}: the ID channel '{name}' (Channel Info) is not imported; EffectCraft reads the footage's object ID channel (ObjectID, object_id, objectId, id)"),
+                    format!("{here}: the ID channel '{name}' (Channel Info) is not imported; Pulso reads the footage's object ID channel (ObjectID, object_id, objectId, id)"),
                 ),
             },
             None => col.lose(LossCategory::Effects, format!("{here}: the Channel Info data is not in the sampled layout, the object ID channel used")),
@@ -576,7 +576,7 @@ fn import_extra(fx: &AepEffect<'_, '_>, extra: Extra, p: &EffectParam<'_, '_>, h
 }
 
 /// The Cryptomatte plug-in (`Extra::Cryptomatte`, docs/aep-format.md 3.7): 1 Settings data
-/// (the layer by name and the selection, both carried as text), 2 Output (EffectCraft's Display
+/// (the layer by name and the selection, both carried as text), 2 Output (Pulso's Display
 /// and Matte Only), 3 Selection Mode (reported when on). Anything else stored is reported.
 fn import_cryptomatte(fx: &AepEffect<'_, '_>, params: &[EffectParam<'_, '_>], cx: &LayerCtx<'_>, shown: &str, group: &mut PropGroup, col: &mut Collector) {
     let here = format!("{}: '{}' effect '{shown}' ({})", cx.comp, cx.layer, fx.match_name());
@@ -585,7 +585,7 @@ fn import_cryptomatte(fx: &AepEffect<'_, '_>, params: &[EffectParam<'_, '_>], cx
             prop.value = v;
         }
     };
-    // The plug-in's Output starts at Colors (EffectCraft's Display starts at Preview); an Output
+    // The plug-in's Output starts at Colors (Pulso's Display starts at Preview); an Output
     // that cannot be imported keeps it.
     let (display, matte_only) = CRYPTO_COLORS;
     set(group, "display", Value::Enum(display));
@@ -631,7 +631,7 @@ fn import_cryptomatte(fx: &AepEffect<'_, '_>, params: &[EffectParam<'_, '_>], cx
                     col.lose(LossCategory::Effects, format!("{here}: keyframes or an expression on {label} are not imported"));
                 } else {
                     match selection_mode_on(p) {
-                        // A picking switch of the plug-in; EffectCraft picks with its own tool.
+                        // A picking switch of the plug-in; Pulso picks with its own tool.
                         Some(true) => col.lose(LossCategory::Effects, format!("{here}: parameter {label} is on and has no counterpart")),
                         Some(false) => {}
                         None => col.lose(LossCategory::DamagedData, format!("{here}: parameter {label} holds an unreadable value, off used")),
@@ -647,7 +647,7 @@ fn import_cryptomatte(fx: &AepEffect<'_, '_>, params: &[EffectParam<'_, '_>], cx
     }
 }
 
-/// EffectCraft's (Display, Matte Only) for the plug-in's Output Colors, its default.
+/// Pulso's (Display, Matte Only) for the plug-in's Output Colors, its default.
 const CRYPTO_COLORS: (u32, bool) = (0, false);
 
 /// Is Selection Mode on? The plug-in writes it, when on, as a record in the default state
@@ -662,7 +662,7 @@ fn selection_mode_on(p: &EffectParam<'_, '_>) -> Option<bool> {
     }
 }
 
-/// Cryptomatte's Output as EffectCraft's (Display, Matte Only): Colors is Colors, Matted RGBA
+/// Cryptomatte's Output as Pulso's (Display, Matte Only): Colors is Colors, Matted RGBA
 /// is Matte (the layer keyed by the selection), Matte Only is Matte Only. Matted Colors (the
 /// ID colours keyed by the selection) becomes Matte, the same matte over the layer's own
 /// colours, and is reported; a value that cannot be read is reported and Colors used.
@@ -712,22 +712,22 @@ fn crypto_output(p: &EffectParam<'_, '_>, here: &str, label: &str, col: &mut Col
     }
 }
 
-/// The channels EffectCraft's IDentifier reads first for its Channel Type Object ID and Material
+/// The channels Pulso's IDentifier reads first for its Channel Type Object ID and Material
 /// ID (`AuxChannels::object_id`, `material_id`).
 const IDENTIFIER_OWN: [&str; 2] = ["ObjectID", "MaterialID"];
 
-/// Curves' EffectCraft parameters, in the stored order (RGB, Red, Green, Blue, Alpha).
+/// Curves' Pulso parameters, in the stored order (RGB, Red, Green, Blue, Alpha).
 const CURVE_IDS: [&str; 5] = ["rgb", "red", "green", "blue", "alpha"];
 
-/// A stored 0..255 curve value as EffectCraft's fraction, as short as it is exact.
+/// A stored 0..255 curve value as Pulso's fraction, as short as it is exact.
 fn fraction(v: u8) -> String {
     let s = format!("{:.6}", f64::from(v) / 255.0);
     s.trim_end_matches('0').trim_end_matches('.').to_string()
 }
 
-/// The Distortion Mesh as EffectCraft's per-vertex offsets in layer pixels (row-major `dx,dy`).
+/// The Distortion Mesh as Pulso's per-vertex offsets in layer pixels (row-major `dx,dy`).
 /// The grid size comes from the data (rows first, `export-tests\mesh`); After Effects'
-/// Bezier handles are reported when they are not the default ones (EffectCraft's mesh is
+/// Bezier handles are reported when they are not the default ones (Pulso's mesh is
 /// bilinear).
 fn import_mesh(m: &MeshData, here: &str, size: (u32, u32), group: &mut PropGroup, col: &mut Collector) {
     let (w, h) = (f64::from(size.0.max(1)), f64::from(size.1.max(1)));
@@ -763,7 +763,7 @@ fn import_mesh(m: &MeshData, here: &str, size: (u32, u32), group: &mut PropGroup
             col.lose(LossCategory::DamagedData, format!("{here}: the Distortion Mesh holds a number that is not valid, not imported"));
             return;
         }
-        // EffectCraft's mesh reads the first two numbers of a vertex; moved handles follow as
+        // Pulso's mesh reads the first two numbers of a vertex; moved handles follow as
         // eight more (kept for the export, not drawn).
         let mut token = format!("{},{}", px(dx * w), px(dy * h));
         if own.iter().any(|x| x.abs() > 0.01) {
@@ -777,7 +777,7 @@ fn import_mesh(m: &MeshData, here: &str, size: (u32, u32), group: &mut PropGroup
     if handles_moved {
         col.lose(
             LossCategory::Effects,
-            format!("{here}: Distortion Mesh Bezier handles moved on their own are not drawn (EffectCraft's mesh is bilinear; they are kept for the export)"),
+            format!("{here}: Distortion Mesh Bezier handles moved on their own are not drawn (Pulso's mesh is bilinear; they are kept for the export)"),
         );
     }
     if let Some(p) = group.prop_mut("rows") {
@@ -797,7 +797,7 @@ fn px(v: f64) -> String {
     if v.abs() < 0.01 { "0".to_string() } else { format!("{v:.3}") }
 }
 
-/// A decoded value in EffectCraft's units, `None` when it does not fit the kind or is not a valid
+/// A decoded value in Pulso's units, `None` when it does not fit the kind or is not a valid
 /// number.
 fn convert(value: ParamValue, kind: Kind) -> Option<Value> {
     let raw = match (value, kind) {

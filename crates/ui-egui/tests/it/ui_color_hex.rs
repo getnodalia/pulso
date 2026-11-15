@@ -3,15 +3,15 @@
 //! sRGB values as linear, so mid-grey `#808080` was stored as `#373737`), the square, slider and
 //! HSB / RGB fields set the colour, and Cancel / Escape / the original swatch restore it.
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::LayerId;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
-use effectcraft_ui_egui::widgets;
 use egui::accesskit::Role;
 use egui::{Event, Key, Modifiers, Pos2, pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
+use pulso_engine::Session;
+use pulso_engine::project::LayerId;
+use pulso_ui_egui::PulsoApp;
+use pulso_ui_egui::dock::PanelKind;
+use pulso_ui_egui::widgets;
 use serde_json::json;
 
 const GREY: f32 = 128.0 / 255.0;
@@ -48,12 +48,12 @@ fn hex_code_sets_an_effect_colour() {
     let fx = s.execute("effect.apply", json!({"layer": layer, "effect": "Multi-Tone Tint"})).unwrap()["effects"][0].as_u64().unwrap();
     let uid = s.active_comp().unwrap().layer(LayerId(layer)).unwrap().props.find_group(fx).unwrap().get("midtones").unwrap().uid;
     s.state.selected_layers = vec![LayerId(layer)];
-    let mut app = EffectcraftApp::new(s);
+    let mut app = PulsoApp::new(s);
     app.show_panel(PanelKind::EffectControls);
     app.toggle_maximize(PanelKind::EffectControls);
     let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| app);
     h.run_steps(4);
-    let midtones = |h: &Harness<'_, EffectcraftApp>| {
+    let midtones = |h: &Harness<'_, PulsoApp>| {
         let c = h.state().session.active_comp().unwrap().layer(LayerId(layer)).unwrap().props.find(uid).unwrap().value.as_color();
         [c[0], c[1], c[2]]
     };

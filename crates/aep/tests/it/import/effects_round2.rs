@@ -3,8 +3,8 @@
 //! Transform import with the values they were made with.
 
 use crate::import::helpers::comp;
-use effectcraft_keyframe::Value;
-use effectcraft_project::PropGroup;
+use pulso_keyframe::Value;
+use pulso_project::PropGroup;
 
 /// The effects of layer `layer`, and the import report's loss count.
 fn effects(name: &str, layer: &str) -> Option<(Vec<PropGroup>, usize, String)> {
@@ -48,7 +48,7 @@ fn near_color(a: &Value, b: [f64; 3]) {
 #[test]
 fn the_eleven_defaults_import_lossless() {
     let (g, losses, detail) = skip!(effects("712-fx-eleven-effects-defaults-on-M.aep", "M"));
-    // CC Radial Blur's fresh Type is item 6, Scratch, which EffectCraft does not have. Set Matte
+    // CC Radial Blur's fresh Type is item 6, Scratch, which Pulso does not have. Set Matte
     // (the eleventh) is imported since its layer parameter is (905).
     assert_eq!(g.len(), 11, "{detail}");
     assert_eq!(losses, 1, "{detail}");
@@ -70,7 +70,7 @@ fn the_eleven_defaults_import_lossless() {
             "ec.channel.setmatte"
         ]
     );
-    // After Effects' defaults where they differ from EffectCraft's.
+    // After Effects' defaults where they differ from Pulso's.
     assert_eq!(v(&g[2], "direction"), s(0.0));
     assert_eq!(v(&g[2], "width"), s(20.0));
     assert_eq!(v(&g[3], "repeatEdge"), Value::Bool(true));

@@ -411,15 +411,15 @@ mod tests {
     /// time ← render ← engine ← ui ← app; host has engine as a dev-dependency; text reads fonts.
     fn ws() -> Vec<Pkg> {
         vec![
-            pkg("effectcraft-time", "crates/time", &[], &[]),
-            pkg("effectcraft-text", "crates/text", &[], &["assets/fonts"]),
-            pkg("effectcraft-render", "crates/render", &[("effectcraft-time", false), ("effectcraft-text", false)], &[]),
-            pkg("effectcraft-engine", "crates/engine", &[("effectcraft-render", false)], &["docs/preferences.md"]),
-            pkg("effectcraft-host", "crates/host", &[("effectcraft-time", false), ("effectcraft-engine", true)], &["crates/svg/tests/fixtures"]),
-            pkg("effectcraft-ui-egui", "crates/ui-egui", &[("effectcraft-engine", false)], &[]),
-            pkg("effectcraft", "apps/effectcraft", &[("effectcraft-ui-egui", false)], &[]),
-            pkg("effectcraft-cli", "apps/effectcraft-cli", &[("effectcraft", false)], &[]),
-            pkg("effectcraft-svg", "crates/svg", &[], &[]),
+            pkg("pulso-time", "crates/time", &[], &[]),
+            pkg("pulso-text", "crates/text", &[], &["assets/fonts"]),
+            pkg("pulso-render", "crates/render", &[("pulso-time", false), ("pulso-text", false)], &[]),
+            pkg("pulso-engine", "crates/engine", &[("pulso-render", false)], &["docs/preferences.md"]),
+            pkg("pulso-host", "crates/host", &[("pulso-time", false), ("pulso-engine", true)], &["crates/svg/tests/fixtures"]),
+            pkg("pulso-ui-egui", "crates/ui-egui", &[("pulso-engine", false)], &[]),
+            pkg("pulso", "apps/pulso", &[("pulso-ui-egui", false)], &[]),
+            pkg("pulso-cli", "apps/pulso-cli", &[("pulso", false)], &[]),
+            pkg("pulso-svg", "crates/svg", &[], &[]),
         ]
     }
 
@@ -435,12 +435,12 @@ mod tests {
     fn file_maps_to_innermost_package() {
         let mut p = ws();
         p.push(pkg("nested", "crates/time/nested", &[], &[]));
-        assert_eq!(owner("crates/time/src/lib.rs", &p).map(|p| p.name.as_str()), Some("effectcraft-time"));
+        assert_eq!(owner("crates/time/src/lib.rs", &p).map(|p| p.name.as_str()), Some("pulso-time"));
         assert_eq!(owner("crates/time/nested/src/lib.rs", &p).map(|p| p.name.as_str()), Some("nested"));
         // a prefix of the dir name is not a match
         assert_eq!(owner("crates/timeline/src/lib.rs", &p).map(|p| p.name.as_str()), None);
-        assert_eq!(owner("apps/effectcraft-cli/src/main.rs", &p).map(|p| p.name.as_str()), Some("effectcraft-cli"));
-        assert_eq!(owner("apps/effectcraft/src/main.rs", &p).map(|p| p.name.as_str()), Some("effectcraft"));
+        assert_eq!(owner("apps/pulso-cli/src/main.rs", &p).map(|p| p.name.as_str()), Some("pulso-cli"));
+        assert_eq!(owner("apps/pulso/src/main.rs", &p).map(|p| p.name.as_str()), Some("pulso"));
         assert!(owner("docs/testing.md", &p).is_none());
     }
 
@@ -449,18 +449,15 @@ mod tests {
         let p = ws();
         // time: render, engine, ui, app, cli via normal edges; host directly; host is not
         // a dependency of anything.
-        let a = expand(&set(&["effectcraft-time"]), &p);
-        assert_eq!(
-            a,
-            set(&["effectcraft-time", "effectcraft-render", "effectcraft-engine", "effectcraft-host", "effectcraft-ui-egui", "effectcraft", "effectcraft-cli"])
-        );
+        let a = expand(&set(&["pulso-time"]), &p);
+        assert_eq!(a, set(&["pulso-time", "pulso-render", "pulso-engine", "pulso-host", "pulso-ui-egui", "pulso", "pulso-cli"]));
         // ui-egui: only its dependents
-        assert_eq!(expand(&set(&["effectcraft-ui-egui"]), &p), set(&["effectcraft-ui-egui", "effectcraft", "effectcraft-cli"]));
+        assert_eq!(expand(&set(&["pulso-ui-egui"]), &p), set(&["pulso-ui-egui", "pulso", "pulso-cli"]));
         // engine: host only through its dev-dependency, and nothing beyond host
-        let e = expand(&set(&["effectcraft-engine"]), &p);
-        assert!(e.contains("effectcraft-host"));
-        assert!(!e.contains("effectcraft-time") && !e.contains("effectcraft-render"));
-        assert_eq!(expand(&set(&["effectcraft-cli"]), &p), set(&["effectcraft-cli"]));
+        let e = expand(&set(&["pulso-engine"]), &p);
+        assert!(e.contains("pulso-host"));
+        assert!(!e.contains("pulso-time") && !e.contains("pulso-render"));
+        assert_eq!(expand(&set(&["pulso-cli"]), &p), set(&["pulso-cli"]));
         assert!(expand(&BTreeSet::new(), &p).is_empty());
     }
 
@@ -499,16 +496,16 @@ mod tests {
         let p = ws();
         // docs/preferences.md is read by an engine test
         let pl = plan(&files(&["docs/preferences.md"]), &p);
-        assert_eq!(pl.direct, set(&["effectcraft-engine"]));
+        assert_eq!(pl.direct, set(&["pulso-engine"]));
         assert!(pl.unmapped.is_empty());
         // a font: read by text (directory input), and an asset
         let pl = plan(&files(&["assets/fonts/Inter-Regular.ttf"]), &p);
-        assert_eq!(pl.direct, set(&["effectcraft-text"]));
+        assert_eq!(pl.direct, set(&["pulso-text"]));
         assert!(pl.assets);
-        assert!(pl.affected.contains("effectcraft-cli"));
+        assert!(pl.affected.contains("pulso-cli"));
         // svg fixtures belong to svg and are read by host
         let pl = plan(&files(&["crates/svg/tests/fixtures/basic-shapes.svg"]), &p);
-        assert_eq!(pl.direct, set(&["effectcraft-svg", "effectcraft-host"]));
+        assert_eq!(pl.direct, set(&["pulso-svg", "pulso-host"]));
     }
 
     #[test]
@@ -584,7 +581,7 @@ let out = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/test-out");
         std::fs::write(root.join(untracked), "new").unwrap();
         let changed = changed_files(root, "HEAD").unwrap();
         assert_eq!(changed, files(&[tracked, untracked]));
-        assert_eq!(plan(&changed, &ws()).direct, set(&["effectcraft-time"]));
+        assert_eq!(plan(&changed, &ws()).direct, set(&["pulso-time"]));
     }
 
     #[cfg(unix)]
@@ -641,7 +638,7 @@ fn fixture(n: &str) -> String { format!("{}/../../docs/fixtures/{n}", env!("CARG
             let md = serde_json::json!({
                 "workspace_root": root,
                 "packages": [{
-                    "name": "effectcraft-engine",
+                    "name": "pulso-engine",
                     "manifest_path": root.join("crates/engine/Cargo.toml"),
                     "targets": [{"kind": ["lib"], "doctest": true}],
                     "dependencies": []
@@ -653,14 +650,14 @@ fn fixture(n: &str) -> String { format!("{}/../../docs/fixtures/{n}", env!("CARG
             assert!(engine.inputs.contains(&"docs/fixtures".into()));
             for deleted in ["docs/preferences.md", "docs/fixtures/example.json"] {
                 assert!(changed.contains(&deleted.to_string()));
-                assert_eq!(plan(&files(&[deleted]), &pkgs).direct, set(&["effectcraft-engine"]));
+                assert_eq!(plan(&files(&[deleted]), &pkgs).direct, set(&["pulso-engine"]));
             }
         }
     }
 
     #[test]
     fn test_runner_keeps_dev_profile_target_selection_and_gpu_isolation() {
-        for packages in [vec![], files(&["effectcraft-gpu", "effectcraft-ui-egui"])] {
+        for packages in [vec![], files(&["pulso-gpu", "pulso-ui-egui"])] {
             for nextest in [false, true] {
                 let command = crate::test_command(&packages, nextest, true);
                 let args: Vec<_> = command.get_args().map(|a| a.to_string_lossy().into_owned()).collect();
@@ -672,7 +669,7 @@ fn fixture(n: &str) -> String { format!("{}/../../docs/fixtures/{n}", env!("CARG
                 for package in &packages {
                     assert!(args.windows(2).any(|w| w[0] == "-p" && w[1] == *package));
                 }
-                assert_eq!(args.windows(2).any(|w| w == ["-E", "not package(effectcraft-gpu)"]), nextest);
+                assert_eq!(args.windows(2).any(|w| w == ["-E", "not package(pulso-gpu)"]), nextest);
                 assert_eq!(args.iter().any(|a| a == "--no-tests=pass"), nextest && !packages.is_empty());
             }
         }
@@ -695,19 +692,19 @@ fn fixture(n: &str) -> String { format!("{}/../../docs/fixtures/{n}", env!("CARG
             "workspace_root": root,
             "packages": [
                 {
-                    "name": "effectcraft-cli",
-                    "manifest_path": root.join("apps/effectcraft-cli/Cargo.toml"),
+                    "name": "pulso-cli",
+                    "manifest_path": root.join("apps/pulso-cli/Cargo.toml"),
                     "targets": [{"kind": ["bin"], "doctest": false}],
                     "dependencies": []
                 },
                 {
-                    "name": "effectcraft-time",
+                    "name": "pulso-time",
                     "manifest_path": root.join("crates/time/Cargo.toml"),
                     "targets": [{"kind": ["lib"], "doctest": false}],
                     "dependencies": []
                 },
                 {
-                    "name": "effectcraft-color",
+                    "name": "pulso-color",
                     "manifest_path": root.join("crates/color/Cargo.toml"),
                     "targets": [{"kind": ["lib"], "doctest": true}],
                     "dependencies": []
@@ -716,9 +713,9 @@ fn fixture(n: &str) -> String { format!("{}/../../docs/fixtures/{n}", env!("CARG
         });
         let pkgs = packages(root, &md, &[]);
         for (name, changed, want_lib, want_doctests) in [
-            ("effectcraft-cli", "apps/effectcraft-cli/src/main.rs", false, false),
-            ("effectcraft-time", "crates/time/src/lib.rs", true, false),
-            ("effectcraft-color", "crates/color/src/lib.rs", true, true),
+            ("pulso-cli", "apps/pulso-cli/src/main.rs", false, false),
+            ("pulso-time", "crates/time/src/lib.rs", true, false),
+            ("pulso-color", "crates/color/src/lib.rs", true, true),
         ] {
             let plan = plan(&files(&[changed]), &pkgs);
             assert_eq!(plan.affected, set(&[name]));
@@ -744,7 +741,7 @@ fn fixture(n: &str) -> String { format!("{}/../../docs/fixtures/{n}", env!("CARG
     #[test]
     fn steps_follow_the_plan() {
         let mut p = ws();
-        if let Some(cli) = p.iter_mut().find(|p| p.name == "effectcraft-cli") {
+        if let Some(cli) = p.iter_mut().find(|p| p.name == "pulso-cli") {
             cli.has_lib = false;
             cli.has_doctests = false;
         }
@@ -756,9 +753,9 @@ fn fixture(n: &str) -> String { format!("{}/../../docs/fixtures/{n}", env!("CARG
         let args = |i: usize| s.get(i).and_then(|s| s.cmd.as_ref()).map(|c| c.get_args().map(|a| a.to_string_lossy().into_owned()).collect::<Vec<_>>());
         let clippy = args(2).unwrap_or_default();
         assert!(!clippy.iter().any(|a| a == "--release" || a == "--profile"));
-        assert!(clippy.windows(2).any(|w| w == ["-p", "effectcraft-ui-egui"]));
+        assert!(clippy.windows(2).any(|w| w == ["-p", "pulso-ui-egui"]));
         assert!(clippy.ends_with(&["--".into(), "-D".into(), "warnings".into()]));
-        assert!(args(7).unwrap_or_default().windows(2).any(|w| w == ["-p", "effectcraft-ui-egui"]));
+        assert!(args(7).unwrap_or_default().windows(2).any(|w| w == ["-p", "pulso-ui-egui"]));
         // without nextest: one cargo test step; an asset change adds the assets check
         let s = steps(&plan(&files(&["assets/fonts/A.ttf"]), &p), &p, false);
         assert!(labels(&s).contains(&"tests (7)".to_string()) && labels(&s).contains(&"assets".to_string()));

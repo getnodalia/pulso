@@ -3,12 +3,12 @@
 //! so these run without the corpus.
 
 use crate::export::helpers::*;
-use effectcraft_aep::export::{AepExportError, ExportOptions, LossCategory, analyze, export};
-use effectcraft_color::Label;
-use effectcraft_keyframe::text_doc::{CharStyle, StyleRun, TextDoc};
-use effectcraft_keyframe::{Ease, Interp, Value};
-use effectcraft_project::{AutoOrient, Footage, FootageKind, ItemKind, Layer, LayerSource, LightKind, Marker, Node, Project, PropGroup, Proxy, build};
-use effectcraft_time::FrameRate;
+use pulso_aep::export::{AepExportError, ExportOptions, LossCategory, analyze, export};
+use pulso_color::Label;
+use pulso_keyframe::text_doc::{CharStyle, StyleRun, TextDoc};
+use pulso_keyframe::{Ease, Interp, Value};
+use pulso_project::{AutoOrient, Footage, FootageKind, ItemKind, Layer, LayerSource, LightKind, Marker, Node, Project, PropGroup, Proxy, build};
+use pulso_time::FrameRate;
 
 /// `p` reports a loss in `category` whose detail contains `needle`, and a strict export refuses.
 #[track_caller]
@@ -25,7 +25,7 @@ fn lossless(p: &Project) {
     assert!(r.is_lossless(), "{:?}", r.losses);
 }
 
-fn first_layer(p: &mut Project, c: effectcraft_project::ItemId, f: impl FnOnce(&mut Layer)) {
+fn first_layer(p: &mut Project, c: pulso_project::ItemId, f: impl FnOnce(&mut Layer)) {
     with_layer(p, c, 0, f);
 }
 
@@ -67,7 +67,7 @@ fn composition_settings_the_format_cannot_hold_are_reported() {
 #[test]
 fn solid_values_the_format_cannot_hold_are_reported() {
     let (p, _, s) = simple();
-    let set = |f: &dyn Fn(&mut effectcraft_project::Solid)| {
+    let set = |f: &dyn Fn(&mut pulso_project::Solid)| {
         let mut q = p.clone();
         if let Some(ItemKind::Solid(solid)) = q.item_mut(s).map(|i| &mut i.kind) {
             f(solid);
@@ -106,7 +106,7 @@ fn key_settings_the_export_does_not_keep_are_reported() {
         o.keys = vec![key(0.0, Value::Scalar(0.0)), key(1.0, Value::Scalar(50.0)), key(2.0, Value::Scalar(100.0))];
     });
     lossless(&p);
-    let keyed = |f: &dyn Fn(&mut effectcraft_keyframe::Keyframe)| {
+    let keyed = |f: &dyn Fn(&mut pulso_keyframe::Keyframe)| {
         let mut q = p.clone();
         first_layer(&mut q, c, |l| {
             if let Some(k) = l.props.prop_mut("transform/opacity").and_then(|o| o.keys.get_mut(1)) {
@@ -222,9 +222,9 @@ fn camera_and_light_options_that_are_not_written_are_reported() {
 /// `simple()` with a new instance of the effect `id` on its layer, changed by `f`.
 fn with_effect(id: &str, f: impl FnOnce(&mut PropGroup)) -> Project {
     let (mut p, c, _) = simple();
-    let spec = effectcraft_effects::find(id).expect(id);
+    let spec = pulso_effects::find(id).expect(id);
     let mut next = p.next_id;
-    let mut g = effectcraft_effects::instantiate(spec, &mut build::Ids(&mut next), spec.name, [1920.0, 1080.0]);
+    let mut g = pulso_effects::instantiate(spec, &mut build::Ids(&mut next), spec.name, [1920.0, 1080.0]);
     p.next_id = next;
     f(&mut g);
     first_layer(&mut p, c, |l| l.props.sub_mut("effects").expect("effects").children.push(Node::Group(g)));
@@ -241,7 +241,7 @@ fn effect_values_the_format_cannot_hold_are_reported() {
     reported(&with_effect("ec.color.tint", |g| set(g, "white", Value::Color([1.5, 0.0, 0.0, 1.0]))), LossCategory::InvalidValues, "colour channel");
     reported(&with_effect("ec.blur.fastbox", |g| set(g, "iterations", Value::Scalar(2.5))), LossCategory::Effects, "whole number");
     reported(&with_effect("ec.color.tint", |g| g.label = Some(Label::Red)), LossCategory::Effects, "label colour");
-    // After Effects' colour parameters have no opacity; Drop Shadow uses EffectCraft's.
+    // After Effects' colour parameters have no opacity; Drop Shadow uses Pulso's.
     reported(&with_effect("ec.perspective.dropshadow", |g| set(g, "color", Value::Color([0.0, 0.0, 0.0, 0.5]))), LossCategory::Effects, "opacity");
     // A parameter the table has no record for, at a value other than a new instance's.
     lossless(&with_effect("ec.time.timewarp", |_| {}));
@@ -275,7 +275,7 @@ fn footage_interpretation_and_durations_that_are_not_written_are_reported() {
         p
     };
     lossless(&with(still.clone()));
-    reported(&with(Footage { alpha: effectcraft_project::AlphaMode::Premultiplied, ..still.clone() }), LossCategory::FootageItems, "alpha interpretation");
+    reported(&with(Footage { alpha: pulso_project::AlphaMode::Premultiplied, ..still.clone() }), LossCategory::FootageItems, "alpha interpretation");
     reported(&with(Footage { pixel_aspect: 2.0, ..still.clone() }), LossCategory::FootageItems, "pixel aspect");
     reported(&with(Footage { loop_count: 3, ..still.clone() }), LossCategory::FootageItems, "loop count");
     let clip = Footage { path: "C:/x/a.mp4".into(), kind: FootageKind::Video, frame_rate: FrameRate::new(25, 1), duration: secs(0.0), ..still };
@@ -289,8 +289,8 @@ fn mask_values_beyond_the_record_limits_are_reported() {
     let mut g = build::mask(
         &mut build::Ids(&mut next),
         "Mask 1",
-        effectcraft_keyframe::ShapePath::rect([960.0, 540.0], 400.0, 200.0),
-        effectcraft_project::MaskMode::Add,
+        pulso_keyframe::ShapePath::rect([960.0, 540.0], 400.0, 200.0),
+        pulso_project::MaskMode::Add,
         build::MASK_COLORS[0],
     );
     p.next_id = next;
@@ -324,9 +324,9 @@ fn camera_options_stretch_curves_and_expressions_that_change_are_reported() {
     // A curve that is not text.
     reported(&with_effect("ec.color.curves", |g| set(g, "rgb", Value::Scalar(1.0))), LossCategory::InvalidValues, "not text");
     // An expression on a popup whose items are After Effects' in another order (Invert's
-    // channels: After Effects counts its separators, EffectCraft has none).
+    // channels: After Effects counts its separators, Pulso has none).
     let p = with_effect("ec.channel.invert", |g| {
-        g.prop_mut("channel").expect("channel").expr = Some(effectcraft_project::Expression { text: "6".into(), enabled: true });
+        g.prop_mut("channel").expect("channel").expr = Some(pulso_project::Expression { text: "6".into(), enabled: true });
     });
     reported(&p, LossCategory::Expressions, "other units");
 }
@@ -350,9 +350,7 @@ fn changed_material_options_of_a_3d_layer_are_reported() {
         ("Accepts Lights", &(|g: &mut PropGroup| set(g, "acceptsLights", Value::Bool(false))) as &dyn Fn(&mut PropGroup)),
         ("Casts Shadows", &|g: &mut PropGroup| set(g, "castsShadows", Value::Enum(1))),
         ("Diffuse", &|g: &mut PropGroup| g.prop_mut("diffuse").expect("diffuse").keys = vec![key(0.0, Value::Scalar(50.0)), key(1.0, Value::Scalar(80.0))]),
-        ("Ambient", &|g: &mut PropGroup| {
-            g.prop_mut("ambient").expect("ambient").expr = Some(effectcraft_project::Expression { text: "100".into(), enabled: true })
-        }),
+        ("Ambient", &|g: &mut PropGroup| g.prop_mut("ambient").expect("ambient").expr = Some(pulso_project::Expression { text: "100".into(), enabled: true })),
     ] {
         let p = three_d(change);
         reported(&p, LossCategory::ThreeD, &format!("material option {name}"));
@@ -369,12 +367,12 @@ fn changed_material_options_of_a_3d_layer_are_reported() {
 #[test]
 fn a_popup_expression_with_the_same_items_is_not_a_loss() {
     let p = with_effect("ec.blur.fastbox", |g| {
-        g.prop_mut("dimensions").expect("dimensions").expr = Some(effectcraft_project::Expression { text: "1".into(), enabled: true });
+        g.prop_mut("dimensions").expect("dimensions").expr = Some(pulso_project::Expression { text: "1".into(), enabled: true });
     });
-    let r = effectcraft_aep::export::export(&p, &effectcraft_aep::export::ExportOptions { allow_losses: true }).expect("export");
+    let r = pulso_aep::export::export(&p, &pulso_aep::export::ExportOptions { allow_losses: true }).expect("export");
     assert_eq!(r.report.count(LossCategory::Expressions), 0, "{:?}", r.report.losses);
     assert!(r.report.is_lossless(), "{:?}", r.report.losses);
-    assert!(effectcraft_aep::export::export(&p, &effectcraft_aep::export::ExportOptions { allow_losses: false }).is_ok());
+    assert!(pulso_aep::export::export(&p, &pulso_aep::export::ExportOptions { allow_losses: false }).is_ok());
     assert_eq!(r.report.exported.expressions, 1);
 }
 
@@ -402,7 +400,7 @@ fn composition_options_and_the_render_queue_that_are_not_written_are_reported() 
     // value is reported, and a strict export refuses.
     let (p, c, _) = simple();
     lossless(&p);
-    let cases: [(&dyn Fn(&mut effectcraft_project::Comp), &str); 4] = [
+    let cases: [(&dyn Fn(&mut pulso_project::Comp), &str); 4] = [
         (&|comp| comp.preserve_frame_rate = true, "Preserve Frame Rate"),
         (&|comp| comp.preserve_resolution = true, "Preserve Resolution"),
         (&|comp| comp.motion_blur_samples = 32, "motion blur samples per frame"),
@@ -420,11 +418,11 @@ fn composition_options_and_the_render_queue_that_are_not_written_are_reported() 
         comp.hide_shy = true;
         comp.draft_3d = true;
         comp.poster_time = secs(1.5);
-        comp.resolution = effectcraft_project::Resolution::Half;
+        comp.resolution = pulso_project::Resolution::Half;
     });
     lossless(&q);
     // A render queue item is not written.
     let mut q = p;
-    q.render_queue.push(effectcraft_project::render_queue::RenderQueueItem::new(1, c));
+    q.render_queue.push(pulso_project::render_queue::RenderQueueItem::new(1, c));
     reported(&q, LossCategory::RenderQueue, "render queue item of 'C'");
 }

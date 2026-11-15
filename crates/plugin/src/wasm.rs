@@ -5,7 +5,7 @@ use std::sync::Mutex;
 use wasmi::{Config, Engine, Instance, Linker, Memory, Module, Store, StoreLimits, StoreLimitsBuilder, TypedFunc, WasmParams, WasmResults};
 
 use crate::{EffectPlugin, MIN_WASM_API_VERSION, PluginFrame, PluginManifest, PluginParams, WASM_API_VERSION};
-use effectcraft_effects::plugin::{PluginHost, PluginImage};
+use pulso_effects::plugin::{PluginHost, PluginImage};
 
 /// Instruction budget per frame: a fixed allowance plus some per pixel. Generous for per-pixel
 /// work, but a runaway loop stops instead of hanging the render.

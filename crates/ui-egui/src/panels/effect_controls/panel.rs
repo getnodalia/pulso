@@ -1,7 +1,7 @@
 use super::common::{Actions, PARAM_NAME_X, ROW, effect_active, selected_layer};
 use super::editors::{curves_editor, editor_height, histogram_only, levels_editor, object_matte_editor, roto_editor, warp_editor};
 use super::rows::{FxScope, group_rows, toggle_closed};
-use super::{Align2, Color32, EffectcraftApp, EvalCtx, GroupKind, Icon, Layer, PropGroup, Rect, Sense, Stroke, Tokens, json, pos2, vec2, widgets};
+use super::{Align2, Color32, EvalCtx, GroupKind, Icon, Layer, PropGroup, PulsoApp, Rect, Sense, Stroke, Tokens, json, pos2, vec2, widgets};
 
 // ---------------------------------------------------------------------------------------------
 
@@ -25,7 +25,7 @@ struct EffectHdr<'a> {
 }
 
 /// The effect header's name field while renaming: Enter or blur commits, Escape cancels.
-fn rename_field(app: &mut EffectcraftApp, ui: &mut egui::Ui, h: &EffectHdr, mut value: String, actions: &mut Actions) {
+fn rename_field(app: &mut PulsoApp, ui: &mut egui::Ui, h: &EffectHdr, mut value: String, actions: &mut Actions) {
     let EffectHdr { g, shown, r, tw, reset, rename_id, layer_id } = *h;
     let ctx = ui.ctx().clone();
     let name_rect = Rect::from_min_max(pos2(tw.max.x + 6.0, r.min.y + 2.0), pos2(reset.min.x - 6.0, r.max.y - 2.0));
@@ -62,14 +62,14 @@ struct EditorCx<'a> {
 }
 
 /// An effect's custom editor (curves, levels, roto...), or the histogram-only fallback.
-fn effect_editor(app: &mut EffectcraftApp, ui: &mut egui::Ui, cx: &EditorCx, g: &PropGroup, er: Rect, actions: &mut Actions) {
+fn effect_editor(app: &mut PulsoApp, ui: &mut egui::Ui, cx: &EditorCx, g: &PropGroup, er: Rect, actions: &mut Actions) {
     let GroupKind::Effect { effect } = &g.kind else { return };
     match effect.as_str() {
         "ec.color.curves" => curves_editor(app, ui, cx.bp, cx.layer, g, cx.ectx, er, actions),
-        effectcraft_engine::effects::warp_stab::ID => warp_editor(app, ui, cx.bp, cx.layer, g, er, actions),
-        effectcraft_engine::effects::camera_tracker::ID => crate::panels::camera_tracker_ui::editor(app, ui, cx.bp, cx.layer, g, er, actions),
-        effectcraft_engine::effects::roto::ID => roto_editor(app, ui, cx.bp, cx.layer, g, er, actions),
-        effectcraft_engine::effects::object_matte::ID => object_matte_editor(app, ui, cx.bp, cx.layer, g, er, actions),
+        pulso_engine::effects::warp_stab::ID => warp_editor(app, ui, cx.bp, cx.layer, g, er, actions),
+        pulso_engine::effects::camera_tracker::ID => crate::panels::camera_tracker_ui::editor(app, ui, cx.bp, cx.layer, g, er, actions),
+        pulso_engine::effects::roto::ID => roto_editor(app, ui, cx.bp, cx.layer, g, er, actions),
+        pulso_engine::effects::object_matte::ID => object_matte_editor(app, ui, cx.bp, cx.layer, g, er, actions),
         "ec.color.levels" | "ec.color.levelsic" => levels_editor(app, ui, cx.bp, cx.layer, g, effect, cx.ectx, er, actions),
         crate::panels::fx_editors::GLOW | crate::panels::fx_editors::RESHAPE | crate::panels::fx_editors::EXTRACTOR => {
             crate::panels::fx_editors::header_editor(app, ui, cx.bp, cx.layer, g, effect, cx.ectx, er, actions)
@@ -129,8 +129,8 @@ fn drop_payload(ui: &egui::Ui, rect: Rect, p: &egui::Painter, t: &Tokens, layer_
 
 /// A plug-in effect whose last render failed (an effect helper that stopped, ...): a warning sign
 /// at `at`, after the effect's name, with the message on hover. The frame shows the input as is.
-fn render_error_mark(app: &mut EffectcraftApp, ui: &mut egui::Ui, bp: &egui::Painter, effect: &str, g: &PropGroup, at: egui::Pos2) {
-    let Some(err) = effectcraft_engine::effects::plugin::plugin_error(effect) else { return };
+fn render_error_mark(app: &mut PulsoApp, ui: &mut egui::Ui, bp: &egui::Painter, effect: &str, g: &PropGroup, at: egui::Pos2) {
+    let Some(err) = pulso_engine::effects::plugin::plugin_error(effect) else { return };
     let wr = bp.text(at, Align2::LEFT_CENTER, "⚠", Tokens::semibold(12.0), app.tokens.warning);
     let resp = ui.interact(wr.expand(2.0), egui::Id::unique(("ec-fx-error", g.uid)), Sense::hover());
     app.auto.add(&format!("effectControls.effect.{}.error", g.uid), wr, &err);
@@ -138,7 +138,7 @@ fn render_error_mark(app: &mut EffectcraftApp, ui: &mut egui::Ui, bp: &egui::Pai
     ui.ctx().request_repaint_after(std::time::Duration::from_millis(500));
 }
 
-fn about_button(app: &mut EffectcraftApp, ui: &mut egui::Ui, bp: &egui::Painter, t: &Tokens, effect: &str, g: &PropGroup, r: Rect) {
+fn about_button(app: &mut PulsoApp, ui: &mut egui::Ui, bp: &egui::Painter, t: &Tokens, effect: &str, g: &PropGroup, r: Rect) {
     // About…: the effect's name and category (AE's About dialog).
     let about = Rect::from_min_size(pos2(r.max.x - 50.0, r.center().y - 9.0), vec2(44.0, 18.0));
     let aresp = ui.interact(about, egui::Id::unique(("ec-about", g.uid)), Sense::click());
@@ -148,11 +148,11 @@ fn about_button(app: &mut EffectcraftApp, ui: &mut egui::Ui, bp: &egui::Painter,
     if aresp.clicked() {
         widgets::open_popup(ui, apop);
     }
-    if let Some(spec) = effectcraft_engine::effects::find(effect) {
+    if let Some(spec) = pulso_engine::effects::find(effect) {
         let lines = vec![
             crate::i18n::effects::name(spec.id, spec.name),
             format!("Category: {}", crate::i18n::effects::category(spec.category)),
-            "EffectCraft built-in effect (MIT OR Apache-2.0)".to_string(),
+            "Pulso built-in effect (MIT OR Apache-2.0)".to_string(),
         ];
         let _ = widgets::popup_menu(ui, apop, about.left_bottom(), &lines, None);
     }
@@ -164,7 +164,7 @@ fn about_button(app: &mut EffectcraftApp, ui: &mut egui::Ui, bp: &egui::Painter,
 /// effects or presets onto the panel applies them; a right-click on empty space opens the Effect
 /// menu. The rows read from a snapshot of the project, and every edit is queued and run through
 /// [`crate::menus::invoke`], with failures reported in `app.ui.status`.
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut PulsoApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     let ctx = ui.ctx().clone();
@@ -173,7 +173,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
         return;
     };
     let Some(cid) = app.session.active_comp_id() else { return };
-    let comp = app.session.project.comp_arc(cid).unwrap_or_else(|| effectcraft_engine::project::Comp::new(1, 1, Default::default(), Default::default()).into());
+    let comp = app.session.project.comp_arc(cid).unwrap_or_else(|| pulso_engine::project::Comp::new(1, 1, Default::default(), Default::default()).into());
     let comp_name = app.session.project.item(cid).map(|i| i.name.clone()).unwrap_or_default();
     let snap_project = app.session.project.clone();
     let snap_expr = app.session.expr.clone();
@@ -230,7 +230,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
         let active = effect_active(g, layer.id, &app.session.state.selected_props);
         bp.rect_filled(r, 0.0, if active { t.fx_header_active } else { t.fx_header });
         // The effect's colour label (26.5): a bar on the header's left edge.
-        if let Some(lab) = g.label.filter(|l| *l != effectcraft_engine::color::Label::None) {
+        if let Some(lab) = g.label.filter(|l| *l != pulso_engine::color::Label::None) {
             let [lr, lg, lb] = app.session.prefs.label_rgb(lab);
             bp.rect_filled(Rect::from_min_size(r.min, vec2(4.0, r.height())), 0.0, Color32::from_rgb(lr, lg, lb));
             app.auto.add(
@@ -320,8 +320,8 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
             }
             ui.separator();
             ui.menu_button(crate::i18n::tr("Label"), |ui| {
-                let cur = g.label.unwrap_or(effectcraft_engine::color::Label::None);
-                for (i, l) in effectcraft_engine::color::Label::ALL.into_iter().enumerate() {
+                let cur = g.label.unwrap_or(pulso_engine::color::Label::None);
+                for (i, l) in pulso_engine::color::Label::ALL.into_iter().enumerate() {
                     if widgets::label_entry(ui, l, &app.session.prefs.label_name(l), l == cur, &t).clicked() {
                         picked_label = Some(i);
                         ui.close();
@@ -339,7 +339,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
         });
         // What the effect can't render as asked (an OCIO config it can't read, transforms it
         // passes through), under its name.
-        if let Some(w) = effectcraft_engine::effects::warning(g, &mut |pr| ectx.value(&layer, pr)) {
+        if let Some(w) = pulso_engine::effects::warning(g, &mut |pr| ectx.value(&layer, pr)) {
             let galley = bp.layout(format!("⚠ {w}"), Tokens::ui(11.0), t.warning, (body.width() - 20.0).max(60.0));
             let wr = Rect::from_min_size(pos2(body.min.x + 10.0, y + 3.0), galley.size());
             bp.galley(wr.min, galley, t.warning);

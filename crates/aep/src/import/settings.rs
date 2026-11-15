@@ -2,25 +2,25 @@
 //! display, frame count start) from [`crate::ProjectSettings`] (cases 620-634).
 
 use crate::{AepFile, TimeDisplay, WorkingSpace};
-use effectcraft_color::ColorSpace;
-use effectcraft_project::{BitDepth, ProjectSettings, TimeDisplayStyle};
+use pulso_color::ColorSpace;
+use pulso_project::{BitDepth, ProjectSettings, TimeDisplayStyle};
 
 use crate::import::report::{Collector, LossCategory};
 
-/// The working spaces whose After Effects name is sampled (620, 624) and that EffectCraft has.
+/// The working spaces whose After Effects name is sampled (620, 624) and that Pulso has.
 pub(crate) fn color_space(name: &str) -> Option<ColorSpace> {
     match name {
         "sRGB IEC61966-2.1" => Some(ColorSpace::Srgb),
-        // The second name is the one After Effects shows for the profile EffectCraft's exporter
+        // The second name is the one After Effects shows for the profile Pulso's exporter
         // writes (its description tag) once it re-saves such a project.
-        "Rec.709 Gamma 2.4" | "Rec.709 Gamma 2.4 (EffectCraft)" => Some(ColorSpace::Rec709),
+        "Rec.709 Gamma 2.4" | "Rec.709 Gamma 2.4 (Pulso)" => Some(ColorSpace::Rec709),
         _ => None,
     }
 }
 
 /// `current` with every setting the file stores replaced; a setting the file does not hold (or
 /// holds in an unknown form) keeps the current value. The two linear-light switches are always
-/// held: After Effects writes their chunk only when on (626, 627), so a file without it has them off. A working space EffectCraft does not have is
+/// held: After Effects writes their chunk only when on (626, 627), so a file without it has them off. A working space Pulso does not have is
 /// reported.
 pub(crate) fn map(file: &AepFile<'_>, current: &ProjectSettings, col: &mut Collector) -> ProjectSettings {
     let s = crate::ProjectSettings::read(file);
@@ -44,11 +44,11 @@ pub(crate) fn map(file: &AepFile<'_>, current: &ProjectSettings, col: &mut Colle
                 out.working_space = Some(cs);
                 // After Effects renders in the working space (902: an sRGB PNG step 128 is 135 in
                 // a Rec.709 Gamma 2.4 project, a grey 0.5 solid 128, in the Render Queue output
-                // and in the captures), EffectCraft converts to `output_space` (sRGB when unset).
+                // and in the captures), Pulso converts to `output_space` (sRGB when unset).
                 // sRGB stays unset, which is the same.
                 out.output_space = (cs != ColorSpace::Srgb).then_some(cs);
             }
-            None => col.lose(LossCategory::ProjectSettings, format!("working space '{name}' (no EffectCraft counterpart; the current one is kept)")),
+            None => col.lose(LossCategory::ProjectSettings, format!("working space '{name}' (no Pulso counterpart; the current one is kept)")),
         },
         None => {}
     }
@@ -93,7 +93,7 @@ mod tests {
     #[test]
     fn rec709_under_both_names() {
         assert_eq!(color_space("Rec.709 Gamma 2.4"), Some(ColorSpace::Rec709));
-        assert_eq!(color_space("Rec.709 Gamma 2.4 (EffectCraft)"), Some(ColorSpace::Rec709));
+        assert_eq!(color_space("Rec.709 Gamma 2.4 (Pulso)"), Some(ColorSpace::Rec709));
         assert_eq!(color_space("Rec.709 Gamma 2.4 (other)"), None);
     }
 }

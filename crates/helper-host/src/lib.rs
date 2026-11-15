@@ -1,8 +1,8 @@
-//! # effectcraft-helper-host (L3)
+//! # pulso-helper-host (L3)
 //!
-//! **External effect helpers**: separate programs that offer effects to EffectCraft over a small,
+//! **External effect helpers**: separate programs that offer effects to Pulso over a small,
 //! versioned protocol ([`protocol`], `docs/external-helpers.md`, ADR
-//! `docs/adr/0001-external-effect-helpers.md`). EffectCraft finds installed helpers
+//! `docs/adr/0001-external-effect-helpers.md`). Pulso finds installed helpers
 //! ([`find_helpers`]), starts each as a child process, lists its effects and registers every one
 //! as an ordinary plug-in effect (plug-in API 2), so the UI, the property tree, keyframes,
 //! scripting and the command surface need nothing new. Rendering sends the frame to the helper
@@ -10,7 +10,7 @@
 //! time, another layer, parameters at another time) while it works.
 //!
 //! The point is containment: whatever native code a helper runs (an OpenFX plug-in host, for
-//! example) runs in **its** process. If it crashes, hangs or talks nonsense, EffectCraft stops
+//! example) runs in **its** process. If it crashes, hangs or talks nonsense, Pulso stops
 //! it, shows the error on the effect, leaves the frame as it was and starts the helper again
 //! for the next render; an effect that keeps taking its helper down is turned off
 //! ([`blocklist`]). This crate is safe Rust (`unsafe_code = "forbid"`, like the rest of the
@@ -32,14 +32,14 @@ pub mod serve;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock};
 
-use effectcraft_effects::plugin::{plugin, register_plugin};
+use pulso_effects::plugin::{plugin, register_plugin};
 use serde_json::{Value, json};
 
 use crate::client::{Helper, HelperEffect, lock};
 use crate::protocol::RemoteEffect;
 
-/// Helper program names start with this (`effectcraft-helper-ofx`, plus `.exe` on Windows).
-pub const PROGRAM_PREFIX: &str = "effectcraft-helper-";
+/// Helper program names start with this (`pulso-helper-ofx`, plus `.exe` on Windows).
+pub const PROGRAM_PREFIX: &str = "pulso-helper-";
 
 /// The running helpers.
 fn helpers() -> &'static Mutex<Vec<Arc<Helper>>> {
@@ -48,13 +48,13 @@ fn helpers() -> &'static Mutex<Vec<Arc<Helper>>> {
 }
 
 /// Where helpers are looked for: `helpers/` next to the executable, `helpers/` in the settings
-/// folder (`config_dir`), and every entry of `EFFECTCRAFT_HELPER_PATH` (a path list of helper
+/// folder (`config_dir`), and every entry of `PULSO_HELPER_PATH` (a path list of helper
 /// programs or folders).
 pub fn default_search_paths(config_dir: Option<&Path>) -> Vec<PathBuf> {
     let mut v = vec![];
     if let Some(dir) = std::env::current_exe().ok().and_then(|e| e.parent().map(Path::to_path_buf)) {
         v.push(dir.join("helpers"));
-        // macOS app bundles: Contents/MacOS/effectcraft → Contents/Helpers.
+        // macOS app bundles: Contents/MacOS/pulso → Contents/Helpers.
         if cfg!(target_os = "macos")
             && let Some(contents) = dir.parent()
         {
@@ -64,7 +64,7 @@ pub fn default_search_paths(config_dir: Option<&Path>) -> Vec<PathBuf> {
     if let Some(c) = config_dir {
         v.push(c.join("helpers"));
     }
-    if let Some(p) = std::env::var_os("EFFECTCRAFT_HELPER_PATH") {
+    if let Some(p) = std::env::var_os("PULSO_HELPER_PATH") {
         v.extend(std::env::split_paths(&p).filter(|p| !p.as_os_str().is_empty()));
     }
     v
@@ -83,7 +83,7 @@ pub fn is_helper_name(name: &str) -> bool {
     stem.len() > PROGRAM_PREFIX.len() && stem.starts_with(PROGRAM_PREFIX) && !stem.contains('.')
 }
 
-/// The helper programs in `paths`: files named `effectcraft-helper-*` in each folder and its
+/// The helper programs in `paths`: files named `pulso-helper-*` in each folder and its
 /// direct subfolders, and paths that are themselves such files (any name is accepted for an
 /// explicit file). Sorted, without duplicates.
 pub fn find_helpers(paths: &[PathBuf]) -> Vec<PathBuf> {
@@ -226,7 +226,7 @@ pub fn list() -> Value {
 }
 
 /// Stop every helper process (they start again when needed). Called when the app quits;
-/// helpers also exit on their own when EffectCraft's end of the pipe closes.
+/// helpers also exit on their own when Pulso's end of the pipe closes.
 pub fn stop_all() {
     for h in lock(helpers()).iter() {
         h.stop();
@@ -240,14 +240,14 @@ mod tests {
     #[test]
     fn helper_programs_are_recognised_by_name() {
         if cfg!(windows) {
-            assert!(is_helper_name("effectcraft-helper-ofx.exe"));
-            assert!(!is_helper_name("effectcraft-helper-ofx"));
+            assert!(is_helper_name("pulso-helper-ofx.exe"));
+            assert!(!is_helper_name("pulso-helper-ofx"));
         } else {
-            assert!(is_helper_name("effectcraft-helper-ofx"));
-            assert!(!is_helper_name("effectcraft-helper-ofx.pdb"));
+            assert!(is_helper_name("pulso-helper-ofx"));
+            assert!(!is_helper_name("pulso-helper-ofx.pdb"));
         }
-        assert!(!is_helper_name("effectcraft-helper-"));
-        assert!(!is_helper_name("effectcraft"));
+        assert!(!is_helper_name("pulso-helper-"));
+        assert!(!is_helper_name("pulso"));
     }
 
     #[test]

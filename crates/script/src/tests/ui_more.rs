@@ -2,16 +2,16 @@
 
 use std::sync::Arc;
 
-use effectcraft_engine::Session;
-use effectcraft_engine::scriptui::{DrawOp, PathSeg, WidgetKind, WindowKind};
+use pulso_engine::Session;
+use pulso_engine::scriptui::{DrawOp, PathSeg, WidgetKind, WindowKind};
 use serde_json::json;
 
 use crate::run_code;
 
 fn session() -> Session {
-    let mut s = Session { expr: Some(Arc::new(effectcraft_expr::Expressions)), ..Default::default() };
+    let mut s = Session { expr: Some(Arc::new(pulso_expr::Expressions)), ..Default::default() };
     crate::install(&mut s);
-    s.config = Some(Arc::new(effectcraft_engine::config::MemoryConfig::default()));
+    s.config = Some(Arc::new(pulso_engine::config::MemoryConfig::default()));
     s
 }
 
@@ -221,8 +221,8 @@ fn pin_at(s: &mut Session, id: u64, i: usize) -> [f64; 2] {
 fn position_now(s: &Session, layer: u64) -> [f64; 2] {
     let cid = s.active_comp_id().unwrap();
     let comp = s.project.comp(cid).unwrap();
-    let l = comp.layer(effectcraft_engine::project::LayerId(layer)).unwrap();
-    let ctx = effectcraft_engine::render::EvalCtx {
+    let l = comp.layer(pulso_engine::project::LayerId(layer)).unwrap();
+    let ctx = pulso_engine::render::EvalCtx {
         project: &s.project,
         comp_id: cid,
         comp,

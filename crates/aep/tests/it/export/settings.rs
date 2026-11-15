@@ -1,17 +1,17 @@
 //! Project settings (cases 620-634): written into the template's header chunks, read back with
-//! `effectcraft-aep`, and the settings fixtures through import, export and import.
+//! `pulso-aep`, and the settings fixtures through import, export and import.
 
 use crate::export::helpers::*;
-use effectcraft_aep::export::LossCategory;
-use effectcraft_aep::{TimeDisplay, WorkingSpace, parse, write};
-use effectcraft_color::ColorSpace;
-use effectcraft_project::{BitDepth, ColorEngine, Project, ProjectSettings, TimeDisplayStyle};
+use pulso_aep::export::LossCategory;
+use pulso_aep::{TimeDisplay, WorkingSpace, parse, write};
+use pulso_color::ColorSpace;
+use pulso_project::{BitDepth, ColorEngine, Project, ProjectSettings, TimeDisplayStyle};
 
-fn read_back(p: &Project) -> effectcraft_aep::ProjectSettings {
+fn read_back(p: &Project) -> pulso_aep::ProjectSettings {
     let r = export_all(p);
     let file = parse(&r.bytes).expect("parse");
     assert_eq!(write(&file).expect("write"), r.bytes, "container consistent");
-    effectcraft_aep::ProjectSettings::read(&file)
+    pulso_aep::ProjectSettings::read(&file)
 }
 
 fn with(f: impl FnOnce(&mut ProjectSettings)) -> Project {
@@ -22,7 +22,7 @@ fn with(f: impl FnOnce(&mut ProjectSettings)) -> Project {
 
 #[test]
 fn every_setting_is_written_as_after_effects_stores_it() {
-    // EffectCraft's defaults: 8 bpc, no working space, gamma 2.2, timecode, frames from 0.
+    // Pulso's defaults: 8 bpc, no working space, gamma 2.2, timecode, frames from 0.
     let d = read_back(&with(|_| {}));
     assert_eq!(d.bits_per_channel, Some(8));
     assert_eq!(d.working_space, Some(WorkingSpace::None));
@@ -79,7 +79,7 @@ fn rec709_gamma_24_is_written_with_a_profile_of_our_own() {
     let r = export_all(&p);
     assert!(r.report.is_lossless(), "{:?}", r.report.losses);
     let file = parse(&r.bytes).expect("parse");
-    let s = effectcraft_aep::ProjectSettings::read(&file);
+    let s = pulso_aep::ProjectSettings::read(&file);
     assert_eq!(s.working_space, Some(WorkingSpace::Profile("Rec.709 Gamma 2.4".into())));
     let cpid = file.chunks.iter().find(|c| c.is(b"cpid")).and_then(|c| c.bytes()).expect("cpid").to_vec();
     let pw = file.chunks.iter().position(|c| c.is(b"PwCs")).expect("PwCs");
@@ -95,7 +95,7 @@ fn rec709_gamma_24_is_written_with_a_profile_of_our_own() {
     // Import maps it back to Rec.709.
     let mut q = Project::default();
     let none = |_: &str| false;
-    let back = effectcraft_aep::import::import(&mut q, &r.bytes, &effectcraft_aep::import::ImportOptions::new(&none)).expect("import");
+    let back = pulso_aep::import::import(&mut q, &r.bytes, &pulso_aep::import::ImportOptions::new(&none)).expect("import");
     assert_eq!(back.settings.working_space, Some(ColorSpace::Rec709));
 }
 
@@ -107,11 +107,11 @@ fn our_rec709_profile_without_its_name_is_still_rec709() {
     let key = b",\"colorProfileName\":\"Rec.709 Gamma 2.4\"";
     let at = bytes.windows(key.len()).position(|w| w == key).expect("name");
     bytes[at..at + key.len()].fill(b' ');
-    let s = effectcraft_aep::ProjectSettings::read(&parse(&bytes).expect("parse"));
-    assert_eq!(s.working_space, Some(WorkingSpace::Profile("Rec.709 Gamma 2.4 (EffectCraft)".into())));
+    let s = pulso_aep::ProjectSettings::read(&parse(&bytes).expect("parse"));
+    assert_eq!(s.working_space, Some(WorkingSpace::Profile("Rec.709 Gamma 2.4 (Pulso)".into())));
     let mut q = Project::default();
     let none = |_: &str| false;
-    let back = effectcraft_aep::import::import(&mut q, &bytes, &effectcraft_aep::import::ImportOptions::new(&none)).expect("import");
+    let back = pulso_aep::import::import(&mut q, &bytes, &pulso_aep::import::ImportOptions::new(&none)).expect("import");
     assert_eq!(back.settings.working_space, Some(ColorSpace::Rec709));
 }
 
@@ -148,15 +148,15 @@ fn settings_fixtures_round_trip() {
     ];
     for name in names {
         let bytes = fixture!(name);
-        let orig = effectcraft_aep::ProjectSettings::read(&parse(&bytes).expect("parse"));
+        let orig = pulso_aep::ProjectSettings::read(&parse(&bytes).expect("parse"));
         let mut p = Project::default();
         let none = |_: &str| false;
-        let r = effectcraft_aep::import::import(&mut p, &bytes, &effectcraft_aep::import::ImportOptions::new(&none)).expect(name);
+        let r = pulso_aep::import::import(&mut p, &bytes, &pulso_aep::import::ImportOptions::new(&none)).expect(name);
         p.settings = r.settings;
         let back = read_back(&p);
         // 621-630 share a file with 628 (scene compensation off), which the round trip does not
         // carry (628 is not in this list); every other setting comes back.
-        let back = effectcraft_aep::ProjectSettings { scene_compensation: orig.scene_compensation, ..back };
+        let back = pulso_aep::ProjectSettings { scene_compensation: orig.scene_compensation, ..back };
         assert_eq!(back, orig, "{name}");
     }
 }
@@ -168,14 +168,14 @@ fn an_output_space_equal_to_the_working_space_is_the_normal_case() {
     let bytes = fixture!("902-settings-rec709-16bpc-steps-png-grey-solid.aep");
     let mut p = Project::default();
     let none = |_: &str| false;
-    let opts = effectcraft_aep::import::ImportOptions { allow_losses: true, ..effectcraft_aep::import::ImportOptions::new(&none) };
-    let r = effectcraft_aep::import::import(&mut p, &bytes, &opts).expect("import");
+    let opts = pulso_aep::import::ImportOptions { allow_losses: true, ..pulso_aep::import::ImportOptions::new(&none) };
+    let r = pulso_aep::import::import(&mut p, &bytes, &opts).expect("import");
     assert_eq!((r.settings.working_space, r.settings.output_space), (Some(ColorSpace::Rec709), Some(ColorSpace::Rec709)));
     p.settings = r.settings;
     let e = export_all(&p);
     assert_eq!(e.report.count(LossCategory::ProjectSettings), 0, "{:?}", e.report.losses);
     let mut q = Project::default();
-    let back = effectcraft_aep::import::import(&mut q, &e.bytes, &opts).expect("re-import");
+    let back = pulso_aep::import::import(&mut q, &e.bytes, &opts).expect("re-import");
     assert_eq!((back.settings.working_space, back.settings.output_space), (Some(ColorSpace::Rec709), Some(ColorSpace::Rec709)));
     // Another output space is still reported.
     let other = with(|s| {

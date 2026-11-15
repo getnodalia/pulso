@@ -1,17 +1,17 @@
 //! Eases that were read as linear before: Anchor Point (597, 730), an effect point and an effect
-//! colour (598), mask paths (599, 700). EffectCraft's values between the keys are compared with
+//! colour (598), mask paths (599, 700). Pulso's values between the keys are compared with
 //! After Effects' read-backs (MANIFEST S17 / S19).
 
 use crate::import::helpers::comp;
-use effectcraft_keyframe::Value;
-use effectcraft_project::{Layer, Project};
-use effectcraft_time::{TICKS_PER_SECOND, Tick};
+use pulso_keyframe::Value;
+use pulso_project::{Layer, Project};
+use pulso_time::{TICKS_PER_SECOND, Tick};
 
 fn at(s: f64) -> Tick {
     Tick((s * TICKS_PER_SECOND as f64).round() as i64)
 }
 
-fn layer<'p>(p: &'p Project, r: &effectcraft_aep::import::ImportResult, name: &str) -> &'p Layer {
+fn layer<'p>(p: &'p Project, r: &pulso_aep::import::ImportResult, name: &str) -> &'p Layer {
     let (_, c) = comp(p, r, "C");
     c.layers.iter().find(|l| l.name == name).unwrap_or_else(|| panic!("no {name}"))
 }

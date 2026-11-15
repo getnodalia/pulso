@@ -1,13 +1,13 @@
-//! The exported bytes are parsed back with `effectcraft-aep` and every exported field is compared
+//! The exported bytes are parsed back with `pulso-aep` and every exported field is compared
 //! with the project it came from.
 
 use crate::export::helpers::*;
-use effectcraft_aep::export::{AepExportError, ExportOptions, LossCategory, analyze, export};
-use effectcraft_aep::{BlendMode as AepBlend, Interpolation, ItemKind as AepKind, PropNode, Quality as AepQuality, parse, write};
-use effectcraft_color::{BlendMode, Label};
-use effectcraft_keyframe::{Ease, Interp, Value};
-use effectcraft_project::{ItemKind, LayerSource, Project, Quality};
-use effectcraft_time::FrameRate;
+use pulso_aep::export::{AepExportError, ExportOptions, LossCategory, analyze, export};
+use pulso_aep::{BlendMode as AepBlend, Interpolation, ItemKind as AepKind, PropNode, Quality as AepQuality, parse, write};
+use pulso_color::{BlendMode, Label};
+use pulso_keyframe::{Ease, Interp, Value};
+use pulso_project::{ItemKind, LayerSource, Project, Quality};
+use pulso_time::FrameRate;
 
 fn close(a: f64, b: f64) -> bool {
     (a - b).abs() < 1e-9
@@ -21,7 +21,7 @@ fn simple_project_round_trips_through_the_container() {
     let file = parse(&r.bytes).expect("parse");
     // The container is consistent: writing it back gives the same bytes.
     assert_eq!(write(&file).expect("write"), r.bytes);
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let items = view.all_items();
     let kinds: Vec<_> = items.iter().filter_map(|i| i.kind()).collect();
     assert_eq!(kinds.iter().filter(|k| **k == AepKind::Composition).count(), 1);
@@ -44,7 +44,7 @@ fn composition_header_fields() {
     });
     let r = export_all(&p);
     let file = parse(&r.bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let item = view.all_items().into_iter().find(|i| i.display_name().as_deref() == Some("Flags")).expect("comp");
     let h = item.comp().expect("comp").header().expect("header");
     assert_eq!((h.width, h.height), (800, 600));
@@ -74,7 +74,7 @@ fn ntsc_and_odd_frame_rates_use_the_time_bases_after_effects_writes() {
         add_comp(&mut p, "R", 640, 360, rate, 2.0, None);
         let r = export_all(&p);
         let file = parse(&r.bytes).expect("parse");
-        let view = effectcraft_aep::Project::new(&file).expect("project");
+        let view = pulso_aep::Project::new(&file).expect("project");
         let item = view.all_items().into_iter().find(|i| i.display_name().as_deref() == Some("R")).expect("comp");
         let h = item.comp().expect("c").header().expect("h");
         assert_eq!((h.time_base.frame_duration, h.time_base.timescale, h.frame_rate_fixed), (fd, ts, fixed), "{}", rate.label());
@@ -101,17 +101,17 @@ fn null_anchor_points_round_trip() {
     }
     let r = export_all(&p);
     let file = parse(&r.bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let comp = view.all_items().into_iter().find(|i| i.comp().is_some()).expect("comp");
     let stored: Vec<_> =
         comp.comp().expect("c").layers().map(|l| (l.name().unwrap_or_default(), l.transform(800, 600).expect("transform").anchor_fraction.source)).collect();
-    assert_eq!(stored, [("Centre".to_string(), effectcraft_aep::ValueSource::Stored), ("Corner".to_string(), effectcraft_aep::ValueSource::Default)]);
+    assert_eq!(stored, [("Centre".to_string(), pulso_aep::ValueSource::Stored), ("Corner".to_string(), pulso_aep::ValueSource::Default)]);
     let mut back = Project::default();
     let none = |_: &str| false;
-    let res = effectcraft_aep::import::import(
+    let res = pulso_aep::import::import(
         &mut back,
         &r.bytes,
-        &effectcraft_aep::import::ImportOptions { allow_losses: true, ..effectcraft_aep::import::ImportOptions::new(&none) },
+        &pulso_aep::import::ImportOptions { allow_losses: true, ..pulso_aep::import::ImportOptions::new(&none) },
     )
     .expect("import");
     let comp = res.comps.first().and_then(|id| back.comp(*id)).expect("comp");
@@ -156,7 +156,7 @@ fn layer_header_fields() {
     let r = export_all(&p);
     assert!(r.report.is_lossless());
     let file = parse(&r.bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let comp = view.all_items().into_iter().find(|i| i.comp().is_some()).expect("comp");
     let layers: Vec<_> = comp.comp().expect("c").layers().collect();
     assert_eq!(layers.len(), 4);
@@ -197,7 +197,7 @@ fn solids_and_items() {
     add_solid(&mut p, "Root solid", 31, 17, [1.0, 0.5, 0.25], None);
     let r = export_all(&p);
     let file = parse(&r.bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let all = view.all_items();
     let folder = all.iter().find(|i| i.display_name().as_deref() == Some("Folder A")).expect("folder");
     let kids: Vec<_> = folder.children().collect();
@@ -213,9 +213,9 @@ fn solids_and_items() {
     assert_eq!(rs.solid_rgb(), Some([1.0, 0.5, 0.25]));
 }
 
-fn transform_of(bytes: &[u8]) -> (effectcraft_aep::Transform, Vec<(String, Vec<(i32, Option<Interpolation>, Option<Interpolation>, Vec<f64>)>)>) {
+fn transform_of(bytes: &[u8]) -> (pulso_aep::Transform, Vec<(String, Vec<(i32, Option<Interpolation>, Option<Interpolation>, Vec<f64>)>)>) {
     let file = parse(bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let comp = view.all_items().into_iter().find(|i| i.comp().is_some()).expect("comp");
     let h = comp.comp().expect("c").header().expect("h");
     let layer = comp.comp().expect("c").layers().next().expect("layer");
@@ -271,7 +271,7 @@ fn defaults_are_not_written() {
     assert_eq!(r.bytes, plain.bytes);
     // A layer at the default values has no property record beyond the template's.
     let file = parse(&r.bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let comp = view.all_items().into_iter().find(|i| i.comp().is_some()).expect("comp");
     let layer = comp.comp().expect("c").layers().next().expect("layer");
     let Some(PropNode::Group(g)) = layer.properties().and_then(|p| p.get("ADBE Transform Group")) else { panic!("no group") };
@@ -299,7 +299,7 @@ fn keyframes_with_interpolation_ease_and_expressions() {
         o.keys = vec![k0, k1, key(2.0, Value::Scalar(50.0))];
         let rot = tr.get_mut("rotation").expect("r");
         rot.value = Value::Scalar(10.0);
-        rot.expr = Some(effectcraft_project::Expression { text: "time*20".into(), enabled: false });
+        rot.expr = Some(pulso_project::Expression { text: "time*20".into(), enabled: false });
     });
     let r = export_all(&p);
     assert_eq!(r.report.exported.keyframes, 3);
@@ -316,7 +316,7 @@ fn keyframes_with_interpolation_ease_and_expressions() {
     assert_eq!(opacity[1].3, vec![1.0]);
     assert!(close(tr.rotation_degrees.value, 10.0));
     let file = parse(&r.bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let comp = view.all_items().into_iter().find(|i| i.comp().is_some()).expect("comp");
     let layer = comp.comp().expect("c").layers().next().expect("layer");
     let Some(PropNode::Group(g)) = layer.properties().and_then(|p| p.get("ADBE Transform Group")) else { panic!("no group") };
@@ -329,8 +329,8 @@ fn keyframes_with_interpolation_ease_and_expressions() {
 fn losses_are_reported_and_refused_unless_allowed() {
     let (mut p, c, _) = simple();
     let t = add_comp(&mut p, "T", 100, 100, FrameRate::new(25, 1), 1.0, None);
-    add_layer(&mut p, t, "Par", LayerSource::Light { kind: effectcraft_project::LightKind::Parallel }, (100, 100));
-    add_layer(&mut p, t, "Amb", LayerSource::Light { kind: effectcraft_project::LightKind::Ambient }, (100, 100));
+    add_layer(&mut p, t, "Par", LayerSource::Light { kind: pulso_project::LightKind::Parallel }, (100, 100));
+    add_layer(&mut p, t, "Amb", LayerSource::Light { kind: pulso_project::LightKind::Ambient }, (100, 100));
     with_layer(&mut p, c, 0, |l| {
         l.blend_mode = BlendMode::Dissolve;
         l.switches.three_d = true;
@@ -353,7 +353,7 @@ fn losses_are_reported_and_refused_unless_allowed() {
     assert_eq!(ok.report, rep);
     // The report round-trips through JSON.
     let json = serde_json::to_string(&rep).expect("json");
-    assert_eq!(serde_json::from_str::<effectcraft_aep::export::ExportReport>(&json).expect("back"), rep);
+    assert_eq!(serde_json::from_str::<pulso_aep::export::ExportReport>(&json).expect("back"), rep);
 }
 
 #[test]
@@ -468,7 +468,7 @@ fn a_root_folder_named_solids_is_the_solids_folder() {
     add_layer(&mut p, c, "N", LayerSource::Null, (100, 100));
     let r = export_all(&p);
     let file = parse(&r.bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let folders: Vec<_> = view.all_items().into_iter().filter(|i| i.kind() == Some(AepKind::Folder)).collect();
     assert_eq!(folders.len(), 1, "one Solids folder, not two");
     let kids: Vec<_> = folders[0].children().filter_map(|k| k.footage()).collect();
@@ -487,7 +487,7 @@ fn the_3d_switch_is_written() {
     let r = export_all(&p);
     assert!(r.report.is_lossless(), "{:?}", r.report.losses);
     let file = parse(&r.bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let layer = view.all_items().into_iter().find_map(|i| i.comp()).and_then(|c| c.layers().next()).expect("layer");
     assert!(layer.header().expect("header").is_three_d());
     let Some(PropNode::Group(g)) = layer.properties().and_then(|p| p.get("ADBE Transform Group")) else { panic!("transform") };
@@ -510,7 +510,7 @@ fn time_stretch_is_the_exact_ratio_and_scales_the_time_scale() {
         let r = export_all(&p);
         assert!(r.report.is_lossless(), "{pct}: {:?}", r.report.losses);
         let file = parse(&r.bytes).expect("parse");
-        let view = effectcraft_aep::Project::new(&file).expect("project");
+        let view = pulso_aep::Project::new(&file).expect("project");
         let layer = view.all_items().into_iter().find_map(|i| i.comp()).and_then(|c| c.layers().next()).expect("layer");
         let h = layer.header().expect("header");
         assert_eq!((h.stretch, h.stretch_den), (num, den), "{pct}");
@@ -522,12 +522,8 @@ fn time_stretch_is_the_exact_ratio_and_scales_the_time_scale() {
         // And back.
         let mut q = Project::default();
         let none = |_: &str| false;
-        effectcraft_aep::import::import(
-            &mut q,
-            &r.bytes,
-            &effectcraft_aep::import::ImportOptions { allow_losses: true, ..effectcraft_aep::import::ImportOptions::new(&none) },
-        )
-        .expect("import");
+        pulso_aep::import::import(&mut q, &r.bytes, &pulso_aep::import::ImportOptions { allow_losses: true, ..pulso_aep::import::ImportOptions::new(&none) })
+            .expect("import");
         let l = q.items.values().find_map(|i| if let ItemKind::Comp(c) = &i.kind { c.layers.first().cloned() } else { None }).expect("layer");
         assert!((l.stretch - pct).abs() < 1e-9 && l.out_point == secs(1.0 + 2.0 * pct / 100.0), "{pct}: {} {:?}", l.stretch, l.out_point);
     }
@@ -544,7 +540,7 @@ fn unwritten_layer_switches_and_off_frame_times_are_reported() {
     with_layer(&mut p, c, 0, |l| {
         l.switches.quality = Quality::Wireframe;
         l.preserve_transparency = true;
-        l.auto_orient = effectcraft_project::AutoOrient::AlongPath;
+        l.auto_orient = pulso_project::AutoOrient::AlongPath;
         l.in_point = secs(0.013);
     });
     let r = export_all(&p);

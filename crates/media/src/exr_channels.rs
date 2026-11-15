@@ -15,15 +15,15 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock, PoisonError};
 
-use effectcraft_raster::channels3d::{BACKGROUND_DEPTH, split_channel};
-use effectcraft_raster::{AuxChannels, Image};
-use effectcraft_render::reads::{ReadFile, ReadFiles};
 use exr::block::UncompressedBlock;
 use exr::block::chunk::TileCoordinates;
 use exr::image::read::image::ReadImage;
 use exr::image::read::layers::{ChannelsReader, ReadAllLayers, ReadChannels};
 use exr::meta::attribute::SampleType;
 use exr::meta::header::Header;
+use pulso_raster::channels3d::{BACKGROUND_DEPTH, split_channel};
+use pulso_raster::{AuxChannels, Image};
+use pulso_render::reads::{ReadFile, ReadFiles};
 
 use crate::convert::{AlphaOp, float_to_image};
 
@@ -1005,13 +1005,13 @@ mod tests {
     /// that failed, or a broken part the picture doesn't use).
     #[test]
     fn a_shared_picture_without_cached_channels_is_still_decoded() {
-        use effectcraft_project::Footage;
-        use effectcraft_render::FloatCurve;
+        use pulso_project::Footage;
+        use pulso_render::FloatCurve;
         let bytes: Arc<[u8]> = flat(&["Image.R", "Image.G", "Image.B", "depth.Z"], (4, 2), 0.5).into();
         let path = "/474-shared-fallback.exr";
         assert!(cache().get(path, Use::Channels, || None).is_none(), "a read that failed");
         let op = AlphaOp::of(&Footage::default(), FloatCurve::Linear);
-        let img = layered_picture(path, bytes, &ReadFile::new(path, effectcraft_render::reads::FileStamp::Virtual), op, true).unwrap();
+        let img = layered_picture(path, bytes, &ReadFile::new(path, pulso_render::reads::FileStamp::Virtual), op, true).unwrap();
         assert_eq!(img.get(1, 1), [0.5, 0.5, 0.5, 1.0]);
     }
 
@@ -1069,19 +1069,19 @@ mod tests {
         pool.add_bytes(paths[0], frame(0.25));
         pool.add_bytes(paths[1], frame(0.75));
         let mut f = crate::probe_bytes(paths[0], frame(0.25)).unwrap();
-        f.kind = effectcraft_project::FootageKind::Sequence;
+        f.kind = pulso_project::FootageKind::Sequence;
         f.sequence = paths.iter().map(|p| p.to_string()).collect();
         let t1 = f.frame_rate.tick_of(1);
-        use effectcraft_render::FootageSource;
+        use pulso_render::FootageSource;
         // The first frame: the picture, then an effect reads the channels.
-        pool.frame_at(&f, effectcraft_time::Tick::ZERO).unwrap();
-        let aux = pool.aux(effectcraft_project::ItemId(1), &f, effectcraft_time::Tick::ZERO).unwrap();
+        pool.frame_at(&f, pulso_time::Tick::ZERO).unwrap();
+        let aux = pool.aux(pulso_project::ItemId(1), &f, pulso_time::Tick::ZERO).unwrap();
         assert_eq!(aux.get("GlossDir.R").and_then(|p| p.first()).copied(), Some(0.25));
         // The next frame's picture decodes the file into the cache, so its channels are not read.
         let px = pool.frame_at(&f, t1).unwrap().get(0, 0);
         let aux = cached(paths[1], || panic!("the frame's decode is reused, the file is not read again")).unwrap();
         assert_eq!(aux.get("GlossDir.R").and_then(|p| p.first()).copied(), Some(0.75));
-        assert_eq!(px, pool.frame_at(&f, effectcraft_time::Tick::ZERO).unwrap().get(0, 0), "the same picture");
+        assert_eq!(px, pool.frame_at(&f, pulso_time::Tick::ZERO).unwrap().get(0, 0), "the same picture");
     }
 
     /// An EXR file with an unnamed RGB layer and a named `GlossDir.R` of `v` (2×2).
@@ -1095,7 +1095,7 @@ mod tests {
     /// then the channels once `aux()` asks).
     #[test]
     fn given_aux_footage_decodes_once_from_the_first_frame() {
-        use effectcraft_render::FootageSource;
+        use pulso_render::FootageSource;
         let (given, learned) = ("/474-given-still.exr", "/474-learned-still.exr");
         let pool = crate::MediaPool::new();
         let mut f = std::collections::HashMap::new();
@@ -1105,14 +1105,14 @@ mod tests {
         }
         pool.set_aux_footage(&[given.to_string()]);
         take_decodes();
-        let t = effectcraft_time::Tick::ZERO;
+        let t = pulso_time::Tick::ZERO;
         pool.frame_at(&f[given], t).unwrap();
-        let aux = pool.aux(effectcraft_project::ItemId(1), &f[given], t).unwrap();
+        let aux = pool.aux(pulso_project::ItemId(1), &f[given], t).unwrap();
         assert_eq!(aux.get("GlossDir.R").and_then(|p| p.first()).copied(), Some(0.25));
         assert_eq!(take_decodes(), [0, 1], "the picture and the channels share one decode");
         // Learned only at the first `aux()`: the picture was decoded on its own before.
         pool.frame_at(&f[learned], t).unwrap();
-        pool.aux(effectcraft_project::ItemId(2), &f[learned], t).unwrap();
+        pool.aux(pulso_project::ItemId(2), &f[learned], t).unwrap();
         assert_eq!(take_decodes(), [1, 1]);
     }
 
@@ -1120,14 +1120,14 @@ mod tests {
     /// only their picture again; what `aux()` learned is dropped with each new set too.
     #[test]
     fn a_new_aux_footage_set_returns_to_picture_only() {
-        use effectcraft_render::FootageSource;
+        use pulso_render::FootageSource;
         let paths: Vec<String> = (1..=4).map(|i| format!("/474-unset_{i:04}.exr")).collect();
         let pool = crate::MediaPool::new();
         for p in &paths {
             pool.add_bytes(p, rgb_and_gloss(0.5));
         }
         let mut f = crate::probe_bytes(&paths[0], rgb_and_gloss(0.5)).unwrap();
-        f.kind = effectcraft_project::FootageKind::Sequence;
+        f.kind = pulso_project::FootageKind::Sequence;
         f.sequence = paths.clone();
         let at = |i: i64| f.frame_rate.tick_of(i);
         // (counted on this thread, so other tests sharing the channel cache don't change them)
@@ -1142,7 +1142,7 @@ mod tests {
         assert!(!cache().lock().held.iter().any(|(p, _)| *p == paths[0]), "no longer kept once no effect reads it");
         assert_eq!(frame(1), [1, 0], "no longer given: the picture alone");
         // Learned by `aux()`, then a new set without it: picture only again.
-        pool.aux(effectcraft_project::ItemId(1), &f, at(1)).unwrap();
+        pool.aux(pulso_project::ItemId(1), &f, at(1)).unwrap();
         assert_eq!(frame(2), [0, 1], "learned");
         pool.set_aux_footage(&[]);
         assert_eq!(frame(3), [1, 0], "a new set drops what was learned");
@@ -1153,9 +1153,9 @@ mod tests {
     /// around it), in every alpha interpretation and float curve.
     #[test]
     fn picture_from_planes_is_the_image_crates() {
-        use effectcraft_project::{AlphaMode, Footage};
-        use effectcraft_render::FloatCurve;
         use exr::prelude::*;
+        use pulso_project::{AlphaMode, Footage};
+        use pulso_render::FloatCurve;
         let half = |n: &str, v: f32, len: usize| AnyChannel::new(n, FlatSamples::F16((0..len).map(|i| f16::from_f32(v + i as f32 * 0.37 - 1.0)).collect()));
         let float = |n: &str, v: f32, len: usize| AnyChannel::new(n, FlatSamples::F32((0..len).map(|i| ((i * 7) % 11) as f32 * v).collect()));
         let part = |name: Option<&str>, pos: (i32, i32), size: (usize, usize), list: Vec<AnyChannel<FlatSamples>>| {
@@ -1179,7 +1179,7 @@ mod tests {
                 display,
             ),
         ];
-        let bits = |i: &effectcraft_raster::Image| i.data.iter().flat_map(|p| p.map(f32::to_bits)).collect::<Vec<_>>();
+        let bits = |i: &pulso_raster::Image| i.data.iter().flat_map(|p| p.map(f32::to_bits)).collect::<Vec<_>>();
         for (k, bytes) in files.iter().enumerate() {
             let path = format!("/474-planes-{k}.exr");
             let d = cache().get(&path, Use::Channels, || Some(bytes.as_slice().into())).unwrap();
@@ -1189,8 +1189,8 @@ mod tests {
                 for curve in [FloatCurve::Srgb, FloatCurve::Linear, FloatCurve::Gamma24] {
                     let op = AlphaOp::of(&Footage { alpha, premul_color: [0.2, 0.4, 0.6], ..Default::default() }, curve);
                     let want = crate::convert::dynamic_to_image(&img, op);
-                    let got = cached_picture(&path, bytes.as_slice().into(), &ReadFile::new(path.as_str(), effectcraft_render::reads::FileStamp::Virtual), op)
-                        .unwrap();
+                    let got =
+                        cached_picture(&path, bytes.as_slice().into(), &ReadFile::new(path.as_str(), pulso_render::reads::FileStamp::Virtual), op).unwrap();
                     assert_eq!((got.width, got.height), (want.width, want.height));
                     assert_eq!(bits(&got), bits(&want), "file {k} {alpha:?} {curve:?}");
                 }
@@ -1221,10 +1221,10 @@ mod tests {
         image.write().to_buffered(&mut bytes).unwrap();
         let b: Arc<[u8]> = bytes.into_inner().into();
         let f = crate::probe_bytes("/layers.exr", b.clone()).unwrap();
-        assert_eq!((f.width, f.height, f.alpha), (4, 2, effectcraft_project::AlphaMode::Ignore));
+        assert_eq!((f.width, f.height, f.alpha), (4, 2, pulso_project::AlphaMode::Ignore));
         let pool = crate::MediaPool::new();
         pool.add_bytes("/layers.exr", b.clone());
-        let px = pool.frame_at(&f, effectcraft_time::Tick::ZERO).unwrap().get(1, 1);
+        let px = pool.frame_at(&f, pulso_time::Tick::ZERO).unwrap().get(1, 1);
         assert!((px[0] - 1.0).abs() < 1e-4 && px[1] > 0.3 && px[1] < 0.6 && px[2] < 1e-4 && px[3] == 1.0, "diffuse, sRGB-encoded: {px:?}");
         let aux = read_exr_channels(&b).unwrap();
         assert_eq!(aux.layers(), ["depth", "diffuse"]);

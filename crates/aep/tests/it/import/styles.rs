@@ -2,10 +2,10 @@
 //! values, keys and Blending Options, without losses.
 
 use crate::import::helpers::comp;
-use effectcraft_keyframe::Value;
-use effectcraft_project::styles::{BLENDING, GROUP, STYLE_BLEND_MODES};
-use effectcraft_project::{Comp, Layer, Project, PropGroup};
-use effectcraft_time::Tick;
+use pulso_keyframe::Value;
+use pulso_project::styles::{BLENDING, GROUP, STYLE_BLEND_MODES};
+use pulso_project::{Comp, Layer, Project, PropGroup};
+use pulso_time::Tick;
 
 fn lossless(name: &str) -> Option<(Project, Comp)> {
     Some({
@@ -51,7 +51,7 @@ fn all_nine_at_after_effects_defaults() {
     assert!(ls.groups().all(|g| g.enabled));
     let ds = style(l, "dropShadow");
     assert_eq!((v(ds, "blendMode"), v(ds, "opacity"), v(ds, "angle")), (mode("Multiply"), s(75.0), s(120.0)));
-    // After Effects' Use Global Light is off by default (EffectCraft's own default is on).
+    // After Effects' Use Global Light is off by default (Pulso's own default is on).
     assert_eq!(v(ds, "useGlobalLight"), Value::Bool(false));
     assert_eq!(v(style(l, "outerGlow"), "blendMode"), mode("Screen"));
     assert_eq!(v(style(l, "innerGlow"), "source"), Value::Enum(1), "Edge");
@@ -170,16 +170,16 @@ fn blending_options_without_a_style_are_reported() {
     assert!(marked >= 9, "{marked}");
     let mut p = Project::default();
     let none = |_: &str| false;
-    let opts = effectcraft_aep::import::ImportOptions { allow_losses: true, ..effectcraft_aep::import::ImportOptions::new(&none) };
-    let r = effectcraft_aep::import::import(&mut p, &bytes, &opts).expect("import").report;
+    let opts = pulso_aep::import::ImportOptions { allow_losses: true, ..pulso_aep::import::ImportOptions::new(&none) };
+    let r = pulso_aep::import::import(&mut p, &bytes, &opts).expect("import").report;
     assert_eq!(r.imported.layer_styles, 0);
-    let lost = r.losses.iter().filter(|l| l.category == effectcraft_aep::import::LossCategory::LayerStyles).flat_map(|l| l.details.iter());
+    let lost = r.losses.iter().filter(|l| l.category == pulso_aep::import::LossCategory::LayerStyles).flat_map(|l| l.details.iter());
     assert!(lost.clone().any(|d| d.contains("Blending Options set without a layer style")), "{:?}", r.losses);
     // A layer without styles and without Blending Options values reports nothing.
     let mut q = Project::default();
     let base = fixture!("000-base.aep");
-    let r = effectcraft_aep::import::import(&mut q, &base, &effectcraft_aep::import::ImportOptions::new(&none)).expect("base").report;
-    assert_eq!(r.count(effectcraft_aep::import::LossCategory::LayerStyles), 0);
+    let r = pulso_aep::import::import(&mut q, &base, &pulso_aep::import::ImportOptions::new(&none)).expect("base").report;
+    assert_eq!(r.count(pulso_aep::import::LossCategory::LayerStyles), 0);
 }
 
 #[test]

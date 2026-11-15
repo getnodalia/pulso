@@ -14,7 +14,7 @@
 //!   @effects                                  the effect categories (Effect menu)
 //!   @dynamic:history                          entries computed from the session when the menu
 //!                                             opens ([`dynamic`]: recent files, undo history…)
-//! [mac] Quit EffectCraft | app.quit           only on macOS ([!mac] = everywhere else)
+//! [mac] Quit Pulso | app.quit           only on macOS ([!mac] = everywhere else)
 //! ```
 //!
 //! An entry's shortcut is the command's default shortcut unless the line gives one (needed for
@@ -22,13 +22,13 @@
 //! (`| F3, Cmd+Shift+T`); the menus show the first. Adobe-service entries (Team Projects,
 //! Libraries, Bridge, Media Encoder, Behance, Creative Cloud…) are intentionally absent; the
 //! Essential Graphics workspace uses the Properties panel and the Essential Graphics panel, whose
-//! templates use EffectCraft's own open `.ectemplate` format.
+//! templates use Pulso's own open `.ectemplate` format.
 //!
-//! Where EffectCraft has entries After Effects lacks, After Effects' entries keep their order and
+//! Where Pulso has entries After Effects lacks, After Effects' entries keep their order and
 //! the others get a fixed place. File ▸ Import: the project imports sit together where After
 //! Effects has Adobe Premiere Pro Project…, in alphabetical order and named in full (Adobe After
-//! Effects Project…, Adobe Premiere Pro Project…, EffectCraft Project…); the formats only
-//! EffectCraft imports follow a separator at the end, in alphabetical order (#3103).
+//! Effects Project…, Adobe Premiere Pro Project…, Pulso Project…); the formats only
+//! Pulso imports follow a separator at the end, in alphabetical order (#3103).
 
 use std::sync::OnceLock;
 
@@ -296,14 +296,14 @@ pub fn entry_label(s: &Session, e: &MenuEntry) -> String {
             Some("footage") => {
                 let shown = s.state.footage_panel.as_ref().and_then(|f| s.project.item(f.item));
                 let f = shown.or_else(|| {
-                    s.state.project_selection.iter().filter_map(|i| s.project.item(*i)).find(|i| matches!(i.kind, effectcraft_project::ItemKind::Footage(_)))
+                    s.state.project_selection.iter().filter_map(|i| s.project.item(*i)).find(|i| matches!(i.kind, pulso_project::ItemKind::Footage(_)))
                 });
                 format!("Footage: {}", f.map(|i| i.name.clone()).unwrap_or_else(|| "(none)".into()))
             }
             _ => e.label.clone(),
         },
-        "edit.label" => match e.params.get("label").and_then(Value::as_str).and_then(effectcraft_color::Label::from_name) {
-            Some(l) if l != effectcraft_color::Label::None => s.prefs.label_name(l),
+        "edit.label" => match e.params.get("label").and_then(Value::as_str).and_then(pulso_color::Label::from_name) {
+            Some(l) if l != pulso_color::Label::None => s.prefs.label_name(l),
             _ => e.label.clone(),
         },
         _ => e.label.clone(),
@@ -321,7 +321,7 @@ pub fn checked(s: &Session, command: &str, params: &Value) -> Option<bool> {
     let pstr = |k: &str| params.get(k).and_then(Value::as_str);
     match command {
         "layer.setBlendMode" => {
-            let want = effectcraft_color::BlendMode::from_name(pstr("mode")?)?;
+            let want = pulso_color::BlendMode::from_name(pstr("mode")?)?;
             Some(layer?.blend_mode == want)
         }
         "layer.setSwitch" => {
@@ -344,22 +344,22 @@ pub fn checked(s: &Session, command: &str, params: &Value) -> Option<bool> {
             })
         }
         "layer.quality" => {
-            use effectcraft_project::Quality::*;
+            use pulso_project::Quality::*;
             let q = layer?.switches.quality;
             Some(matches!((pstr("quality")?, q), ("best", Best) | ("draft", Draft) | ("wireframe", Wireframe)))
         }
         "layer.sampling" => {
-            use effectcraft_project::Sampling::*;
+            use pulso_project::Sampling::*;
             let q = layer?.switches.sampling;
             Some(matches!((pstr("sampling")?, q), ("bilinear", Bilinear) | ("bicubic", Bicubic)))
         }
         "layer.frameBlending" => {
-            use effectcraft_project::FrameBlend::*;
+            use pulso_project::FrameBlend::*;
             let q = layer?.switches.frame_blend;
             Some(matches!((pstr("mode")?, q), ("off", Off) | ("frameMix", FrameMix) | ("pixelMotion", PixelMotion)))
         }
         "layer.trackMatte" => {
-            use effectcraft_project::MatteKind::*;
+            use pulso_project::MatteKind::*;
             let m = layer?.track_matte;
             Some(match (pstr("op")?, m) {
                 ("none", None) => true,
@@ -392,7 +392,7 @@ pub fn checked(s: &Session, command: &str, params: &Value) -> Option<bool> {
             })
         }
         "layer.mask.motionBlur" | "layer.mask.featherFalloff" | "path.rotoBezier" => {
-            use effectcraft_project::{FeatherFalloff, GroupKind, MaskMotionBlur};
+            use pulso_project::{FeatherFalloff, GroupKind, MaskMotionBlur};
             let GroupKind::Mask { motion_blur, feather_falloff, roto_bezier, .. } = layer?.masks()?.groups().next()?.kind else { return None };
             Some(match command {
                 "path.rotoBezier" => roto_bezier,
@@ -531,8 +531,8 @@ fn effect_categories() -> Vec<MenuNode> {
 
 /// The After Effects menu layout. Labels use "..." like AE's macOS menus.
 pub const TREE: &str = r#"
-[mac] EffectCraft
-  About EffectCraft... | app.about
+[mac] Pulso
+  About Pulso... | app.about
   ---
   Settings...
     General... | app.settings {"page":"general"} | Cmd+Alt+;
@@ -553,11 +553,11 @@ pub const TREE: &str = r#"
     3D... | app.settings {"page":"3d"}
     Scripting & Expressions... | app.settings {"page":"scripting"}
   ---
-  Hide EffectCraft | app.hide
+  Hide Pulso | app.hide
   Hide Others | app.hideOthers
   Show All | app.showAll
   ---
-  Quit EffectCraft | app.quit
+  Quit Pulso | app.quit
 File
   New
     New Project | file.newProject
@@ -585,7 +585,7 @@ File
     Multiple Files... | file.importMultiple
     Adobe After Effects Project... | file.importAep
     Adobe Premiere Pro Project... | file.importTimeline
-    EffectCraft Project... | file.importProject
+    Pulso Project... | file.importProject
     Vanishing Point (.vpe)... | file.importVanishingPoint
     Placeholder... | file.importPlaceholder
     Solid... | file.importSolid
@@ -1300,7 +1300,7 @@ Window
   VR Comp Editor | window.panel {"panel":"vrCompEditor"}
   @dynamic:scriptPanels
 Help
-  EffectCraft Help... | help.docs {"page":"help"} | F1
+  Pulso Help... | help.docs {"page":"help"} | F1
   Scripting Help... | help.docs {"page":"scripting"}
   Expression Reference... | help.docs {"page":"expressions"}
   Effect Reference... | help.docs {"page":"effects"}
@@ -1314,15 +1314,15 @@ Help
   Enable Logging | help.enableLogging
   Reveal Logging File | help.revealLogFile
   ---
-  Join the ArtCraft Discord... | help.discord
+  Join the Nodalia Discord... | help.discord
   Provide Feedback... | help.reportIssue
   ---
-  ArtCraft Website | help.website
-  EffectCraft Home Page | help.appPage
-  EffectCraft on GitHub | help.github
+  Nodalia Website | help.website
+  Pulso Home Page | help.appPage
+  Pulso on GitHub | help.github
   Open Demo Project | file.openDemoProject
   [!mac] ---
-  [!mac] About EffectCraft... | app.about
+  [!mac] About Pulso... | app.about
 "#;
 
 #[cfg(test)]

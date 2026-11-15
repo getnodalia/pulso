@@ -8,13 +8,13 @@ use crate::{
     Project as AepProject, PropNode,
 };
 use crate::{MatteMode, Quality as AepQuality, Rational, Renderer as AepRenderer, TrackMatte as AepMatte};
-use effectcraft_color::{BlendMode, Label};
-use effectcraft_keyframe::Value;
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{
+use pulso_color::{BlendMode, Label};
+use pulso_keyframe::Value;
+use pulso_project::build::{self, Ids};
+use pulso_project::{
     AutoOrient, Comp, Footage, FootageKind, ItemId, ItemKind, Layer, LayerId, LayerSource, LightKind, MatteKind, Project, Quality, Solid, TrackMatte,
 };
-use effectcraft_time::Tick;
+use pulso_time::Tick;
 
 use crate::import::ImportOptions;
 use crate::import::camera::{import_camera_options, import_light_options};
@@ -201,7 +201,7 @@ fn new_comp(h: &CompHeader, renderer: Option<AepRenderer>, map: &TimeMap, name: 
     }
     comp.enable_motion_blur = h.motion_blur;
     if renderer.is_some_and(|r| r.match_name == "ADBE Calder") {
-        comp.renderer = effectcraft_project::Renderer::Advanced3D;
+        comp.renderer = pulso_project::Renderer::Advanced3D;
     }
     comp
 }
@@ -243,7 +243,7 @@ fn import_footage(project: &mut Project, cx: &mut Ctx<'_>, item: &AepItem<'_, '_
     let mut path = f.path.clone().unwrap_or_default();
     // An image sequence's alias is its folder; its files are named by the stored numbering
     // (353, 603), or listed one by one when imported with Force alphabetical order. The first
-    // file stands for the sequence, as in EffectCraft.
+    // file stands for the sequence, as in Pulso.
     let mut sequence = Vec::new();
     if let Some(seq) = item.sequence_info().filter(|s| !path.is_empty() && s.frame_count() > 0) {
         let frames = seq.frame_count();
@@ -303,7 +303,7 @@ fn import_footage(project: &mut Project, cx: &mut Ctx<'_>, item: &AepItem<'_, '_
     };
     // The native frame rate and the stored duration of sequences and clips (352, 603, 606).
     if matches!(kind, FootageKind::Sequence | FootageKind::Video) && f.native_frame_rate > 0 {
-        footage.frame_rate = effectcraft_time::FrameRate::new(i64::from(f.native_frame_rate), 1);
+        footage.frame_rate = pulso_time::FrameRate::new(i64::from(f.native_frame_rate), 1);
     }
     if kind == FootageKind::Sequence {
         footage.sync_sequence_duration();
@@ -313,8 +313,8 @@ fn import_footage(project: &mut Project, cx: &mut Ctx<'_>, item: &AepItem<'_, '_
         // counts native frames, which now last 1 / conform s each.
         let conform_rate = item.conform_frame_rate().unwrap_or(0);
         if kind == FootageKind::Video && conform_rate > 0 && f.native_frame_rate > 0 && conform_rate != f.native_frame_rate {
-            let native = effectcraft_time::FrameRate::new(i64::from(f.native_frame_rate), 1);
-            let conform = effectcraft_time::FrameRate::new(i64::from(conform_rate), 1);
+            let native = pulso_time::FrameRate::new(i64::from(f.native_frame_rate), 1);
+            let conform = pulso_time::FrameRate::new(i64::from(conform_rate), 1);
             if let Some(frames) = d.num.checked_mul(i64::from(f.native_frame_rate)).map(|n| n / d.den.max(1)) {
                 footage.native_rate = Some(native);
                 footage.frame_rate = conform;
@@ -364,7 +364,7 @@ const MAX_SEQUENCE_BYTES: u64 = 32 * 1024 * 1024;
 
 /// `num / den` seconds as ticks (saturating).
 fn cx_ticks(num: i64, den: i64) -> Tick {
-    let t = i128::from(num).saturating_mul(i128::from(effectcraft_time::TICKS_PER_SECOND)) / i128::from(den.max(1));
+    let t = i128::from(num).saturating_mul(i128::from(pulso_time::TICKS_PER_SECOND)) / i128::from(den.max(1));
     Tick(i64::try_from(t).unwrap_or(i64::MAX))
 }
 
@@ -397,7 +397,7 @@ fn blend(mode: AepBlend) -> Option<BlendMode> {
 
 /// The blend mode codes beyond the reader's six (`ldta` byte 99): 906 (set by name: Soft Light 8,
 /// Hard Light 9, Darken 10, Lighten 11, Exclusion 25, Color Dodge 27, Color Burn 28) and 907
-/// (each code rendered by After Effects over a test image and matched against every EffectCraft
+/// (each code rendered by After Effects over a test image and matched against every Pulso
 /// mode: the named mode was the only one within 1/255 on average inside the patch). Codes 23 / 24
 /// render like 27 / 28 on that image; they are taken as the classic variants, which After Effects
 /// keeps beside the newer ones (E). Not imported: 1, 21 and 22 (Alpha Add and Luminescent
@@ -657,7 +657,7 @@ fn build_layers(project: &mut Project, cx: &mut Ctx<'_>, defs: &EffectDefinition
     resolve_mattes(&mut comp, &mattes, &ids, &skipped, &comp_name, &mut cx.col);
     resolve_layer_refs(&mut comp, &layer_refs, &ids, &mut cx.col);
     // Global Light is one setting per composition here: the layers' stored values are adopted.
-    effectcraft_project::styles::sync_comp(&mut comp);
+    pulso_project::styles::sync_comp(&mut comp);
 
     if let Some(secl) = p.item.chunk().child_list(b"SecL") {
         comp.markers = import_markers(comp_view.markers(), secl, &comp_name, &tm, &mut cx.col);
@@ -725,7 +725,7 @@ fn apply_timing(l: &mut Layer, h: &LayerHeader, tm: &TimeMap, name: &str, col: &
     // A ratio such as 1/2^31 (5e-8 %) or 2^31/1 is outside what After Effects allows (±1 % to
     // ±9900 %); taken as stored, the layer and audio time would divide by ~0 (#3247). The in and
     // out points keep the comp times the file stores.
-    l.stretch = effectcraft_project::limits::stretch(stored);
+    l.stretch = pulso_project::limits::stretch(stored);
     if l.stretch.to_bits() != stored.to_bits() {
         col.lose(LossCategory::DamagedData, format!("layer '{name}': the time stretch of {stored:e} % is outside ±1 % to ±9900 %, {} % is used", l.stretch));
     }
@@ -810,7 +810,7 @@ struct PendingMatte {
 /// matte layer can be anywhere in the composition, also below its target (407). A matte with no
 /// layer id is the form of After Effects before 23.0, where the matte is always the layer directly
 /// above: that layer is used. The matte layer's video switch is imported as stored (After Effects
-/// switches it off when the matte is set, 403; EffectCraft, like After Effects, still uses a
+/// switches it off when the matte is set, 403; Pulso, like After Effects, still uses a
 /// hidden layer as a matte).
 fn resolve_mattes(comp: &mut Comp, mattes: &[PendingMatte], ids: &HashMap<u32, LayerId>, skipped: &HashMap<u32, String>, comp_name: &str, col: &mut Collector) {
     for m in mattes {

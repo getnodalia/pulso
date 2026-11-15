@@ -1,16 +1,16 @@
 //! Alt/Option-drag in the Composition viewer (#2968) duplicates the dragged layers and moves the
 //! copies, copy and move together one undo step. A plain drag still moves the layer itself.
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::LayerId;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::panels::viewer::comp_to_screen;
 use egui::{Event, Modifiers, Pos2, vec2};
 use egui_kittest::Harness;
+use pulso_engine::Session;
+use pulso_engine::project::LayerId;
+use pulso_ui_egui::PulsoApp;
+use pulso_ui_egui::panels::viewer::comp_to_screen;
 use serde_json::json;
 
 /// A 640×360 comp with two solids, A (left) and B (right), both selected.
-fn harness() -> (Harness<'static, EffectcraftApp>, u64, u64) {
+fn harness() -> (Harness<'static, PulsoApp>, u64, u64) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Main", "width": 640, "height": 360, "duration": 4})).unwrap();
     let a = s.execute("layer.newSolid", json!({"name": "A", "color": "#e04020", "width": 100, "height": 100})).unwrap()["layer"].as_u64().unwrap();
@@ -18,20 +18,20 @@ fn harness() -> (Harness<'static, EffectcraftApp>, u64, u64) {
     s.execute("prop.set", json!({"layer": a, "path": "transform/position", "value": [150.0, 180.0]})).unwrap();
     s.execute("prop.set", json!({"layer": b, "path": "transform/position", "value": [450.0, 180.0]})).unwrap();
     s.execute("layer.select", json!({"layers": [a, b]})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| PulsoApp::new(s));
     h.run_steps(4);
     (h, a, b)
 }
 
-fn at(h: &Harness<'_, EffectcraftApp>, comp: [f32; 2]) -> Pos2 {
+fn at(h: &Harness<'_, PulsoApp>, comp: [f32; 2]) -> Pos2 {
     comp_to_screen(&h.ctx, comp).unwrap()
 }
 
-fn zoom(h: &Harness<'_, EffectcraftApp>) -> f32 {
+fn zoom(h: &Harness<'_, PulsoApp>) -> f32 {
     (at(h, [100.0, 0.0]).x - at(h, [0.0, 0.0]).x) / 100.0
 }
 
-fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, modifiers: Modifiers) {
+fn drag(h: &mut Harness<'_, PulsoApp>, from: Pos2, to: Pos2, modifiers: Modifiers) {
     h.input_mut().events.push(Event::PointerMoved(from));
     h.step();
     h.input_mut().events.push(Event::ModifiersChanged(modifiers));
@@ -47,12 +47,12 @@ fn drag(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2, modifiers: Mo
     h.run_steps(3);
 }
 
-fn pos(h: &Harness<'_, EffectcraftApp>, id: LayerId) -> [f64; 2] {
+fn pos(h: &Harness<'_, PulsoApp>, id: LayerId) -> [f64; 2] {
     let v = h.state().session.active_comp().unwrap().layer(id).unwrap().props.prop("transform/position").unwrap().value.as_vec2();
     [v[0], v[1]]
 }
 
-fn count(h: &Harness<'_, EffectcraftApp>) -> usize {
+fn count(h: &Harness<'_, PulsoApp>) -> usize {
     h.state().session.active_comp().unwrap().layers.len()
 }
 
@@ -139,7 +139,7 @@ fn alt_dragging_a_gizmo_arrow_moves_a_copy() {
     let solid = s.execute("layer.newSolid", json!({"color": "#ff0000", "width": 200, "height": 200})).unwrap()["layer"].as_u64().unwrap();
     s.execute("layer.setSwitch", json!({"layer": solid, "switch": "threeD", "value": true})).unwrap();
     s.execute("layer.select", json!({"layers": [solid]})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| PulsoApp::new(s));
     h.run_steps(6);
     let p0 = pos(&h, LayerId(solid));
     let [x, y, w, hh] = h.state().auto.find(&format!("viewer.gizmo.{solid}.x")).expect("x arrow registered").rect;

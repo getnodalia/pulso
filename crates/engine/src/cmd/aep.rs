@@ -1,5 +1,5 @@
-//! File ▸ Import ▸ Adobe After Effects Project… (`effectcraft_aep::import`) and File ▸ Export ▸
-//! Adobe After Effects Project… (`effectcraft_aep::export`).
+//! File ▸ Import ▸ Adobe After Effects Project… (`pulso_aep::import`) and File ▸ Export ▸
+//! Adobe After Effects Project… (`pulso_aep::export`).
 //!
 //! Adds the items of an `.aep` (or its XML form, `.aepx`) to the project in a folder named after
 //! the file (`docs/aep-import.md` lists what arrives). What the importer cannot bring over (effects
@@ -8,9 +8,9 @@
 //! in the report's `missingFonts` (not a loss: the text keeps the font name and is drawn with the
 //! fallback font).
 
-use effectcraft_aep::export::{AepExportError, ExportOptions};
-use effectcraft_aep::import::{AepImportError, ImportOptions};
-use effectcraft_project::{FootageKind, ItemKind};
+use pulso_aep::export::{AepExportError, ExportOptions};
+use pulso_aep::import::{AepImportError, ImportOptions};
+use pulso_project::{FootageKind, ItemKind};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, always, b_p, bad, str_p};
@@ -36,7 +36,7 @@ fn import_aep(s: &mut Session, p: &Value) -> Result<Value> {
     let doc = path.clone();
     let exists = move |f: &str| crate::doc_path::resolve(f, Some(&doc)).ok().and_then(|p| p.to_str().map(|p| services.exists(p))).unwrap_or(false);
     // The renderer's own font lookup (family, full or PostScript name); a miss falls back.
-    let has_font = |font: &str| !effectcraft_text::resolve(font, "Regular").missing;
+    let has_font = |font: &str| !pulso_text::resolve(font, "Regular").missing;
     let name = std::path::Path::new(&path).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "After Effects Project".into());
     // Into a project without compositions the file's settings come along (it is opened as a
     // project); into one with compositions only when asked (`applySettings`). Settings that are not
@@ -44,12 +44,12 @@ fn import_aep(s: &mut Session, p: &Value) -> Result<Value> {
     let apply = b_p(p, "applySettings").unwrap_or_else(|| s.project.comps().next().is_none());
     let options = ImportOptions { allow_losses, exists: &exists, has_font: &has_font, folder_name: &name, settings: apply };
     if dry_run {
-        let report = effectcraft_aep::import::analyze_with(&bytes, &options).map_err(|e| EngineError::Other(format!("cannot import {path}: {e}")))?;
+        let report = pulso_aep::import::analyze_with(&bytes, &options).map_err(|e| EngineError::Other(format!("cannot import {path}: {e}")))?;
         return Ok(json!({"dryRun": true, "report": report}));
     }
     let importer = s.importer.clone();
     let res = s.edit("Import Adobe After Effects Project", None, |proj, st| {
-        let r = effectcraft_aep::import::import(proj, &bytes, &options).map_err(|e| match e {
+        let r = pulso_aep::import::import(proj, &bytes, &options).map_err(|e| match e {
             AepImportError::Refused(_) => EngineError::Refused {
                 losses: e.to_string(),
                 advice: "nothing was imported: pass `allowLosses` to import anyway, or `dryRun` for the full report",
@@ -106,7 +106,7 @@ fn export_aep(s: &mut Session, p: &Value) -> Result<Value> {
     let allow_losses = b_p(p, "allowLosses").unwrap_or(false);
     let dry_run = b_p(p, "dryRun").unwrap_or(false);
     if dry_run {
-        return Ok(json!({"dryRun": true, "report": effectcraft_aep::export::analyze(&s.project)}));
+        return Ok(json!({"dryRun": true, "report": pulso_aep::export::analyze(&s.project)}));
     }
     // Image-sequence folders keep their stored numbering in After Effects only with their actual
     // modification time (otherwise it rescans them and warns about every gap on open). The folder
@@ -121,7 +121,7 @@ fn export_aep(s: &mut Session, p: &Value) -> Result<Value> {
         let dir = file.get(..file.rfind(['/', '\\'])?).filter(|d| !d.is_empty())?;
         services.stamp(dir).and_then(|(_, ns)| u64::try_from(ns / 1_000_000_000).ok())
     };
-    let res = effectcraft_aep::export::export_with(&s.project, &ExportOptions { allow_losses }, &folder_time).map_err(|e| match e {
+    let res = pulso_aep::export::export_with(&s.project, &ExportOptions { allow_losses }, &folder_time).map_err(|e| match e {
         AepExportError::Refused(_) => {
             EngineError::Refused { losses: e.to_string(), advice: "nothing was written: pass `allowLosses` to export anyway, or `dryRun` for the full report" }
         }

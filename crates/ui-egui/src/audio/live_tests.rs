@@ -2,11 +2,11 @@
 
 use super::{AudioDevice, AudioFeed, AudioPlayback, Feeder, PlaySpan, PreviewRate, feed_block};
 use crate::frames::RenderSource;
-use effectcraft_engine::color::Label;
-use effectcraft_engine::keyframe::Value;
-use effectcraft_engine::project::{Comp, Expression, Footage, FootageKind, ItemId, ItemKind, Layer, LayerSource, Project, Property, build};
-use effectcraft_engine::render::{EvalCtx, ExprHost, FootageSource, LayerCache};
-use effectcraft_engine::time::{FrameRate, Tick};
+use pulso_engine::color::Label;
+use pulso_engine::keyframe::Value;
+use pulso_engine::project::{Comp, Expression, Footage, FootageKind, ItemId, ItemKind, Layer, LayerSource, Project, Property, build};
+use pulso_engine::render::{EvalCtx, ExprHost, FootageSource, LayerCache};
+use pulso_engine::time::{FrameRate, Tick};
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::Duration;
@@ -25,7 +25,7 @@ impl AudioDevice for Device {
 /// A ramp identifies the exact source sample, exposing skips and repeats after an edit.
 struct Ramp;
 impl FootageSource for Ramp {
-    fn frame(&self, _: ItemId, _: &Footage, _: Tick) -> Option<Arc<effectcraft_engine::raster::Image>> {
+    fn frame(&self, _: ItemId, _: &Footage, _: Tick) -> Option<Arc<pulso_engine::raster::Image>> {
         None
     }
     fn audio(&self, _: ItemId, _: &Footage, t: Tick, frames: usize, rate: u32) -> Option<Vec<f32>> {
@@ -117,7 +117,7 @@ struct Gated {
     resume: Mutex<mpsc::Receiver<()>>,
 }
 impl FootageSource for Gated {
-    fn frame(&self, _: ItemId, _: &Footage, _: Tick) -> Option<Arc<effectcraft_engine::raster::Image>> {
+    fn frame(&self, _: ItemId, _: &Footage, _: Tick) -> Option<Arc<pulso_engine::raster::Image>> {
         None
     }
     fn audio(&self, _: ItemId, _: &Footage, _: Tick, frames: usize, _: u32) -> Option<Vec<f32>> {

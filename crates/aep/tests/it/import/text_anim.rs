@@ -2,11 +2,11 @@
 //! S17 (538-578, 595, 596).
 
 use crate::import::helpers::comp;
-use effectcraft_aep::import::{ImportResult, LossCategory};
-use effectcraft_keyframe::Value;
-use effectcraft_keyframe::text_doc::{Composer, Direction, Justify, Kerning, TextDoc};
-use effectcraft_project::{Layer, Project, PropGroup};
-use effectcraft_time::{TICKS_PER_SECOND, Tick};
+use pulso_aep::import::{ImportResult, LossCategory};
+use pulso_keyframe::Value;
+use pulso_keyframe::text_doc::{Composer, Direction, Justify, Kerning, TextDoc};
+use pulso_project::{Layer, Project, PropGroup};
+use pulso_time::{TICKS_PER_SECOND, Tick};
 
 fn text_layer<'p>(p: &'p Project, r: &ImportResult) -> &'p Layer {
     let (_, c) = comp(p, r, "C");
@@ -195,7 +195,7 @@ fn paragraph_settings_arrive() {
 }
 
 #[test]
-fn settings_without_an_effectcraft_field_are_reported() {
+fn settings_without_an_pulso_field_are_reported() {
     for (name, what) in [
         ("548-text-linejoin-round.aep", None),
         ("552-text-nobreak-on.aep", Some("No Break")),

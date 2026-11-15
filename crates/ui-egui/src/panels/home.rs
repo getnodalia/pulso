@@ -1,6 +1,6 @@
 //! The Home screen, laid out like After Effects' (shown over the whole workspace at launch, from
 //! the Tools bar's Home button and by the Learn workspace). A left rail holds New Project / Open
-//! Project, the Home / Templates / Learn pages and, at its foot, the ArtCraft community links.
+//! Project, the Home / Templates / Learn pages and, at its foot, the Nodalia community links.
 //! The Home page welcomes you with quick-start tiles (New Composition, the demo project, Import,
 //! New from Template) over the recent projects (File ▸ Open Recent, from Settings): a filterable
 //! table with thumbnails and Name / Opened / Size / Kind columns. Templates is the New from
@@ -18,7 +18,7 @@ use serde_json::json;
 use crate::i18n::{tr, tr_args};
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{PulsoApp, widgets};
 
 pub const THUMB_W: usize = 96;
 pub const THUMB_H: usize = 54;
@@ -40,7 +40,7 @@ pub struct RecentEntry {
 }
 
 /// The recent projects, most recent first (Settings ▸ General ▸ recent items).
-pub fn recent_entries(prefs: &effectcraft_engine::prefs::Prefs) -> Vec<RecentEntry> {
+pub fn recent_entries(prefs: &pulso_engine::prefs::Prefs) -> Vec<RecentEntry> {
     prefs
         .recent_projects
         .iter()
@@ -128,7 +128,7 @@ pub fn format_size(bytes: u64) -> String {
 /// The Kind column: what a recent file is, by its extension, in the interface language.
 fn kind_of(path: &str) -> &'static str {
     tr(match std::path::Path::new(path).extension().and_then(std::ffi::OsStr::to_str).map(str::to_ascii_lowercase).as_deref() {
-        Some("ecproj") => "EffectCraft project",
+        Some("ecproj") => "Pulso project",
         Some("aep" | "aepx") => "After Effects project",
         Some("json" | "lottie") => "Lottie animation",
         _ => "Project",
@@ -179,7 +179,7 @@ pub fn decode_thumb(text: &str) -> Option<egui::ColorImage> {
 
 /// Store the viewer's frame as the open project's thumbnail after it is opened or saved (once per
 /// saved revision, when the viewer shows that revision).
-pub fn capture_thumbnail(app: &mut EffectcraftApp) {
+pub fn capture_thumbnail(app: &mut PulsoApp) {
     let s = &app.session;
     let (Some(path), Some(_)) = (s.path.clone(), s.config.as_ref()) else { return };
     if s.is_dirty() {
@@ -203,7 +203,7 @@ pub fn capture_thumbnail(app: &mut EffectcraftApp) {
     app.home_thumb_saved = Some(key);
 }
 
-fn thumb_texture(app: &mut EffectcraftApp, ctx: &egui::Context, path: &str) -> Option<egui::TextureHandle> {
+fn thumb_texture(app: &mut PulsoApp, ctx: &egui::Context, path: &str) -> Option<egui::TextureHandle> {
     if let Some(t) = app.home_thumbs.get(path) {
         return t.clone();
     }
@@ -222,7 +222,7 @@ fn thumb_texture(app: &mut EffectcraftApp, ctx: &egui::Context, path: &str) -> O
 const RAIL_W: f32 = 236.0;
 
 /// Draw the Home screen over `rect` (the whole workspace).
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut PulsoApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let p = ui.painter().with_clip_rect(rect);
@@ -244,7 +244,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
 }
 
 /// The left rail: New / Open Project, the pages, and the community links at its foot.
-fn rail_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, rail: Rect, actions: &mut Vec<(&'static str, serde_json::Value)>) {
+fn rail_ui(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, rail: Rect, actions: &mut Vec<(&'static str, serde_json::Value)>) {
     let t = app.tokens;
     let x0 = rail.min.x + 16.0;
     let w = rail.width() - 32.0;
@@ -285,12 +285,12 @@ fn rail_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, rail:
     }
     // Community links at the foot (below the pages when the window is short).
     let links = [
-        (Icon::Chat, "Join the ArtCraft Discord", "help.discord"),
-        (Icon::Globe, "getartcraft.com", "help.website"),
-        (Icon::Globe, "EffectCraft home page", "help.appPage"),
-        (Icon::Code, "EffectCraft on GitHub", "help.github"),
+        (Icon::Chat, "Join the Nodalia Discord", "help.discord"),
+        (Icon::Globe, "getnodalia.com", "help.website"),
+        (Icon::Globe, "Pulso home page", "help.appPage"),
+        (Icon::Code, "Pulso on GitHub", "help.github"),
     ];
-    let sib = effectcraft_engine::links::SIBLINGS;
+    let sib = pulso_engine::links::SIBLINGS;
     let sib_rows = sib.len().div_ceil(2) as f32;
     let foot_h = 22.0 + links.len() as f32 * 30.0 + 22.0 + sib_rows * 26.0;
     let mut cy = (rail.max.y - 16.0 - foot_h).max(y + 16.0);
@@ -315,7 +315,7 @@ fn rail_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, rail:
         }
         cy += 30.0;
     }
-    p.text(pos2(x0, cy + 8.0), Align2::LEFT_CENTER, tr("More ArtCraft apps"), Tokens::ui(11.0), t.text_faint);
+    p.text(pos2(x0, cy + 8.0), Align2::LEFT_CENTER, tr("More Nodalia apps"), Tokens::ui(11.0), t.text_faint);
     cy += 20.0;
     let sw = (w - 6.0) / 2.0;
     for (i, (name, slug)) in sib.iter().enumerate() {
@@ -331,18 +331,11 @@ fn rail_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, rail:
 }
 
 /// The Home page: the welcome, quick-start tiles and the recent projects table.
-fn home_page(
-    app: &mut EffectcraftApp,
-    ui: &mut egui::Ui,
-    p: &egui::Painter,
-    area: Rect,
-    ctx: &egui::Context,
-    actions: &mut Vec<(&'static str, serde_json::Value)>,
-) {
+fn home_page(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, area: Rect, ctx: &egui::Context, actions: &mut Vec<(&'static str, serde_json::Value)>) {
     let t = app.tokens;
     let (x0, w) = (area.min.x, area.width());
     let mut y = area.min.y;
-    p.text(pos2(x0, y + 14.0), Align2::LEFT_CENTER, tr("Welcome to EffectCraft"), Tokens::semibold(26.0), t.tab_text_active);
+    p.text(pos2(x0, y + 14.0), Align2::LEFT_CENTER, tr("Welcome to Pulso"), Tokens::semibold(26.0), t.tab_text_active);
     y += 40.0;
     p.text(
         pos2(x0, y + 8.0),
@@ -477,7 +470,7 @@ fn home_page(
 
 /// Run the commands the Home screen's buttons and recent files asked for, and leave Home once one
 /// opened something (not while a dialog it opened waits, nor when only the list changed).
-fn run_actions(app: &mut EffectcraftApp, ctx: &egui::Context, actions: Vec<(&str, serde_json::Value)>) {
+fn run_actions(app: &mut PulsoApp, ctx: &egui::Context, actions: Vec<(&str, serde_json::Value)>) {
     for (id, params) in actions {
         let before = (app.session.path.clone(), app.session.revision);
         match crate::menus::invoke(app, ctx, id, params) {
@@ -507,7 +500,7 @@ mod tests {
 
     #[test]
     fn recent_list_comes_from_settings() {
-        let mut prefs = effectcraft_engine::prefs::Prefs::default();
+        let mut prefs = pulso_engine::prefs::Prefs::default();
         prefs.push_recent("/projects/a/Alpha.ecproj");
         prefs.push_recent("/projects/b/Beta.ecproj");
         let e = recent_entries(&prefs);
@@ -559,7 +552,7 @@ mod tests {
         assert_eq!(format_ago(now, now - 30 * 86_400), "2026-08-22");
         assert_eq!(format_ago(now, now + 100), "Just now");
         assert_eq!((format_size(900), format_size(13_000), format_size(3_500_000)), ("900 B".into(), "13 KB".into(), "3.3 MB".into()));
-        assert_eq!((kind_of("/a/B.ecproj"), kind_of("c.AEP"), kind_of("x")), ("EffectCraft project", "After Effects project", "Project"));
+        assert_eq!((kind_of("/a/B.ecproj"), kind_of("c.AEP"), kind_of("x")), ("Pulso project", "After Effects project", "Project"));
         // After a week it is the date, whole even for a five-digit year.
         assert_eq!(format_ago(i64::MAX, 253_402_300_800), "10000-01-01");
     }
@@ -571,7 +564,7 @@ mod tests {
         let now = 1_790_000_000;
         crate::i18n::set_current("zh-hans");
         let shown = (format_ago(now, now - 5), format_ago(now, now - 3 * 3_600), format_ago(now, now - 90_000), kind_of("/a/B.ecproj"));
-        let catalog = (tr("Just now").to_string(), tr_args("{} hours ago", &[&3]), tr("Yesterday").to_string(), tr("EffectCraft project"));
+        let catalog = (tr("Just now").to_string(), tr_args("{} hours ago", &[&3]), tr("Yesterday").to_string(), tr("Pulso project"));
         crate::i18n::set_current("en");
         assert_eq!(shown, catalog);
         assert_eq!(tr("Filter recent files"), "Filter recent files");
@@ -579,9 +572,9 @@ mod tests {
 
     #[test]
     fn home_screen_registers_its_controls() {
-        let mut s = effectcraft_engine::Session::default();
+        let mut s = pulso_engine::Session::default();
         s.prefs.push_recent("/projects/Alpha.ecproj");
-        let mut app = EffectcraftApp::new(s);
+        let mut app = PulsoApp::new(s);
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         ctx.run_ui(Default::default(), |_| {}).textures_delta.clear();
@@ -612,12 +605,12 @@ mod tests {
 
     #[test]
     fn learn_tab_lists_and_starts_tutorials() {
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = PulsoApp::new(pulso_engine::Session::default());
         app.ui.start_screen = true;
         app.ui.home_learn = true;
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
-        let frame = |app: &mut EffectcraftApp| {
+        let frame = |app: &mut PulsoApp| {
             ctx.run_ui(Default::default(), |ui| {
                 app.auto.begin_frame();
                 show(app, ui, Rect::from_min_size(pos2(0.0, 0.0), vec2(1200.0, 800.0)));
@@ -628,7 +621,7 @@ mod tests {
         };
         frame(&mut app);
         frame(&mut app);
-        for t in effectcraft_engine::learn::tutorials() {
+        for t in pulso_engine::learn::tutorials() {
             assert!(app.auto.find(&format!("home.learn.{}.start", t.id)).is_some(), "{}", t.id);
         }
         assert!(app.auto.find("home.recent.0").is_none());

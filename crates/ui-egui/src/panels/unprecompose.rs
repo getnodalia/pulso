@@ -12,7 +12,7 @@ use egui::vec2;
 use serde_json::{Value, json};
 
 use crate::theme::Tokens;
-use crate::{Dialog, EffectcraftApp};
+use crate::{Dialog, PulsoApp};
 
 const COMMAND: &str = "layer.unprecompose";
 
@@ -25,7 +25,7 @@ pub struct Pending {
 /// Whether command `id` with `params` needs the prompt first. When it does, the prompt opens
 /// holding the command and the caller must not run it. `Err` when the dry run fails (a locked
 /// layer, a layer that is not a pre-comp, several layers), with the message.
-pub fn guard(app: &mut EffectcraftApp, id: &str, params: &Value) -> Result<bool, String> {
+pub fn guard(app: &mut PulsoApp, id: &str, params: &Value) -> Result<bool, String> {
     if id != COMMAND || params.get("force") == Some(&Value::Bool(true)) || params.get("dryRun") == Some(&Value::Bool(true)) {
         return Ok(false);
     }
@@ -49,7 +49,7 @@ pub fn guard(app: &mut EffectcraftApp, id: &str, params: &Value) -> Result<bool,
     Ok(true)
 }
 
-pub fn show(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn show(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
     let Some((_, warnings)) = app.dialog_state.unprecompose.command.clone() else {
         app.dialog = None;
         return;
@@ -89,7 +89,7 @@ pub fn show(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
 }
 
 /// The prompt's answer: Cancel (`false`) drops the unpack, Unpack Anyway runs it with `force`.
-fn finish(app: &mut EffectcraftApp, ctx: &egui::Context, go: bool) {
+fn finish(app: &mut PulsoApp, ctx: &egui::Context, go: bool) {
     app.dialog = None;
     let Some((params, _)) = app.dialog_state.unprecompose.command.take() else { return };
     if go {
@@ -108,10 +108,10 @@ fn forced(params: &Value) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use effectcraft_engine::Session;
+    use pulso_engine::Session;
 
     /// A comp with two solids nested into a pre-comp; the pre-comp layer's id.
-    fn scene(app: &mut EffectcraftApp) -> u64 {
+    fn scene(app: &mut PulsoApp) -> u64 {
         let s = &mut app.session;
         s.execute("comp.new", json!({"name": "Main", "width": 640, "height": 360, "duration": 4.0, "fps": 24.0})).unwrap();
         let a = s.execute("layer.newSolid", json!({"color": "#ff0000"})).unwrap()["layer"].as_u64().unwrap();
@@ -123,9 +123,9 @@ mod tests {
         s.active_comp().map_or(0, |c| c.layers.len())
     }
 
-    fn fresh() -> (egui::Context, EffectcraftApp) {
+    fn fresh() -> (egui::Context, PulsoApp) {
         let ctx = egui::Context::default();
-        let app = EffectcraftApp::new(Session::default());
+        let app = PulsoApp::new(Session::default());
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         (ctx, app)
     }

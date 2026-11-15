@@ -11,9 +11,9 @@
 
 use std::io::Cursor;
 
-use effectcraft_project::{AlphaMode, Footage, FootageKind};
-use effectcraft_time::{FrameRate, Tick};
 use image::{AnimationDecoder, DynamicImage, codecs::webp::WebPDecoder};
+use pulso_project::{AlphaMode, Footage, FootageKind};
+use pulso_time::{FrameRate, Tick};
 
 use crate::gif_anim::{Anim, MAX_BYTES, MAX_FRAMES, gcd};
 use crate::{MediaError, Result};
@@ -182,9 +182,9 @@ pub(crate) fn load(bytes: &[u8]) -> Result<Anim> {
 
 #[cfg(test)]
 mod tests {
-    use effectcraft_project::{AlphaMode, Footage, FootageKind};
-    use effectcraft_time::{FrameRate, Tick};
     use image::{ExtendedColorType, ImageEncoder, codecs::webp::WebPEncoder};
+    use pulso_project::{AlphaMode, Footage, FootageKind};
+    use pulso_time::{FrameRate, Tick};
 
     use super::timing;
     use crate::{MediaPool, probe_bytes};

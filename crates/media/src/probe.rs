@@ -1,11 +1,11 @@
-//! Probing: describe a file as an [`effectcraft_project::Footage`].
+//! Probing: describe a file as an [`pulso_project::Footage`].
 
 use std::path::Path;
 use std::sync::Arc;
 
-use effectcraft_project::{AlphaMode, Footage, FootageKind};
-use effectcraft_time::{FrameRate, Tick};
 use image::metadata::Orientation;
+use pulso_project::{AlphaMode, Footage, FootageKind};
+use pulso_time::{FrameRate, Tick};
 
 use crate::{MediaError, Result, ext_of, rate_from_fc};
 
@@ -13,7 +13,7 @@ use crate::{MediaError, Result, ext_of, rate_from_fc};
 pub const DEFAULT_SEQUENCE_RATE: FrameRate = FrameRate::FPS_30;
 
 /// Probe one file. Image sequences are made by the engine, which groups numbered stills
-/// (`effectcraft_engine::sequence`) and probes their first frame here.
+/// (`pulso_engine::sequence`) and probes their first frame here.
 pub fn probe(path: impl AsRef<Path>) -> Result<Footage> {
     let path = path.as_ref();
     // A movie is read in place (its index), not loaded whole.
@@ -46,10 +46,10 @@ fn side_file_reader(model: &Path) -> impl Fn(&str) -> Option<Vec<u8>> + use<> {
 /// Probe a 3D model (glTF 2.0 / OBJ / STL / FBX): a [`FootageKind::Model`] item whose duration is its
 /// longest animation. `resolve` reads sibling resources.
 pub fn probe_model(path: &str, bytes: &[u8], resolve: &dyn Fn(&str) -> Option<Vec<u8>>) -> Result<Footage> {
-    let m = effectcraft_model::load(path, bytes, resolve).map_err(|e| MediaError::Decode(format!("{path}: {e}")))?;
+    let m = pulso_model::load(path, bytes, resolve).map_err(|e| MediaError::Decode(format!("{path}: {e}")))?;
     let s = m.summary();
     let dur = s.animations.iter().map(|a| a.1).fold(0.0f64, f64::max);
-    let codec = match effectcraft_model::format_of(path) {
+    let codec = match pulso_model::format_of(path) {
         Some("obj") => "OBJ",
         Some("stl") => "STL",
         Some("fbx") => "FBX",
@@ -207,9 +207,9 @@ pub(crate) fn footage_from_info(path: &str, info: &filmcraft_media::MediaInfo) -
 /// The colour profile a video stream declares (H.273 primaries / transfer from the bitstream or
 /// container). `None` (interpreted as sRGB) for Rec. 709 primaries with an sRGB curve. BT.2020
 /// with a PQ or HLG curve is Rec. 2100 (HDR10, HLG), not Rec. 2020's 2.4 gamma (#2849).
-fn profile_of(c: &filmcraft_color::ColorInfo) -> Option<effectcraft_project::ColorSpace> {
-    use effectcraft_project::ColorSpace;
+fn profile_of(c: &filmcraft_color::ColorInfo) -> Option<pulso_project::ColorSpace> {
     use filmcraft_color::{Primaries, Transfer};
+    use pulso_project::ColorSpace;
     match (c.primaries, c.transfer) {
         (Primaries::Bt2020, Transfer::Pq) => Some(ColorSpace::Rec2100Pq),
         (Primaries::Bt2020, Transfer::Hlg) => Some(ColorSpace::Rec2100Hlg),
@@ -300,14 +300,14 @@ pub(crate) fn load_oriented(bytes: &[u8], fmt: Option<image::ImageFormat>) -> im
 /// The rotation an MP4/MOV movie is shown with (a phone held upright records sideways frames and
 /// says so in its video track's header): the quarter turn nearest the track's rotation. Only the
 /// rotation counts; any mirroring, scaling or offset in the header is ignored, and other
-/// containers have none. FilmCraft turns the frames of a pure 0/90/180/270° header itself, so this
+/// containers have none. Toma turns the frames of a pure 0/90/180/270° header itself, so this
 /// is only the quarter turn nearest to a header it does not turn.
 pub(crate) fn video_turn(bytes: &[u8]) -> Orientation {
     let Ok(file) = filmcraft_isobmff::open(bytes) else { return Orientation::NoTransforms };
     let Some(track) = file.tracks.iter().find(|t| t.kind == filmcraft_isobmff::TrackKind::Video) else {
         return Orientation::NoTransforms;
     };
-    // A pure rotation is already applied by FilmCraft's decoder (frames and size come out
+    // A pure rotation is already applied by Toma's decoder (frames and size come out
     // upright); only the headers it leaves as stored (mirrored, scaled, sheared) are turned here.
     if track.display_rotation().is_some() {
         return Orientation::NoTransforms;
@@ -391,8 +391,8 @@ mod tests {
     /// #2849: a stream's primaries and curve pick its profile; BT.2020 with PQ or HLG is Rec. 2100.
     #[test]
     fn stream_colour_picks_the_profile() {
-        use effectcraft_project::ColorSpace;
         use filmcraft_color::{Primaries, Transfer};
+        use pulso_project::ColorSpace;
         let rows = [
             (Primaries::Bt2020, Transfer::Pq, Some(ColorSpace::Rec2100Pq)),
             (Primaries::Bt2020, Transfer::Hlg, Some(ColorSpace::Rec2100Hlg)),

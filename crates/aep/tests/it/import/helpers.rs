@@ -1,7 +1,7 @@
 //! Helpers shared by the import tests.
 #![allow(dead_code, unused_macros)]
-use effectcraft_aep::import::{AepImportError, ImportOptions, ImportResult, import};
-use effectcraft_project::{Comp, ItemId, ItemKind, Project};
+use pulso_aep::import::{AepImportError, ImportOptions, ImportResult, import};
+use pulso_project::{Comp, ItemId, ItemKind, Project};
 
 /// Imports a fixture into an empty project, allowing losses, with no footage file present;
 /// `None` when the fixture is missing.
@@ -58,8 +58,8 @@ pub fn comp<'p>(project: &'p Project, r: &ImportResult, name: &str) -> (ItemId, 
 /// cases of a combined file, so tests that patch ids read them here.
 pub fn comp_ids(name: &str) -> Option<Vec<(String, u32, Vec<u32>)>> {
     let bytes = crate::common::try_fixture(name)?;
-    let file = effectcraft_aep::parse(&bytes).unwrap_or_else(|e| panic!("{name}: {e}"));
-    let view = effectcraft_aep::Project::new(&file).expect("a project");
+    let file = pulso_aep::parse(&bytes).unwrap_or_else(|e| panic!("{name}: {e}"));
+    let view = pulso_aep::Project::new(&file).expect("a project");
     Some(
         view.all_items()
             .into_iter()

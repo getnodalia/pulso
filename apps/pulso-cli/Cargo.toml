@@ -1,0 +1,28 @@
+[package]
+name = "pulso-cli"
+description = "Pulso headless CLI: render frames and sequences, run commands, MCP server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "pulso-cli"
+path = "src/main.rs"
+
+[dependencies]
+pulso-engine = { workspace = true }
+pulso-host = { workspace = true }
+pulso-automation = { workspace = true }
+pulso-ui-egui = { workspace = true }
+pulso-render = { workspace = true }
+pulso-gpu = { workspace = true }
+pulso-time = { workspace = true }
+pulso-track = { workspace = true }
+pulso-segment = { workspace = true }
+pulso-sam2 = { workspace = true }
+serde_json = { workspace = true }
+image = { workspace = true }
+cpu-time = "1"

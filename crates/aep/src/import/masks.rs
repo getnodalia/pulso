@@ -1,19 +1,19 @@
 //! Layer masks: path, mode, invert, feather, opacity and expansion, with keyframes and
-//! expressions, in EffectCraft's units.
+//! expressions, in Pulso's units.
 //!
 //! Units (`docs/aep-format.md` 3.4 and 3.8): the path is stored as `f32` points normalised inside a
 //! box that is itself normalised to the **layer source** size (090 on a 1920x1080 solid, 309 on a
 //! 100x100 solid), so vertices become layer pixels with the origin at the layer's top left, as the
 //! project's masks are; a tangent is the handle minus the vertex (232). Feather and expansion are
 //! pixels, opacity a fraction (percent here). The path keyframes (64-byte records, 093) carry time,
-//! interpolation, label, roving and the ease at byte 24 (599, 700: EffectCraft's path at 0.5 / 1 /
+//! interpolation, label, roving and the ease at byte 24 (599, 700: Pulso's path at 0.5 / 1 /
 //! 1.5 s within 0.5 px of After Effects'); only speed 0 is sampled, another speed is imported as
 //! progress per second and reported.
 
 use crate::{Layer as AepLayer, MaskAtom, MaskMode as AepMode, PropNode, ShapePath as AepPath, ValueSource};
-use effectcraft_keyframe::{Ease, Interp, Keyframe, ShapePath, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{GroupKind, MaskMode, Node, PropGroup as EcGroup};
+use pulso_keyframe::{Ease, Interp, Keyframe, ShapePath, Value};
+use pulso_project::build::{self, Ids};
+use pulso_project::{GroupKind, MaskMode, Node, PropGroup as EcGroup};
 
 use crate::import::props::{Kind, LIMIT, import_expression, import_keys, interp};
 use crate::import::report::{Collector, LossCategory};
@@ -206,7 +206,7 @@ pub(crate) fn import_path_keys(
     what: &str,
     size: (u32, u32),
     tm: &TimeMap,
-    prop: &mut effectcraft_project::Property,
+    prop: &mut pulso_project::Property,
     col: &mut Collector,
 ) {
     let Some(list) = path.keys() else {

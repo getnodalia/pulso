@@ -1,6 +1,6 @@
 [package]
-name = "effectcraft-script"
-description = "EffectCraft scripting: JavaScript (boa) with an After Effects-style object model (app, project, CompItem, Layer, Property…) over the engine's undoable commands"
+name = "pulso-script"
+description = "Pulso scripting: JavaScript (boa) with an After Effects-style object model (app, project, CompItem, Layer, Property…) over the engine's undoable commands"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,12 +10,12 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-effectcraft-engine = { workspace = true }
-effectcraft-project = { workspace = true }
-effectcraft-keyframe = { workspace = true }
-effectcraft-time = { workspace = true }
-effectcraft-render = { workspace = true }
-effectcraft-path = { workspace = true }
+pulso-engine = { workspace = true }
+pulso-project = { workspace = true }
+pulso-keyframe = { workspace = true }
+pulso-time = { workspace = true }
+pulso-render = { workspace = true }
+pulso-path = { workspace = true }
 serde_json = { workspace = true }
 boa_engine = { workspace = true }
 web-time = { workspace = true }
@@ -25,8 +25,8 @@ web-time = { workspace = true }
 boa_engine = { workspace = true, features = ["js"] }
 
 [dev-dependencies]
-effectcraft-expr = { workspace = true }
-effectcraft-psd = { workspace = true }
+pulso-expr = { workspace = true }
+pulso-psd = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 socket2 = "0.6"

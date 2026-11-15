@@ -2,28 +2,28 @@
 //! output (a log), Run and Clear are named and reachable with Tab, Tab leaves the input instead of
 //! typing a tab character, and Enter / Space work the buttons.
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
 use egui::accesskit::Role;
 use egui::{Event, Key, Modifiers};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
+use pulso_engine::Session;
+use pulso_ui_egui::PulsoApp;
+use pulso_ui_egui::dock::PanelKind;
 use serde_json::json;
 
 const INPUT: &str = "Script… (⌘/Ctrl+Enter runs)";
 
-fn harness() -> Harness<'static, EffectcraftApp> {
+fn harness() -> Harness<'static, PulsoApp> {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "duration": 4})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| PulsoApp::new(s));
     h.state_mut().show_panel(PanelKind::ScriptConsole);
     h.state_mut().ui.maximized = Some(PanelKind::ScriptConsole);
     h.run_steps(4);
     h
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
+fn key(h: &mut Harness<'_, PulsoApp>, key: Key, modifiers: Modifiers) {
     for pressed in [true, false] {
         h.input_mut().events.push(Event::Key { key, physical_key: None, pressed, repeat: false, modifiers });
         h.step();
@@ -31,7 +31,7 @@ fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
     h.run_steps(3);
 }
 
-fn focused(h: &Harness<'_, EffectcraftApp>) -> Option<(Role, String)> {
+fn focused(h: &Harness<'_, PulsoApp>) -> Option<(Role, String)> {
     h.root().children_recursive().find(|n| n.is_focused()).map(|n| (n.accesskit_node().role(), n.accesskit_node().label().unwrap_or_default()))
 }
 

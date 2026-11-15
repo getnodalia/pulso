@@ -4,13 +4,13 @@
 
 use std::sync::Arc;
 
-use effectcraft_effects::{EffectEnv, EffectHost, LayerPixels};
-use effectcraft_keyframe::Value;
-use effectcraft_project::{BitDepth, Footage, ItemId};
-use effectcraft_raster::channels3d::{BACKGROUND_DEPTH, crypto_float, crypto_hash};
-use effectcraft_raster::{AuxChannels, Image};
-use effectcraft_render::{Backend, FootageSource, RenderOpts, Renderer};
-use effectcraft_time::Tick;
+use pulso_effects::{EffectEnv, EffectHost, LayerPixels};
+use pulso_keyframe::Value;
+use pulso_project::{BitDepth, Footage, ItemId};
+use pulso_raster::channels3d::{BACKGROUND_DEPTH, crypto_float, crypto_hash};
+use pulso_raster::{AuxChannels, Image};
+use pulso_render::{Backend, FootageSource, RenderOpts, Renderer};
+use pulso_time::Tick;
 
 use crate::tests::{Pattern, Scene, c, check, diff, gpu, n, opts, pattern, set, tolerance};
 
@@ -103,10 +103,9 @@ pub(crate) fn aux_scene(w: u32, h: u32, scale: f64) -> AuxChannels {
 /// differ by more than 1e-3).
 pub(crate) fn direct(id: &str, vals: &[(&str, Value)], allow: f64) {
     let Some(g) = gpu() else { return };
-    let spec = effectcraft_effects::find(id).unwrap();
+    let spec = pulso_effects::find(id).unwrap();
     let size = [70.0, 44.0];
-    let mut params =
-        effectcraft_effects::Params { values: spec.params.iter().map(|ps| (ps.id.to_string(), effectcraft_effects::default_value(ps, size))).collect() };
+    let mut params = pulso_effects::Params { values: spec.params.iter().map(|ps| (ps.id.to_string(), pulso_effects::default_value(ps, size))).collect() };
     for (k, v) in vals {
         params.values.insert(k.to_string(), v.clone());
     }
@@ -124,8 +123,8 @@ pub(crate) fn direct(id: &str, vals: &[(&str, Value)], allow: f64) {
                     }
                 }
             }
-            let buf = effectcraft_effects::Buf { img, offset, scale };
-            let ctx = || effectcraft_effects::EffectCtx {
+            let buf = pulso_effects::Buf { img, offset, scale };
+            let ctx = || pulso_effects::EffectCtx {
                 params: &params,
                 time: 0.25,
                 layer_size: size,
@@ -134,8 +133,7 @@ pub(crate) fn direct(id: &str, vals: &[(&str, Value)], allow: f64) {
                 env: EffectEnv { host: Some(&host), ..Default::default() },
             };
             let cpu = (spec.render)(&ctx(), buf.clone());
-            let out =
-                effectcraft_render::Accelerator::effects(g, &[effectcraft_render::FxStep { spec, ctx: ctx() }], &buf, None).expect("the GPU runs the effect");
+            let out = pulso_render::Accelerator::effects(g, &[pulso_render::FxStep { spec, ctx: ctx() }], &buf, None).expect("the GPU runs the effect");
             assert_eq!((out.offset, out.scale), (cpu.offset, cpu.scale), "{id}: geometry");
             let d = diff(&cpu.img, &out.img, 1e-3);
             assert!(
@@ -209,10 +207,10 @@ fn on() -> Value {
 }
 
 /// #474: every effect done here reads aux channels, so the session gives the media layer its
-/// footage ([`effectcraft_effects::reads_aux`]).
+/// footage ([`pulso_effects::reads_aux`]).
 #[test]
 fn every_effect_here_reads_aux() {
-    assert!(crate::fx_depth::IDS.iter().all(|i| effectcraft_effects::reads_aux(i)));
+    assert!(crate::fx_depth::IDS.iter().all(|i| pulso_effects::reads_aux(i)));
 }
 
 #[test]
@@ -259,7 +257,7 @@ fn ids_and_cryptomatte() {
 }
 
 /// The GPU skips the ID colours for displays that do not read them
-/// ([`effectcraft_effects::CryptoAux::for_display`]): every display × Matte Only must still match
+/// ([`pulso_effects::CryptoAux::for_display`]): every display × Matte Only must still match
 /// the CPU effect, so a shader that starts reading RGB in another mode fails here. Matte Only is
 /// checked both ways: the matte in RGB over alpha 1 (#3127) and, for older projects, in alpha too.
 #[test]
@@ -272,7 +270,7 @@ fn cryptomatte_every_display_matches_the_cpu() {
                     ("selection", Value::Str("beta, delta".into())),
                     ("display", e(display)),
                     ("matteOnly", Value::Bool(matte_only)),
-                    (effectcraft_effects::MATTE_ONLY_IN_ALPHA, Value::Bool(in_alpha)),
+                    (pulso_effects::MATTE_ONLY_IN_ALPHA, Value::Bool(in_alpha)),
                 ],
             );
         }
@@ -289,6 +287,6 @@ fn extractor() {
     case("ec.3d.extractor", &[("red", Value::Str("A".into())), ("blackPoint", n(0.2)), ("whitePoint", n(0.8)), ("clip", on())]);
     case("ec.3d.extractor", &[("green", Value::Str("".into())), ("alpha", Value::Str("nothing".into()))]);
     // `(copy)` reads the input's own channel, not the footage's R plane of aux_scene.
-    let copy = || Value::Str(effectcraft_effects::EXTRACTOR_COPY.into());
+    let copy = || Value::Str(pulso_effects::EXTRACTOR_COPY.into());
     case("ec.3d.extractor", &[("red", copy()), ("green", Value::Str("Coverage".into())), ("alpha", copy())]);
 }

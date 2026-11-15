@@ -1,6 +1,6 @@
 [package]
-name = "effectcraft-project"
-description = "The EffectCraft document: project items, compositions, layers and the After-Effects-style property tree"
+name = "pulso-project"
+description = "The Pulso document: project items, compositions, layers and the After-Effects-style property tree"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,10 +10,10 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-effectcraft-time = { workspace = true }
-effectcraft-geom = { workspace = true }
-effectcraft-color = { workspace = true }
-effectcraft-keyframe = { workspace = true }
+pulso-time = { workspace = true }
+pulso-geom = { workspace = true }
+pulso-color = { workspace = true }
+pulso-keyframe = { workspace = true }
 craft-ecproj-format = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

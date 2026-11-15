@@ -1,6 +1,6 @@
 //! Hostile and damaged input: nothing may panic; whatever parses must write back identically.
 
-use effectcraft_aep::{AepError, parse, write};
+use pulso_aep::{AepError, parse, write};
 
 /// Parses; on success, the invariant "parse then write is the identity" must hold.
 fn check(bytes: &[u8]) -> Result<(), AepError> {
@@ -150,7 +150,7 @@ fn garbage_after_a_valid_header() {
 
 // ----------------------------------------------------------------------------------- typed view
 
-use effectcraft_aep::{AepFile, Body, Chunk, Comp, Layer, Project, PropGroup, PropNode, Property};
+use pulso_aep::{AepFile, Body, Chunk, Comp, Layer, Project, PropGroup, PropNode, Property};
 
 /// Touches the property accessors; none may panic on a damaged property.
 fn exercise_property(p: &Property<'_, '_>) {
@@ -211,19 +211,19 @@ fn exercise_layer(project: &Project<'_, '_>, comp_size: (u32, u32), layer: &Laye
         let _ = (g.name, g.position, g.details.len());
         for d in &g.details {
             match d {
-                effectcraft_aep::ShapeDetail::Polystar { star_type, outer_radius, inner_radius, inner_roundness, item_index } => {
+                pulso_aep::ShapeDetail::Polystar { star_type, outer_radius, inner_radius, inner_roundness, item_index } => {
                     let _ = (star_type.value, outer_radius.value, inner_radius.value, inner_roundness.map(|r| r.value), *item_index);
                 }
-                effectcraft_aep::ShapeDetail::Gradient { gradient_type, highlight_length, highlight_angle, item_index } => {
+                pulso_aep::ShapeDetail::Gradient { gradient_type, highlight_length, highlight_angle, item_index } => {
                     let _ = (gradient_type.value, highlight_length.map(|t| t.value), highlight_angle.map(|t| t.value), *item_index);
                 }
-                effectcraft_aep::ShapeDetail::RectPosition { position, item_index } => {
+                pulso_aep::ShapeDetail::RectPosition { position, item_index } => {
                     let _ = (position.value, *item_index);
                 }
             }
         }
         for item in g.items {
-            if let effectcraft_aep::ShapeItem::Path { paths, .. } = item {
+            if let pulso_aep::ShapeItem::Path { paths, .. } = item {
                 for s in paths {
                     let _ = s.vertices((1.0, 1.0)).iter().fold(0.0, |acc, v| acc + v.in_tangent()[0] + v.out_tangent()[1]);
                 }
@@ -558,7 +558,7 @@ fn typed_view_survives_damaged_chunk_bodies() {
 
 #[test]
 fn extreme_values_in_the_decoded_headers() {
-    use effectcraft_aep::{CompHeader, LayerHeader, Rational, ShapePath};
+    use pulso_aep::{CompHeader, LayerHeader, Rational, ShapePath};
     // Every field at its maximum: no overflow, no division by zero, no panic.
     let h = LayerHeader::parse(&[0xff; 164]).unwrap();
     let _ = (h.in_point(), h.out_point(), h.in_point_seconds(), h.out_point_seconds(), h.start_seconds(), h.stretch_percent());
@@ -680,7 +680,7 @@ fn hostile_text_dictionaries_and_marker_headers_never_panic() {
 
 #[test]
 fn extreme_values_in_the_batch_3_fields() {
-    use effectcraft_aep::{CompHeader, Footage, LayerHeader, Rational};
+    use pulso_aep::{CompHeader, Footage, LayerHeader, Rational};
     // Time stretch: zero and maximal numerators and denominators (bytes 8 and 108), with extreme times.
     for (num, den) in [(0u32, 0u32), (1, 0), (0, 1), (u32::MAX, 1), (1, u32::MAX), (u32::MAX, u32::MAX), (3, 2)] {
         let mut ldta = [0u8; 164];

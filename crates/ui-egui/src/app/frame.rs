@@ -2,7 +2,7 @@ use super::clipboard::copy_image;
 use super::window::fit_window;
 use super::*;
 
-impl EffectcraftApp {
+impl PulsoApp {
     /// Completed, non-discarded UI passes since launch.
     pub fn ui_passes(&self) -> u64 {
         self.ui_pass_seq
@@ -138,21 +138,21 @@ impl EffectcraftApp {
     pub(crate) fn handle_events(&mut self, ctx: &egui::Context) {
         for ev in self.session.drain_events() {
             match ev {
-                effectcraft_engine::Event::OpenComp(c) => {
+                pulso_engine::Event::OpenComp(c) => {
                     panels::viewers::on_open_comp(self, c);
                     self.ui.timeline.pps = None;
                 }
-                effectcraft_engine::Event::Toast { message, .. } => self.toast = Some((message, self.now)),
-                effectcraft_engine::Event::OpenUrl(url) => ctx.open_url(egui::OpenUrl::new_tab(url)),
+                pulso_engine::Event::Toast { message, .. } => self.toast = Some((message, self.now)),
+                pulso_engine::Event::OpenUrl(url) => ctx.open_url(egui::OpenUrl::new_tab(url)),
                 // Frames are keyed by content: an edit keeps those of comps it doesn't touch.
-                effectcraft_engine::Event::ProjectChanged { .. } => {}
-                effectcraft_engine::Event::Frontend { command, params } => {
+                pulso_engine::Event::ProjectChanged { .. } => {}
+                pulso_engine::Event::Frontend { command, params } => {
                     if let Err(e) = crate::menus::frontend(self, ctx, &command, params) {
                         self.ui.status = e;
                     }
                 }
-                effectcraft_engine::Event::PurgeCaches => self.frames.clear(),
-                effectcraft_engine::Event::CopyImage { width, height, rgba } => {
+                pulso_engine::Event::PurgeCaches => self.frames.clear(),
+                pulso_engine::Event::CopyImage { width, height, rgba } => {
                     if let Err(e) = copy_image(ctx, width, height, &rgba) {
                         self.ui.status = e;
                     }
@@ -603,7 +603,7 @@ impl EffectcraftApp {
     }
 }
 
-impl EffectcraftApp {
+impl PulsoApp {
     /// Scripts' `app.scheduleTask` tasks that are due (repeating ones keep a ScriptUI panel
     /// fresh): errors as a toast, the last line printed in the status bar, and a repaint when
     /// the next one is due.
@@ -612,7 +612,7 @@ impl EffectcraftApp {
             return;
         }
         let previous_comp = self.session.active_comp_id();
-        let Some(r) = effectcraft_engine::scriptui::ScriptUi::run_tasks(&mut self.session) else { return };
+        let Some(r) = pulso_engine::scriptui::ScriptUi::run_tasks(&mut self.session) else { return };
         if self.session.active_comp_id().is_some() && self.session.active_comp_id() != previous_comp {
             self.ui.start_screen = false;
         }
@@ -659,7 +659,7 @@ impl EffectcraftApp {
     /// One background worker tracks source availability and optional content reloads. It wakes
     /// the UI only for changes; availability remains enabled when automatic reload is off.
     fn tick_footage_reload(&mut self, ctx: &egui::Context) {
-        use effectcraft_engine::footage_reload;
+        use pulso_engine::footage_reload;
         if self.session.project.items.is_empty() && self.footage_watcher.is_none() {
             return;
         }

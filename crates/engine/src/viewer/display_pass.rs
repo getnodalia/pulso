@@ -20,10 +20,10 @@
 
 use std::sync::Arc;
 
-use effectcraft_color::icc::Lut3d;
-use effectcraft_color::space;
-use effectcraft_project::{HdrMode, ProjectSettings};
-use effectcraft_render::color::Pipe;
+use pulso_color::icc::Lut3d;
+use pulso_color::space;
+use pulso_project::{HdrMode, ProjectSettings};
+use pulso_render::color::Pipe;
 
 use super::{Channel, Conv, Curve, DisplayColor};
 
@@ -38,7 +38,7 @@ pub enum PassCurve {
     Hlg,
 }
 
-/// SMPTE ST 2084 and BT.2100 HLG constants (`effectcraft_color::space`), in `f32`.
+/// SMPTE ST 2084 and BT.2100 HLG constants (`pulso_color::space`), in `f32`.
 const PQ_M1: f32 = 2610.0 / 16384.0;
 const PQ_M2: f32 = 2523.0 / 4096.0 * 128.0;
 const PQ_C1: f32 = 3424.0 / 4096.0;
@@ -274,12 +274,12 @@ impl FrameEncoding {
     }
 }
 
-/// Project Settings ▸ HDR on linear light (`effectcraft_render::color::output_hdr`).
+/// Project Settings ▸ HDR on linear light (`pulso_render::color::output_hdr`).
 pub fn hdr_step(mode: HdrMode, l: [f32; 3]) -> [f32; 3] {
     match mode {
         HdrMode::Clip => l,
-        HdrMode::Compand => l.map(effectcraft_render::color::compand),
-        HdrMode::ToneMap => effectcraft_render::color::tone_map(l),
+        HdrMode::Compand => l.map(pulso_render::color::compand),
+        HdrMode::ToneMap => pulso_render::color::tone_map(l),
     }
 }
 

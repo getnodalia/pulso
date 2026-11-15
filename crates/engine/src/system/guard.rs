@@ -14,7 +14,7 @@ thread_local! {
 }
 
 /// How many panics [`guarded`] has caught on this thread so far: compare two readings to learn
-/// whether a call panicked (crash repros, `effectcraft-cli replay`).
+/// whether a call panicked (crash repros, `pulso-cli replay`).
 pub fn caught() -> u64 {
     CAUGHT.with(Cell::get)
 }

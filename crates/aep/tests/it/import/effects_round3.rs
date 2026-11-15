@@ -3,8 +3,8 @@
 //! layer parameters naming the layer they were set to. Layer Control: 220, 320, 321.
 
 use crate::import::helpers::comp;
-use effectcraft_keyframe::Value;
-use effectcraft_project::{Comp, PropGroup};
+use pulso_keyframe::Value;
+use pulso_project::{Comp, PropGroup};
 
 const F905: &str = "905-fx-24-effects-set-one-comp.aep";
 
@@ -45,7 +45,7 @@ fn col(g: &PropGroup, id: &str, want: [f64; 3]) {
 #[test]
 fn the_24_effects_import_with_their_values() {
     let (p, r) = load!(F905);
-    // The one loss: CC Bend It's default Render Prestart "Bend" has no EffectCraft item.
+    // The one loss: CC Bend It's default Render Prestart "Bend" has no Pulso item.
     assert_eq!(r.report.total_losses(), 1, "{:?}", r.report.losses);
     assert!(format!("{:?}", r.report.losses).contains("'Bend' has no counterpart"));
     let (_, c) = comp(&p, &r, "C");
@@ -168,7 +168,7 @@ fn the_24_effects_import_with_their_values() {
     near(&g, "hueTransform", 90.0);
     col(&g, "colorToChange", [0.0, 0.0, 1.0]);
     near(&g, "matchingTolerance", 30.0);
-    // After Effects' Match Colors default is Using RGB (EffectCraft's own: Using Hue).
+    // After Effects' Match Colors default is Using RGB (Pulso's own: Using Hue).
     assert_eq!(v(&g, "matchColors"), Value::Enum(0));
 
     let g = e("E18");
@@ -241,7 +241,7 @@ fn layer_control_names_another_layer_itself_or_none() {
 /// the owning layer's own id is "this layer", 0 is the explicit None (`NO_LAYER`); nothing panics.
 #[test]
 fn hostile_layer_parameter_ids_are_reported_or_neutral() {
-    use effectcraft_aep::import::{ImportOptions, LossCategory, import};
+    use pulso_aep::import::{ImportOptions, LossCategory, import};
     let bytes = fixture!(F905);
     // The value records (the layer's and the project list's copy): the match name followed by its
     // `LIST tdbs`, not the definition in `parT`.
@@ -252,13 +252,13 @@ fn hostile_layer_parameter_ids_are_reported_or_neutral() {
     assert!(!records.is_empty());
     let none = |_: &str| false;
     let opts = ImportOptions { allow_losses: true, ..ImportOptions::new(&none) };
-    let none_value = Value::Layer(Some(effectcraft_project::NO_LAYER));
+    let none_value = Value::Layer(Some(pulso_project::NO_LAYER));
     for (id, expected) in [(u32::MAX, Value::Layer(None)), (0, none_value), (12345, Value::Layer(None))] {
         let mut b = bytes.clone();
         for &tdpi in &records {
             b[tdpi..tdpi + 4].copy_from_slice(&id.to_be_bytes());
         }
-        let mut p = effectcraft_project::Project::default();
+        let mut p = pulso_project::Project::default();
         let r = import(&mut p, &b, &opts).expect("imports");
         let (_, c) = comp(&p, &r, "C");
         let g = fx_of(c, "E24");
@@ -272,7 +272,7 @@ fn hostile_layer_parameter_ids_are_reported_or_neutral() {
 /// 2026 writes 0.990005 (64 881): the same scale, imported.
 #[test]
 fn a_valid_maximum_off_by_one_16_16_step_is_the_same_scale() {
-    use effectcraft_aep::import::{ImportOptions, LossCategory, import};
+    use pulso_aep::import::{ImportOptions, LossCategory, import};
     let mut b = fixture!("438-fx-glow-midpoint-0.25.aep");
     let mut n = 0;
     let mut i = 0;
@@ -288,18 +288,18 @@ fn a_valid_maximum_off_by_one_16_16_step_is_the_same_scale() {
     }
     assert!(n >= 1);
     let none = |_: &str| false;
-    let mut p = effectcraft_project::Project::default();
+    let mut p = pulso_project::Project::default();
     let r = import(&mut p, &b, &ImportOptions { allow_losses: true, ..ImportOptions::new(&none) }).expect("imports");
     assert_eq!(r.report.count(LossCategory::Effects), 0, "{:?}", r.report.losses);
 }
 
 #[test]
 fn curves_and_mesh_warp_import() {
-    use effectcraft_aep::import::{ImportOptions, import};
+    use pulso_aep::import::{ImportOptions, import};
     let none = |_: &str| false;
     let opts = ImportOptions { allow_losses: false, ..ImportOptions::new(&none) };
-    let fx = |name: &str| -> Option<effectcraft_project::PropGroup> {
-        let mut p = effectcraft_project::Project::default();
+    let fx = |name: &str| -> Option<pulso_project::PropGroup> {
+        let mut p = pulso_project::Project::default();
         let r = import(&mut p, &crate::common::try_fixture(name)?, &opts).unwrap_or_else(|e| panic!("{name}: {e}"));
         let (_, c) = comp(&p, &r, "C");
         Some(c.layers.iter().filter_map(|l| l.props.sub("effects")).flat_map(|e| e.children.iter()).find_map(|n| n.as_group().cloned()).expect("effect"))

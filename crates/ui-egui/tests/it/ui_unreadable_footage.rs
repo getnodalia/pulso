@@ -4,13 +4,13 @@
 
 use std::sync::Arc;
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::{Footage, FootageKind, ItemId, ItemKind, Proxy};
-use effectcraft_engine::render::FootageSource;
-use effectcraft_render::Image;
-use effectcraft_time::Tick;
-use effectcraft_ui_egui::EffectcraftApp;
 use egui_kittest::Harness;
+use pulso_engine::Session;
+use pulso_engine::project::{Footage, FootageKind, ItemId, ItemKind, Proxy};
+use pulso_engine::render::FootageSource;
+use pulso_render::Image;
+use pulso_time::Tick;
+use pulso_ui_egui::PulsoApp;
 use serde_json::json;
 
 const WHY: &str = "H.264 (High 4:2:2) isn't supported by the built-in decoder: chroma_format_idc 2 (only 4:2:0 is implemented)";
@@ -27,7 +27,7 @@ impl FootageSource for Stub {
     }
 }
 
-fn harness(broken: fn(&Footage) -> bool, proxy: Option<Footage>) -> (Harness<'static, EffectcraftApp>, ItemId) {
+fn harness(broken: fn(&Footage) -> bool, proxy: Option<Footage>) -> (Harness<'static, PulsoApp>, ItemId) {
     let mut s = Session { footage: Arc::new(Stub(broken)), ..Default::default() };
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "duration": 4})).unwrap();
     let footage = Footage {
@@ -48,9 +48,9 @@ fn harness(broken: fn(&Footage) -> bool, proxy: Option<Footage>) -> (Harness<'st
     (open(s), clip)
 }
 
-fn open(mut s: Session) -> Harness<'static, EffectcraftApp> {
+fn open(mut s: Session) -> Harness<'static, PulsoApp> {
     s.execute("project.select", json!({"items": []})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| PulsoApp::new(s));
     h.run_steps(4);
     h
 }
@@ -106,7 +106,7 @@ fn a_precomp_with_an_undecodable_proxy_has_a_notice_collapsed_or_not() {
 #[test]
 fn missing_footage_marks_project_timeline_and_viewer_and_clears_after_recovery() {
     let (mut h, clip) = harness(|_| false, None);
-    let set_missing = |h: &mut Harness<'static, EffectcraftApp>, missing| {
+    let set_missing = |h: &mut Harness<'static, PulsoApp>, missing| {
         let item = Arc::make_mut(&mut h.state_mut().session.project).item_mut(clip).unwrap();
         let ItemKind::Footage(f) = &mut item.kind else { panic!("footage fixture") };
         f.missing = missing;
@@ -146,13 +146,13 @@ fn missing_active_proxy_explains_the_proxy_repair_action() {
 
 #[test]
 fn restored_original_and_active_proxy_render_new_pixels_through_media_and_disk_caches() {
-    use effectcraft_engine::render::RenderOpts;
+    use pulso_engine::render::RenderOpts;
     for proxy in [false, true] {
         let dir = std::env::temp_dir().join(format!("ec-offline-pixels-{}-{proxy}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let original = dir.join("original.png");
         image::RgbaImage::from_pixel(16, 16, image::Rgba([255, 0, 0, 255])).save(&original).unwrap();
-        let mut s = effectcraft_host::session();
+        let mut s = pulso_host::session();
         s.prefs.import.auto_reload_footage = "off".into();
         let item = s.execute("file.import", json!({"paths": [original], "sequence": false})).unwrap()["items"][0].as_u64().unwrap();
         let active = if proxy {
@@ -172,7 +172,7 @@ fn restored_original_and_active_proxy_render_new_pixels_through_media_and_disk_c
         s.execute("comp.new", json!({"name": "Output", "width": 16, "height": 16, "duration": 1})).unwrap();
         s.execute("layer.addItem", json!({"item": inner})).unwrap();
         let comp = s.active_comp_id().unwrap();
-        let cache = effectcraft_render::disk_cache::DiskCache::open(dir.join("cache"), 1 << 20).unwrap();
+        let cache = pulso_render::disk_cache::DiskCache::open(dir.join("cache"), 1 << 20).unwrap();
         cache.set_min_layer_ms(0);
         s.disk_cache = Some(cache.clone());
         s.layer_cache.set_disk(Some(cache.clone()));

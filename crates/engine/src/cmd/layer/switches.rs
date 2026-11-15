@@ -150,11 +150,11 @@ pub(super) fn rename(s: &mut Session, p: &Value) -> Result<Value> {
 /// Give layer `l` the name `name` the user typed (comp time `t` picks the text). A text layer's
 /// name follows its text until the user renames it; an empty name makes it follow the text again
 /// (After Effects, #3233). Committing the unchanged name changes nothing.
-pub(super) fn set_layer_name(l: &mut Layer, name: &str, t: effectcraft_time::Tick) {
+pub(super) fn set_layer_name(l: &mut Layer, name: &str, t: pulso_time::Tick) {
     let text_name =
-        l.props.prop("text/sourceText").filter(|_| matches!(l.source, effectcraft_project::LayerSource::Text)).map(|pr| match pr.value_at(l.layer_time(t)) {
-            KV::Text(d) => effectcraft_project::text_layer_name(&d.text),
-            KV::Str(txt) => effectcraft_project::text_layer_name(&txt),
+        l.props.prop("text/sourceText").filter(|_| matches!(l.source, pulso_project::LayerSource::Text)).map(|pr| match pr.value_at(l.layer_time(t)) {
+            KV::Text(d) => pulso_project::text_layer_name(&d.text),
+            KV::Str(txt) => pulso_project::text_layer_name(&txt),
             _ => String::new(),
         });
     match text_name {

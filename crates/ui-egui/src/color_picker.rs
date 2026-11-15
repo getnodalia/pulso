@@ -665,16 +665,16 @@ pub fn hsv_to_rgb([h, s, v]: [f32; 3]) -> [f32; 3] {
 mod tests {
     use super::*;
 
-    fn sampling_viewer() -> egui_kittest::Harness<'static, crate::EffectcraftApp> {
-        let mut session = effectcraft_engine::Session::default();
+    fn sampling_viewer() -> egui_kittest::Harness<'static, crate::PulsoApp> {
+        let mut session = pulso_engine::Session::default();
         session.execute("comp.new", serde_json::json!({"width": 320, "height": 180, "duration": 2})).unwrap();
         session.execute("layer.newSolid", serde_json::json!({"color": "#204060"})).unwrap();
-        let mut harness = egui_kittest::Harness::builder().with_size(vec2(1200.0, 800.0)).build_eframe(|_| crate::EffectcraftApp::new(session));
+        let mut harness = egui_kittest::Harness::builder().with_size(vec2(1200.0, 800.0)).build_eframe(|_| crate::PulsoApp::new(session));
         settle_sampling_viewer(&mut harness);
         harness
     }
 
-    fn settle_sampling_viewer(harness: &mut egui_kittest::Harness<'_, crate::EffectcraftApp>) {
+    fn settle_sampling_viewer(harness: &mut egui_kittest::Harness<'_, crate::PulsoApp>) {
         for _ in 0..200 {
             harness.step();
             if harness.state().frames.inflight() == 0 && harness.state().viewer_image.is_some() {
@@ -686,7 +686,7 @@ mod tests {
         panic!("the synthetic viewer frame did not arrive");
     }
 
-    fn press_sampling_viewer(harness: &mut egui_kittest::Harness<'_, crate::EffectcraftApp>) -> Option<[f32; 3]> {
+    fn press_sampling_viewer(harness: &mut egui_kittest::Harness<'_, crate::PulsoApp>) -> Option<[f32; 3]> {
         let ctx = harness.ctx.clone();
         arm(&ctx, egui::Id::unique("test-popup"));
         let point = crate::panels::viewer::comp_to_screen(&ctx, [20.0, 20.0]).unwrap();
@@ -702,16 +702,16 @@ mod tests {
     #[test]
     fn popup_eyedropper_samples_the_displayed_channel_and_exposure() {
         let mut harness = sampling_viewer();
-        harness.state_mut().session.state.viewer.channel = effectcraft_engine::viewer::Channel::Green;
+        harness.state_mut().session.state.viewer.channel = pulso_engine::viewer::Channel::Green;
         let green = press_sampling_viewer(&mut harness).unwrap();
         assert!(green.iter().all(|value| (*value - 64.0 / 255.0).abs() < 0.01), "{green:?}");
         let options = &mut harness.state_mut().session.state.viewer;
-        options.channel = effectcraft_engine::viewer::Channel::Rgb;
+        options.channel = pulso_engine::viewer::Channel::Rgb;
         options.exposure = 1.0;
         let exposed = press_sampling_viewer(&mut harness).unwrap();
         let mut expected = [[32, 64, 96, 255]];
-        let encoding = effectcraft_engine::viewer::FrameEncoding::of(&harness.state().session.project.settings, false);
-        effectcraft_engine::viewer::DisplayPass::new(effectcraft_engine::viewer::Channel::Rgb, false, 1.0, encoding, None).apply_rgba8(&mut expected);
+        let encoding = pulso_engine::viewer::FrameEncoding::of(&harness.state().session.project.settings, false);
+        pulso_engine::viewer::DisplayPass::new(pulso_engine::viewer::Channel::Rgb, false, 1.0, encoding, None).apply_rgba8(&mut expected);
         for (actual, expected) in exposed.iter().zip(expected[0]) {
             assert!((*actual - expected as f32 / 255.0).abs() < 0.01, "{exposed:?}");
         }
@@ -732,21 +732,21 @@ mod tests {
         }
         let options = &mut harness.state_mut().session.state.viewer;
         options.show_snapshot = false;
-        options.fast_previews = effectcraft_engine::commands::viewer_cmds::FastPreviews::Wireframe;
+        options.fast_previews = pulso_engine::commands::viewer_cmds::FastPreviews::Wireframe;
         harness.event(egui::Event::Key { key: egui::Key::F5, physical_key: None, pressed: false, repeat: false, modifiers: egui::Modifiers::NONE });
         assert_eq!(press_sampling_viewer(&mut harness), None, "wireframe must not sample an old pixel frame");
     }
 
     /// A 32 bpc project whose solid is about 4.0 in linear light (white +2 stops), in half-float viewer
     /// frames; `hdr`: Project Settings ▸ HDR (with an sRGB working space).
-    fn hdr_viewer(hdr: &str) -> egui_kittest::Harness<'static, crate::EffectcraftApp> {
-        let mut s = effectcraft_engine::Session::default();
+    fn hdr_viewer(hdr: &str) -> egui_kittest::Harness<'static, crate::PulsoApp> {
+        let mut s = pulso_engine::Session::default();
         s.execute("comp.new", serde_json::json!({"width": 320, "height": 180, "duration": 2})).unwrap();
         s.execute("file.projectSettings", serde_json::json!({"bitDepth": 32, "workingSpace": "srgb", "hdr": hdr})).unwrap();
         let lid = s.execute("layer.newSolid", serde_json::json!({"color": "#ffffff"})).unwrap()["layer"].as_u64().unwrap();
         s.execute("effect.apply", serde_json::json!({"layers": [lid], "effect": "Exposure"})).unwrap();
         s.execute("prop.set", serde_json::json!({"layer": lid, "path": "effects/#1/master/exposure", "value": 2.0})).unwrap();
-        let mut harness = egui_kittest::Harness::builder().with_size(vec2(1200.0, 800.0)).build_eframe(|_| crate::EffectcraftApp::new(s));
+        let mut harness = egui_kittest::Harness::builder().with_size(vec2(1200.0, 800.0)).build_eframe(|_| crate::PulsoApp::new(s));
         for _ in 0..400 {
             harness.step();
             if harness.state().frames.inflight() == 0 && harness.state().viewer_f16.is_some() {
@@ -759,12 +759,12 @@ mod tests {
     }
 
     /// The linear light of the frame's first pixel (sRGB-encoded).
-    fn linear_of(harness: &egui_kittest::Harness<'_, crate::EffectcraftApp>) -> f32 {
+    fn linear_of(harness: &egui_kittest::Harness<'_, crate::PulsoApp>) -> f32 {
         let p = harness.state().viewer_f16.as_ref().unwrap().pixel(0).unwrap();
-        effectcraft_engine::color::srgb_to_linear(p[0] / p[3])
+        pulso_engine::color::srgb_to_linear(p[0] / p[3])
     }
 
-    fn exposed(harness: &mut egui_kittest::Harness<'_, crate::EffectcraftApp>, stops: f32) -> f32 {
+    fn exposed(harness: &mut egui_kittest::Harness<'_, crate::PulsoApp>, stops: f32) -> f32 {
         harness.state_mut().session.state.viewer.exposure = stops;
         harness.run_steps(2);
         press_sampling_viewer(harness).unwrap()[0]
@@ -778,7 +778,7 @@ mod tests {
         let mut harness = hdr_viewer("clip");
         let l = linear_of(&harness);
         assert!(l > 3.9, "the frame keeps the over-range value: {l}");
-        let srgb = |l: f32| effectcraft_engine::color::linear_to_srgb(l);
+        let srgb = |l: f32| pulso_engine::color::linear_to_srgb(l);
         assert!((exposed(&mut harness, 0.0) - 1.0).abs() < 0.01);
         assert!((exposed(&mut harness, -2.0) - 1.0).abs() < 0.01, "-2 EV");
         let v = exposed(&mut harness, -3.0);
@@ -799,11 +799,11 @@ mod tests {
     #[test]
     fn compand_follows_the_viewer_exposure() {
         let mut harness = hdr_viewer("compand");
-        assert_eq!(harness.state().viewer_f16.as_ref().unwrap().encoding.hdr, effectcraft_engine::project::HdrMode::Compand);
-        let srgb = |l: f32| effectcraft_engine::color::linear_to_srgb(l);
+        assert_eq!(harness.state().viewer_f16.as_ref().unwrap().encoding.hdr, pulso_engine::project::HdrMode::Compand);
+        let srgb = |l: f32| pulso_engine::color::linear_to_srgb(l);
         let l = linear_of(&harness);
         let at0 = exposed(&mut harness, 0.0);
-        let want = srgb(effectcraft_engine::render::color::compand(l));
+        let want = srgb(pulso_engine::render::color::compand(l));
         assert!((at0 - want).abs() < 0.01, "0 EV: {at0} vs {want}");
         let v = exposed(&mut harness, -3.0);
         assert!((v - srgb(l / 8.0)).abs() < 0.01 && v < 0.8, "-3 EV: {v}");

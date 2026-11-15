@@ -200,7 +200,7 @@ fn fxd_point(@builtin(global_invocation_id) gid: vec3<u32>) {
         }
         // Cryptomatte (aux = (ID colours, selection coverage)). u[0] = (op, display, matte only,
         // matte only in alpha). Matte Only is the matte in RGB over alpha 1, or in every channel
-        // for projects saved before #3127 (`effectcraft_effects::matte_only_px`).
+        // for projects saved before #3127 (`pulso_effects::matte_only_px`).
         case 7u: {
             let m = q.w;
             if (P.u[0].z != 0u) {

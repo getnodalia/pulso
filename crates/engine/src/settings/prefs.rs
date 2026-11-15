@@ -12,8 +12,8 @@
 
 use std::collections::BTreeMap;
 
-use effectcraft_color::Label;
-use effectcraft_time::Tick;
+use pulso_color::Label;
+use pulso_time::Tick;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 

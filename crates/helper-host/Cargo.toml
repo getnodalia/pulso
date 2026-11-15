@@ -1,5 +1,5 @@
 [package]
-name = "effectcraft-helper-host"
+name = "pulso-helper-host"
 description = "External effect helpers: finds helper programs, talks to them over a versioned pipe + shared-file protocol and registers their effects (plug-in API 2). Safe Rust; a crashing helper is an error, not a crash"
 version.workspace = true
 edition.workspace = true
@@ -10,14 +10,14 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-effectcraft-effects = { workspace = true }
+pulso-effects = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }
 bytemuck = { workspace = true }
 
 # The crate's integration tests (one binary, `tests/it/main.rs`): the whole protocol against a
-# fake helper. The test binary is also the helper (started with `--effectcraft-helper`), so
+# fake helper. The test binary is also the helper (started with `--pulso-helper`), so
 # `cargo test` covers it on every platform with nothing to install; `harness = false` because
 # libtest would reject the helper argument.
 [[test]]

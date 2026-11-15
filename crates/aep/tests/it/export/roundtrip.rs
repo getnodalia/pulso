@@ -2,8 +2,8 @@
 //! subset (masks included), and the exporter never fails on what the importer produces.
 
 use crate::export::helpers::export_all;
-use effectcraft_aep::import::{ImportOptions, import};
-use effectcraft_project::{Comp, Item, ItemKind, Layer, LayerSource, Project};
+use pulso_aep::import::{ImportOptions, import};
+use pulso_project::{Comp, Item, ItemKind, Layer, LayerSource, Project};
 
 fn import_bytes(bytes: &[u8]) -> Option<Project> {
     let mut p = Project::default();
@@ -14,7 +14,7 @@ fn import_bytes(bytes: &[u8]) -> Option<Project> {
 }
 
 /// Items in tree order: (depth, name) with the item.
-fn tree<'a>(p: &'a Project, parent: Option<effectcraft_project::ItemId>, depth: usize, out: &mut Vec<(usize, &'a Item)>) {
+fn tree<'a>(p: &'a Project, parent: Option<pulso_project::ItemId>, depth: usize, out: &mut Vec<(usize, &'a Item)>) {
     let mut kids: Vec<&Item> = p.items.values().filter(|i| i.parent == parent).collect();
     kids.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()).then(a.id.0.cmp(&b.id.0)));
     for k in kids {
@@ -53,7 +53,7 @@ fn same_layer(x: &Layer, y: &Layer, ca: &Comp, cb: &Comp, comp: &str, pa: &Proje
     assert_eq!(x.blend_mode, y.blend_mode, "{w}");
     assert_eq!(x.label, y.label, "{w}");
     assert_eq!(x.switches, y.switches, "{w} switches");
-    let idx = |c: &Comp, p: Option<effectcraft_project::LayerId>| p.and_then(|id| c.index_of(id));
+    let idx = |c: &Comp, p: Option<pulso_project::LayerId>| p.and_then(|id| c.index_of(id));
     assert_eq!(idx(ca, x.parent), idx(cb, y.parent), "{w} parent");
     let src = |p: &Project, l: &Layer| match &l.source {
         LayerSource::Solid { item } => p.item(*item).map(|i| (i.name.clone(), Some(i.kind.clone()))),
@@ -63,7 +63,7 @@ fn same_layer(x: &Layer, y: &Layer, ca: &Comp, cb: &Comp, comp: &str, pa: &Proje
     };
     assert_eq!(src(pa, x), src(pb, y), "{w} source");
     // Masks (names, mode, invert, values and key counts; the field-by-field check is in masks.rs).
-    let masks = |l: &Layer| -> Vec<effectcraft_project::PropGroup> { l.masks().map(|m| m.groups().cloned().collect()).unwrap_or_default() };
+    let masks = |l: &Layer| -> Vec<pulso_project::PropGroup> { l.masks().map(|m| m.groups().cloned().collect()).unwrap_or_default() };
     let (mx, my) = (masks(x), masks(y));
     assert_eq!(mx.len(), my.len(), "{w} mask count");
     for (a, b) in mx.iter().zip(&my) {
@@ -78,8 +78,7 @@ fn same_layer(x: &Layer, y: &Layer, ca: &Comp, cb: &Comp, comp: &str, pa: &Proje
     let (tx, ty) = (x.transform().expect("t"), y.transform().expect("t"));
     for id in ["anchor", "position", "scale", "rotation", "opacity"] {
         let (px, py) = (tx.get(id).expect("p"), ty.get(id).expect("p"));
-        let close =
-            |a: &effectcraft_keyframe::Value, b: &effectcraft_keyframe::Value| a.components().iter().zip(b.components()).all(|(p, q)| (p - q).abs() < 1e-6);
+        let close = |a: &pulso_keyframe::Value, b: &pulso_keyframe::Value| a.components().iter().zip(b.components()).all(|(p, q)| (p - q).abs() < 1e-6);
         assert!(close(&px.value, &py.value), "{w} {id} value {:?} {:?}", px.value, py.value);
         assert_eq!(px.expr, py.expr, "{w} {id} expression");
         assert_eq!(px.keys.len(), py.keys.len(), "{w} {id} key count");
@@ -89,8 +88,8 @@ fn same_layer(x: &Layer, y: &Layer, ca: &Comp, cb: &Comp, comp: &str, pa: &Proje
     }
 }
 
-fn same_key(kx: &effectcraft_keyframe::Keyframe, ky: &effectcraft_keyframe::Keyframe, spatial: bool, w: &str) {
-    let close = |a: &effectcraft_keyframe::Value, b: &effectcraft_keyframe::Value| a.components().iter().zip(b.components()).all(|(p, q)| (p - q).abs() < 1e-6);
+fn same_key(kx: &pulso_keyframe::Keyframe, ky: &pulso_keyframe::Keyframe, spatial: bool, w: &str) {
+    let close = |a: &pulso_keyframe::Value, b: &pulso_keyframe::Value| a.components().iter().zip(b.components()).all(|(p, q)| (p - q).abs() < 1e-6);
     assert_eq!(kx.time, ky.time, "{w} key time");
     assert!(close(&kx.value, &ky.value), "{w} key value");
     assert_eq!(kx.roving, ky.roving, "{w}");
@@ -102,7 +101,7 @@ fn same_key(kx: &effectcraft_keyframe::Keyframe, ky: &effectcraft_keyframe::Keyf
     // Every side keeps its kind (the Anchor Point's ease too: 597, 730).
     for (sx, sy, ex, ey) in [(kx.in_interp, ky.in_interp, &kx.in_ease, &ky.in_ease), (kx.out_interp, ky.out_interp, &kx.out_ease, &ky.out_ease)] {
         assert_eq!(sx, sy, "{w} interpolation");
-        if sx == effectcraft_keyframe::Interp::Bezier {
+        if sx == pulso_keyframe::Interp::Bezier {
             assert_eq!(ex.len().max(1), ey.len().max(1), "{w} ease dims");
             for (a, b) in ex.iter().zip(ey) {
                 assert!((a.speed - b.speed).abs() < 1e-6 && (a.influence - b.influence).abs() < 1e-6, "{w} ease {a:?} {b:?}");

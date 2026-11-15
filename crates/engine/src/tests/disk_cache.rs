@@ -7,7 +7,7 @@ use crate::Session;
 use crate::render::RenderOpts;
 
 fn folder(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("effectcraft-session-disk-{name}-{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("pulso-session-disk-{name}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
     d.to_string_lossy().to_string()
 }
@@ -20,7 +20,7 @@ fn session(dir: &str) -> Session {
     s
 }
 
-fn project(s: &mut Session) -> effectcraft_project::ItemId {
+fn project(s: &mut Session) -> pulso_project::ItemId {
     s.execute("comp.new", json!({"name": "D", "width": 160, "height": 90, "frameRate": 30, "duration": 1})).unwrap();
     s.execute("layer.newSolid", json!({"color": "#3080ff", "width": 80, "height": 40})).unwrap();
     s.execute("effect.apply", json!({"layer": "#1", "effect": "Gaussian Blur"})).unwrap();
@@ -82,21 +82,21 @@ fn disk_cache_settings_persistence_and_invalidation() {
 fn comp_content_keys_come_from_memory() {
     let dir = folder("keys");
     let mut s = session(&dir);
-    let foot = std::env::temp_dir().join(format!("effectcraft-keys-{}.png", std::process::id()));
+    let foot = std::env::temp_dir().join(format!("pulso-keys-{}.png", std::process::id()));
     std::fs::write(&foot, b"one").unwrap();
     s.edit("add", None, |p, _| {
-        let f = effectcraft_project::Footage {
+        let f = pulso_project::Footage {
             path: foot.to_string_lossy().to_string(),
-            kind: effectcraft_project::FootageKind::Still,
+            kind: pulso_project::FootageKind::Still,
             width: 1,
             height: 1,
             pixel_aspect: 1.0,
-            frame_rate: effectcraft_time::FrameRate::FPS_30,
+            frame_rate: pulso_time::FrameRate::FPS_30,
             native_rate: None,
-            duration: effectcraft_time::Tick::ZERO,
+            duration: pulso_time::Tick::ZERO,
             has_video: true,
             has_audio: false,
-            alpha: effectcraft_project::AlphaMode::Ignore,
+            alpha: pulso_project::AlphaMode::Ignore,
             premul_color: [0.0; 3],
             loop_count: 1,
             codec: "PNG".into(),
@@ -106,31 +106,31 @@ fn comp_content_keys_come_from_memory() {
             layer: None,
             ..Default::default()
         };
-        p.add_item("f.png", effectcraft_color::Label::Lavender, None, effectcraft_project::ItemKind::Footage(f));
+        p.add_item("f.png", pulso_color::Label::Lavender, None, pulso_project::ItemKind::Footage(f));
         Ok(())
     })
     .unwrap();
     let cid = project(&mut s);
-    let k1 = effectcraft_render::disk_cache::comp_content_key(&s.project, cid);
+    let k1 = pulso_render::disk_cache::comp_content_key(&s.project, cid);
     std::fs::write(&foot, b"two, longer").unwrap();
-    assert_eq!(effectcraft_render::disk_cache::comp_content_key(&s.project, cid), k1, "no file is looked at");
+    assert_eq!(pulso_render::disk_cache::comp_content_key(&s.project, cid), k1, "no file is looked at");
     s.execute("prop.set", json!({"layer": "#1", "path": "transform/opacity", "value": 50})).unwrap();
-    let k2 = effectcraft_render::disk_cache::comp_content_key(&s.project, cid);
+    let k2 = pulso_render::disk_cache::comp_content_key(&s.project, cid);
     assert_ne!(k1, k2);
     // Switches that don't change pixels (Audio, Lock, Shy, Hide Shy Layers) don't change it (#103).
     for sw in ["audio", "lock", "shy"] {
         s.execute("layer.setSwitch", json!({"layers": ["#1"], "switch": sw, "value": sw != "audio"})).unwrap();
     }
     s.execute("comp.setSwitch", json!({"switch": "hideShy", "value": true})).unwrap();
-    assert_eq!(effectcraft_render::disk_cache::comp_content_key(&s.project, cid), k2);
+    assert_eq!(pulso_render::disk_cache::comp_content_key(&s.project, cid), k2);
     // Unrelated comps do not change it.
     s.execute("comp.new", json!({"name": "Other", "width": 10, "height": 10, "frameRate": 30, "duration": 1})).unwrap();
-    assert_eq!(effectcraft_render::disk_cache::comp_content_key(&s.project, cid), k2);
+    assert_eq!(pulso_render::disk_cache::comp_content_key(&s.project, cid), k2);
     // A proxy, and its Use Proxy switch, change the pixels.
     let set_proxy = |s: &mut Session, enabled: bool| {
         let it = std::sync::Arc::make_mut(&mut s.project).items.get_mut(&cid).unwrap();
-        it.proxy = Some(Box::new(effectcraft_project::Proxy { footage: effectcraft_project::Footage::default(), enabled }));
-        effectcraft_render::disk_cache::comp_content_key(&s.project, cid)
+        it.proxy = Some(Box::new(pulso_project::Proxy { footage: pulso_project::Footage::default(), enabled }));
+        pulso_render::disk_cache::comp_content_key(&s.project, cid)
     };
     let k3 = set_proxy(&mut s, true);
     assert_ne!(k3, k2);
@@ -149,10 +149,10 @@ fn the_disk_cache_is_attached_at_once_and_edits_do_no_file_work() {
     let attached = |s: &Session| s.layer_cache.disk().is_some_and(|d| std::sync::Arc::ptr_eq(&d, &dc));
     assert!(attached(&s), "attached at once");
     // A sequence of 5000 frames that don't even exist.
-    let seq_dir = std::env::temp_dir().join(format!("effectcraft-no-scan-{}", std::process::id()));
-    let f = effectcraft_project::Footage {
+    let seq_dir = std::env::temp_dir().join(format!("pulso-no-scan-{}", std::process::id()));
+    let f = pulso_project::Footage {
         path: seq_dir.join("f_00000.exr").to_string_lossy().to_string(),
-        kind: effectcraft_project::FootageKind::Sequence,
+        kind: pulso_project::FootageKind::Sequence,
         sequence: (0..5000).map(|i| seq_dir.join(format!("f_{i:05}.exr")).to_string_lossy().to_string()).collect(),
         width: 8,
         height: 8,
@@ -160,7 +160,7 @@ fn the_disk_cache_is_attached_at_once_and_edits_do_no_file_work() {
         ..Default::default()
     };
     s.edit("add", None, |p, _| {
-        p.add_item("seq", effectcraft_color::Label::None, None, effectcraft_project::ItemKind::Footage(f));
+        p.add_item("seq", pulso_color::Label::None, None, pulso_project::ItemKind::Footage(f));
         Ok(())
     })
     .unwrap();
@@ -192,7 +192,7 @@ fn markers_keep_the_content_key_unless_an_expression_reads_them() {
     s.execute("comp.new", json!({"name": "M", "width": 8, "height": 8, "frameRate": 30, "duration": 2})).unwrap();
     let cid = s.active_comp_id().unwrap();
     let l = s.execute("layer.newSolid", json!({"color": "#ff0000"})).unwrap()["layer"].as_u64().unwrap();
-    let key = |s: &Session| effectcraft_render::disk_cache::comp_content_key(&s.project, cid);
+    let key = |s: &Session| pulso_render::disk_cache::comp_content_key(&s.project, cid);
     let k0 = key(&s);
     s.execute("comp.addMarker", json!({"time": 0.5, "comment": "beat"})).unwrap();
     s.execute("markers.set", json!({"layer": l, "new": true, "time": 0.25})).unwrap();
@@ -211,7 +211,7 @@ fn a_lone_comp_marker_keeps_the_content_key() {
     s.execute("comp.new", json!({"name": "M", "width": 8, "height": 8, "frameRate": 30, "duration": 2})).unwrap();
     let cid = s.active_comp_id().unwrap();
     s.execute("layer.newSolid", json!({"color": "#ff0000"})).unwrap();
-    let key = |s: &Session| effectcraft_render::disk_cache::comp_content_key(&s.project, cid);
+    let key = |s: &Session| pulso_render::disk_cache::comp_content_key(&s.project, cid);
     let k0 = key(&s);
     s.execute("comp.addMarker", json!({"time": 0.5, "comment": "beat"})).unwrap();
     assert_eq!(key(&s), k0);
@@ -230,7 +230,7 @@ fn protected_markers_with_a_duration_change_the_content_key() {
     let l = s.execute("layer.addItem", json!({"item": inner.0})).unwrap()["layer"].as_u64().unwrap();
     s.execute("layer.select", json!({"layers": [l]})).unwrap();
     s.execute("layer.timeStretch", json!({"percent": 200})).unwrap();
-    let key = |s: &Session| effectcraft_render::disk_cache::comp_content_key(&s.project, outer);
+    let key = |s: &Session| pulso_render::disk_cache::comp_content_key(&s.project, outer);
     let k0 = key(&s);
     s.execute("comp.addMarker", json!({"comp": inner.0, "time": 2.0, "comment": "beat"})).unwrap();
     assert_eq!(key(&s), k0, "a plain marker");
@@ -253,17 +253,17 @@ fn expressions_reach_only_what_they_name() {
     let comp = |s: &mut Session, name: &str| {
         let c = s.execute("comp.new", json!({"name": name, "width": 8, "height": 8, "frameRate": 30, "duration": 1})).unwrap()["comp"].as_u64().unwrap();
         let l = s.execute("layer.newSolid", json!({"comp": c, "color": "#ff0000"})).unwrap()["layer"].as_u64().unwrap();
-        (effectcraft_project::ItemId(c), (c, l))
+        (pulso_project::ItemId(c), (c, l))
     };
     let (main, ml) = comp(&mut s, "Main");
     let (_, ol) = comp(&mut s, "Other");
     let (third, tl) = comp(&mut s, "Third");
     let unused = s.edit("add", None, |p, _| {
-        let f = effectcraft_project::Footage { path: "/nowhere/a.png".into(), has_video: true, ..Default::default() };
-        Ok(p.add_item("a.png", effectcraft_color::Label::None, None, effectcraft_project::ItemKind::Footage(f)))
+        let f = pulso_project::Footage { path: "/nowhere/a.png".into(), has_video: true, ..Default::default() };
+        Ok(p.add_item("a.png", pulso_color::Label::None, None, pulso_project::ItemKind::Footage(f)))
     });
     let unused = unused.unwrap();
-    let key = |s: &Session| effectcraft_render::disk_cache::comp_content_key(&s.project, main);
+    let key = |s: &Session| pulso_render::disk_cache::comp_content_key(&s.project, main);
     let expr = |s: &mut Session, (comp, layer): (u64, u64), text: &str| {
         s.execute("prop.setExpression", json!({"comp": comp, "layer": layer, "path": "transform/opacity", "expression": text})).unwrap();
     };
@@ -273,7 +273,7 @@ fn expressions_reach_only_what_they_name() {
     let repath = |s: &mut Session, path: &str| {
         let path = path.to_string();
         s.edit("repath", None, move |p, _| {
-            if let Some(effectcraft_project::ItemKind::Footage(f)) = p.item_mut(unused).map(|i| &mut i.kind) {
+            if let Some(pulso_project::ItemKind::Footage(f)) = p.item_mut(unused).map(|i| &mut i.kind) {
                 f.path = path;
             }
             Ok(())
@@ -327,12 +327,12 @@ fn markers_count_only_where_an_expression_can_read_them() {
     let other = s.execute("comp.new", json!({"name": "N", "width": 8, "height": 8, "frameRate": 30, "duration": 2})).unwrap()["comp"].as_u64().unwrap();
     let ol = s.execute("layer.newSolid", json!({"comp": other, "color": "#ff0000"})).unwrap()["layer"].as_u64().unwrap();
     s.execute("prop.setExpression", json!({"comp": other, "layer": ol, "path": "transform/opacity", "expression": "thisComp.marker.numKeys"})).unwrap();
-    let key = |s: &Session| effectcraft_render::disk_cache::comp_content_key(&s.project, cid);
+    let key = |s: &Session| pulso_render::disk_cache::comp_content_key(&s.project, cid);
     let k0 = key(&s);
     s.execute("comp.addMarker", json!({"comp": cid.0, "time": 0.5, "comment": "beat"})).unwrap();
     assert_eq!(key(&s), k0, "no expression of M reads its markers");
     s.execute("prop.setExpression", json!({"comp": other, "layer": ol, "path": "transform/opacity", "expression": "comp(\"M\").marker.numKeys"})).unwrap();
-    let other_key = |s: &Session| effectcraft_render::disk_cache::comp_content_key(&s.project, effectcraft_project::ItemId(other));
+    let other_key = |s: &Session| pulso_render::disk_cache::comp_content_key(&s.project, pulso_project::ItemId(other));
     let n0 = other_key(&s);
     s.execute("comp.addMarker", json!({"comp": cid.0, "time": 1.0})).unwrap();
     assert_ne!(other_key(&s), n0, "N reads M's markers");
@@ -347,10 +347,10 @@ fn reload_footage_drops_the_entries_of_its_files() {
     use crate::render::reads::{FileStamp, ReadFile, ReadFiles};
     struct Probe;
     impl crate::Importer for Probe {
-        fn probe(&self, path: &str) -> std::result::Result<effectcraft_project::Footage, String> {
-            Ok(effectcraft_project::Footage {
+        fn probe(&self, path: &str) -> std::result::Result<pulso_project::Footage, String> {
+            Ok(pulso_project::Footage {
                 path: path.into(),
-                kind: effectcraft_project::FootageKind::Still,
+                kind: pulso_project::FootageKind::Still,
                 width: 1,
                 height: 1,
                 has_video: true,
@@ -367,15 +367,9 @@ fn reload_footage_drops_the_entries_of_its_files() {
         let p = src.join(name);
         std::fs::write(&p, b"aa").unwrap();
         let path = p.to_string_lossy().to_string();
-        let f = effectcraft_project::Footage {
-            path: path.clone(),
-            kind: effectcraft_project::FootageKind::Still,
-            width: 1,
-            height: 1,
-            has_video: true,
-            ..Default::default()
-        };
-        let id = s.edit("add", None, |p, _| Ok(p.add_item(name, effectcraft_color::Label::None, None, effectcraft_project::ItemKind::Footage(f)))).unwrap();
+        let f =
+            pulso_project::Footage { path: path.clone(), kind: pulso_project::FootageKind::Still, width: 1, height: 1, has_video: true, ..Default::default() };
+        let id = s.edit("add", None, |p, _| Ok(p.add_item(name, pulso_color::Label::None, None, pulso_project::ItemKind::Footage(f)))).unwrap();
         (id, path)
     };
     let (a, a_path) = add("a.png");
@@ -384,7 +378,7 @@ fn reload_footage_drops_the_entries_of_its_files() {
     let read = |p: &str| -> ReadFiles { [ReadFile::new(p, FileStamp::native(p).unwrap())].into_iter().collect() };
     dc.put_frame_now(1, 1, 1, &[1; 4], &read(&a_path));
     dc.put_frame_now(2, 1, 1, &[2; 4], &read(&b_path));
-    dc.put_layer_now(3, &effectcraft_effects::Buf { img: effectcraft_raster::Image::new(1, 1), offset: [0.0; 2], scale: 1.0 }, &read(&a_path));
+    dc.put_layer_now(3, &pulso_effects::Buf { img: pulso_raster::Image::new(1, 1), offset: [0.0; 2], scale: 1.0 }, &read(&a_path));
     // Other bytes, same size, the old time back.
     let t = std::fs::metadata(&a_path).unwrap().modified().unwrap();
     std::fs::write(&a_path, b"AA").unwrap();
@@ -408,10 +402,10 @@ fn reload_footage_while_the_disk_cache_is_off_drops_its_entries_when_it_is_on() 
     use crate::render::reads::{FileStamp, ReadFile, ReadFiles};
     struct Probe;
     impl crate::Importer for Probe {
-        fn probe(&self, path: &str) -> std::result::Result<effectcraft_project::Footage, String> {
-            Ok(effectcraft_project::Footage {
+        fn probe(&self, path: &str) -> std::result::Result<pulso_project::Footage, String> {
+            Ok(pulso_project::Footage {
                 path: path.into(),
-                kind: effectcraft_project::FootageKind::Still,
+                kind: pulso_project::FootageKind::Still,
                 width: 1,
                 height: 1,
                 has_video: true,
@@ -427,15 +421,9 @@ fn reload_footage_while_the_disk_cache_is_off_drops_its_entries_when_it_is_on() 
         let p = src.join(name);
         std::fs::write(&p, b"aa").unwrap();
         let path = p.to_string_lossy().to_string();
-        let f = effectcraft_project::Footage {
-            path: path.clone(),
-            kind: effectcraft_project::FootageKind::Still,
-            width: 1,
-            height: 1,
-            has_video: true,
-            ..Default::default()
-        };
-        let id = s.edit("add", None, |p, _| Ok(p.add_item(name, effectcraft_color::Label::None, None, effectcraft_project::ItemKind::Footage(f)))).unwrap();
+        let f =
+            pulso_project::Footage { path: path.clone(), kind: pulso_project::FootageKind::Still, width: 1, height: 1, has_video: true, ..Default::default() };
+        let id = s.edit("add", None, |p, _| Ok(p.add_item(name, pulso_color::Label::None, None, pulso_project::ItemKind::Footage(f)))).unwrap();
         (id, path)
     };
     let (a, a_path) = add("a.png");
@@ -446,7 +434,7 @@ fn reload_footage_while_the_disk_cache_is_off_drops_its_entries_when_it_is_on() 
         let dc = DiskCache::open(&dir, 1 << 30).unwrap();
         dc.put_frame_now(1, 1, 1, &[1; 4], &read(&a_path));
         dc.put_frame_now(2, 1, 1, &[2; 4], &read(&b_path));
-        dc.put_layer_now(3, &effectcraft_effects::Buf { img: effectcraft_raster::Image::new(1, 1), offset: [0.0; 2], scale: 1.0 }, &read(&a_path));
+        dc.put_layer_now(3, &pulso_effects::Buf { img: pulso_raster::Image::new(1, 1), offset: [0.0; 2], scale: 1.0 }, &read(&a_path));
     }
     // Other bytes, same size, the old time back; reloaded while the cache is off.
     let t = std::fs::metadata(&a_path).unwrap().modified().unwrap();

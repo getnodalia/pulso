@@ -1,0 +1,8 @@
+asset:        pulso-graph-editor.png
+title:        Pulso Graph Editor
+author:       EffectCraft contributors
+source:       original work (headless render of the Pulso UI via crates/ui-egui/examples/snapshot.rs)
+license:      MIT OR Apache-2.0
+license-file:
+added:        2026-10-01 by Claude (agent) for Brandon Thomas
+notes:        Screenshot of Pulso only, showing procedurally generated demo content from crates/engine/src/demo.rs and built-in effects. Pulso Graph Editor: the value graph of the PULSO text animator Range Start keyframes with easing, and the graph editor button bar.

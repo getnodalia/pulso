@@ -1,10 +1,10 @@
 //! Damaged and hostile files produce an error or a report, never a panic.
 
-use effectcraft_aep::import::LossCategory;
-use effectcraft_aep::import::{AepImportError, ImportOptions, import};
-use effectcraft_aep::{AepFile, Body, Chunk, parse, write};
-use effectcraft_keyframe::Value;
-use effectcraft_project::{ItemKind, Project};
+use pulso_aep::import::LossCategory;
+use pulso_aep::import::{AepImportError, ImportOptions, import};
+use pulso_aep::{AepFile, Body, Chunk, parse, write};
+use pulso_keyframe::Value;
+use pulso_project::{ItemKind, Project};
 
 fn fixtures() -> Option<Vec<String>> {
     let names = crate::common::names("aep")?;
@@ -76,7 +76,7 @@ fn check_sane(project: &Project, comps: usize) {
 }
 
 /// Imported masks: finite paths with matching tangent lists, sorted keys, valid feather and opacity.
-fn check_masks(l: &effectcraft_project::Layer) {
+fn check_masks(l: &pulso_project::Layer) {
     let Some(masks) = l.masks() else { return };
     let path_ok = |v: &Value| match v {
         Value::Path(p) => {
@@ -88,7 +88,7 @@ fn check_masks(l: &effectcraft_project::Layer) {
         _ => false,
     };
     for g in masks.groups() {
-        assert!(matches!(g.kind, effectcraft_project::GroupKind::Mask { .. }));
+        assert!(matches!(g.kind, pulso_project::GroupKind::Mask { .. }));
         for id in ["path", "feather", "opacity", "expansion"] {
             let p = g.get(id).expect("mask property");
             assert!(p.keys.windows(2).all(|w| w[0].time < w[1].time), "{id}");
@@ -339,7 +339,7 @@ fn parent_loops_are_dropped() {
     let none = |_: &str| false;
     let opts = ImportOptions { allow_losses: true, ..ImportOptions::new(&none) };
     let r = import(&mut p, &looped, &opts).unwrap();
-    assert_eq!(r.report.count(effectcraft_aep::import::LossCategory::ParentLinks), 2);
+    assert_eq!(r.report.count(pulso_aep::import::LossCategory::ParentLinks), 2);
     let c = p.comp(r.comps[0]).unwrap();
     assert!(c.layers.iter().all(|l| l.parent.is_none()));
 
@@ -350,7 +350,7 @@ fn parent_loops_are_dropped() {
     }));
     let mut p = Project::default();
     let r = import(&mut p, &selfish, &opts).unwrap();
-    assert_eq!(r.report.count(effectcraft_aep::import::LossCategory::ParentLinks), 1);
+    assert_eq!(r.report.count(pulso_aep::import::LossCategory::ParentLinks), 1);
 }
 
 /// Regression: a precomposition that contains itself (or two comps containing each other) is cut
@@ -373,14 +373,14 @@ fn precomposition_loops_are_cut() {
     let none = |_: &str| false;
     let opts = ImportOptions { allow_losses: true, ..ImportOptions::new(&none) };
     let r = import(&mut p, &looped, &opts).unwrap();
-    assert_eq!(r.report.count(effectcraft_aep::import::LossCategory::UnsupportedLayers), 1, "{:?}", r.report.losses);
+    assert_eq!(r.report.count(pulso_aep::import::LossCategory::UnsupportedLayers), 1, "{:?}", r.report.losses);
     // No composition uses itself, directly or through another.
     for id in &r.comps {
         let mut stack = vec![*id];
         let mut seen = std::collections::HashSet::new();
         while let Some(c) = stack.pop() {
             for l in &p.comp(c).unwrap().layers {
-                if let effectcraft_project::LayerSource::Comp { item } = l.source {
+                if let pulso_project::LayerSource::Comp { item } = l.source {
                     assert_ne!(item, *id);
                     if seen.insert(item) {
                         stack.push(item);
@@ -405,13 +405,13 @@ fn non_finite_static_values_fall_back_to_the_default() {
     let none = |_: &str| false;
     let opts = ImportOptions { allow_losses: true, ..ImportOptions::new(&none) };
     let r = import(&mut p, &bytes, &opts).unwrap();
-    assert!(r.report.count(effectcraft_aep::import::LossCategory::DamagedData) >= 1, "{:?}", r.report.losses);
+    assert!(r.report.count(pulso_aep::import::LossCategory::DamagedData) >= 1, "{:?}", r.report.losses);
     let layer = &p.comp(r.comps[0]).unwrap().layers[0];
     let pos = layer.props.prop("transform/position").unwrap();
-    assert_eq!(pos.value, effectcraft_keyframe::Value::Vec3([960.0, 540.0, 0.0]));
+    assert_eq!(pos.value, pulso_keyframe::Value::Vec3([960.0, 540.0, 0.0]));
 }
 
-fn import_allowing(bytes: &[u8]) -> (Project, effectcraft_aep::import::ImportResult) {
+fn import_allowing(bytes: &[u8]) -> (Project, pulso_aep::import::ImportResult) {
     let mut p = Project::default();
     let none = |_: &str| false;
     let opts = ImportOptions { allow_losses: true, ..ImportOptions::new(&none) };
@@ -420,7 +420,7 @@ fn import_allowing(bytes: &[u8]) -> (Project, effectcraft_aep::import::ImportRes
     (p, r)
 }
 
-fn mask_count(p: &Project, r: &effectcraft_aep::import::ImportResult) -> usize {
+fn mask_count(p: &Project, r: &pulso_aep::import::ImportResult) -> usize {
     p.comp(r.comps[0]).unwrap().layers.iter().map(|l| l.masks().map_or(0, |m| m.groups().count())).sum()
 }
 
@@ -499,7 +499,7 @@ fn mask_modes_and_switches_from_hostile_mkif() {
     assert_eq!(r.report.count(LossCategory::Masks), 1);
     let l = &p.comp(r.comps[0]).unwrap().layers[0];
     let g = l.masks().unwrap().groups().next().unwrap().clone();
-    assert!(matches!(g.kind, effectcraft_project::GroupKind::Mask { mode: effectcraft_project::MaskMode::Add, .. }));
+    assert!(matches!(g.kind, pulso_project::GroupKind::Mask { mode: pulso_project::MaskMode::Add, .. }));
 
     let bytes = skip!(mutate("091-mask-rect-props.aep", &mut |c| {
         if c.is(b"mkif") {
@@ -547,8 +547,8 @@ const EFFECT_FIXTURES: [&str; 10] = [
     "397-fx-exposure-master-2key.aep",
 ];
 
-fn report_of(bytes: &[u8]) -> effectcraft_aep::import::ImportReport {
-    effectcraft_aep::import::analyze(bytes, &|_| false).expect("a readable project")
+fn report_of(bytes: &[u8]) -> pulso_aep::import::ImportReport {
+    pulso_aep::import::analyze(bytes, &|_| false).expect("a readable project")
 }
 
 #[test]
@@ -621,10 +621,7 @@ fn bogus_effect_structure_is_reported_not_imported_blindly() {
     }));
     let r = report_of(&bytes);
     assert_eq!(r.imported.effects, 0);
-    assert!(
-        r.losses.iter().any(|l| l.category == effectcraft_aep::import::LossCategory::Effects && l.details.iter().any(|d| d.contains("XYZ Unknown"))),
-        "{r:?}"
-    );
+    assert!(r.losses.iter().any(|l| l.category == pulso_aep::import::LossCategory::Effects && l.details.iter().any(|d| d.contains("XYZ Unknown"))), "{r:?}");
 
     // No project-level definitions: a Ramp with an empty parT borrows the definitions of a Ramp
     // in the file that has its own parT (#3170). In the single-case file one of the two has its
@@ -633,7 +630,7 @@ fn bogus_effect_structure_is_reported_not_imported_blindly() {
     let own = {
         let bytes = skip!(crate::common::try_fixture("383-fx-ramp-on-100x100-start-10-20.aep"));
         let file = parse(&bytes).unwrap();
-        let view = effectcraft_aep::Project::new(&file).unwrap();
+        let view = pulso_aep::Project::new(&file).unwrap();
         let effects: Vec<_> = view.all_items().iter().filter_map(|i| i.comp()).flat_map(|c| c.layers().flat_map(|l| l.effects()).collect::<Vec<_>>()).collect();
         assert_eq!(effects.len(), 2);
         effects.iter().filter(|e| e.has_own_definitions()).count()
@@ -649,7 +646,7 @@ fn bogus_effect_structure_is_reported_not_imported_blindly() {
     let r = report_of(&bytes);
     let arrive = if own > 0 { 2 } else { 0 };
     assert_eq!(r.imported.effects, arrive, "{r:?}");
-    assert_eq!(r.count(effectcraft_aep::import::LossCategory::Effects), 2 - arrive, "{r:?}");
+    assert_eq!(r.count(pulso_aep::import::LossCategory::Effects), 2 - arrive, "{r:?}");
     assert!(try_all(&bytes)); // 368, the first Gradient Ramp of its file, has its own parT: it still arrives.
     let bytes = skip!(mutate("368-fx-ramp-default.aep", &mut |c| {
         if let Body::List { list_type, .. } = &mut c.body
@@ -660,7 +657,7 @@ fn bogus_effect_structure_is_reported_not_imported_blindly() {
     }));
     let r = report_of(&bytes);
     assert_eq!(r.imported.effects, 1, "{r:?}");
-    assert_eq!(r.count(effectcraft_aep::import::LossCategory::Effects), 0, "{r:?}");
+    assert_eq!(r.count(pulso_aep::import::LossCategory::Effects), 0, "{r:?}");
 
     // A parT whose definitions were renamed (no pard at all) and an empty definition list.
     for id in [*b"Xard", *b"pard"] {
@@ -705,12 +702,12 @@ fn bogus_effect_structure_is_reported_not_imported_blindly() {
     assert!(try_all(&bytes));
     let r = report_of(&bytes);
     assert_eq!(r.imported.effects, 1, "{r:?}");
-    assert!(r.count(effectcraft_aep::import::LossCategory::Effects) >= 1, "{r:?}");
+    assert!(r.count(pulso_aep::import::LossCategory::Effects) >= 1, "{r:?}");
 }
 
 #[test]
-fn exposure_values_beyond_effectcrafts_slider_range_are_kept() {
-    // After Effects accepts Exposure -100..100 stops (389); EffectCraft's own range is narrower.
+fn exposure_values_beyond_pulsos_slider_range_are_kept() {
+    // After Effects accepts Exposure -100..100 stops (389); Pulso's own range is narrower.
     // A stored 50 is imported as stored (the effect renders it), not clamped and not reported.
     let bytes = skip!(mutate("391-fx-exposure-master-1.5.aep", &mut |c| {
         if c.is(b"cdat") && c.bytes().is_some_and(|b| b.get(0..8) == Some(&1.5f64.to_be_bytes()[..])) {
@@ -733,7 +730,7 @@ fn exposure_values_beyond_effectcrafts_slider_range_are_kept() {
             }
         }
     }
-    assert_eq!(found, Some(effectcraft_keyframe::Value::Scalar(50.0)));
+    assert_eq!(found, Some(pulso_keyframe::Value::Scalar(50.0)));
 }
 
 #[test]
@@ -806,8 +803,8 @@ fn a_composition_without_its_data_is_reported_not_dropped() {
     let at = bytes.windows(4).position(|w| w == b"cdta").expect("cdta");
     bytes[at..at + 4].copy_from_slice(b"xdta");
     let none = |_: &str| false;
-    let mut p = effectcraft_project::Project::default();
-    assert!(effectcraft_aep::import::import(&mut p, &bytes, &effectcraft_aep::import::ImportOptions::new(&none)).is_err());
-    let report = effectcraft_aep::import::analyze(&bytes, &none).expect("analyze");
-    assert_eq!(report.count(effectcraft_aep::import::LossCategory::DamagedData), 1, "{:?}", report.losses);
+    let mut p = pulso_project::Project::default();
+    assert!(pulso_aep::import::import(&mut p, &bytes, &pulso_aep::import::ImportOptions::new(&none)).is_err());
+    let report = pulso_aep::import::analyze(&bytes, &none).expect("analyze");
+    assert_eq!(report.count(pulso_aep::import::LossCategory::DamagedData), 1, "{:?}", report.losses);
 }

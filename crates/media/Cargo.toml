@@ -1,6 +1,6 @@
 [package]
-name = "effectcraft-media"
-description = "Footage import: probing, stills, image sequences, video and audio via FilmCraft's pure-Rust codecs, memory-budgeted frame cache"
+name = "pulso-media"
+description = "Footage import: probing, stills, image sequences, video and audio via Toma's pure-Rust codecs, memory-budgeted frame cache"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,15 +11,15 @@ workspace = true
 
 [dependencies]
 craft-docpath = { workspace = true }
-effectcraft-time = { workspace = true }
-effectcraft-color = { workspace = true }
-effectcraft-project = { workspace = true }
-effectcraft-raster = { workspace = true }
-effectcraft-render = { workspace = true }
-effectcraft-psd = { workspace = true }
-effectcraft-svg = { workspace = true }
-effectcraft-pdf = { workspace = true }
-effectcraft-model = { workspace = true }
+pulso-time = { workspace = true }
+pulso-color = { workspace = true }
+pulso-project = { workspace = true }
+pulso-raster = { workspace = true }
+pulso-render = { workspace = true }
+pulso-psd = { workspace = true }
+pulso-svg = { workspace = true }
+pulso-pdf = { workspace = true }
+pulso-model = { workspace = true }
 filmcraft-codecs = { workspace = true }
 filmcraft-media = { workspace = true }
 filmcraft-aac = { workspace = true }
@@ -38,5 +38,5 @@ thiserror = { workspace = true }
 log = { workspace = true }
 
 [dev-dependencies]
-# (tests render comps that read layers through effects; already a dependency of effectcraft-render)
-effectcraft-effects = { workspace = true }
+# (tests render comps that read layers through effects; already a dependency of pulso-render)
+pulso-effects = { workspace = true }

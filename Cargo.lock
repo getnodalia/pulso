@@ -1419,15 +1419,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft"
+name = "pulso"
 version = "0.23.1"
 dependencies = [
  "chrono",
  "cpal",
  "craft-update",
- "effectcraft-engine",
- "effectcraft-host",
- "effectcraft-ui-egui",
+ "pulso-engine",
+ "pulso-host",
+ "pulso-ui-egui",
  "eframe",
  "egui",
  "fmv-macos-events",
@@ -1447,27 +1447,27 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-aep"
+name = "pulso-aep"
 version = "0.23.1"
 dependencies = [
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-keyframe",
- "effectcraft-project",
- "effectcraft-time",
+ "pulso-color",
+ "pulso-effects",
+ "pulso-keyframe",
+ "pulso-project",
+ "pulso-time",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "effectcraft-automation"
+name = "pulso-automation"
 version = "0.23.1"
 dependencies = [
- "effectcraft-engine",
- "effectcraft-host",
- "effectcraft-model",
- "effectcraft-script",
+ "pulso-engine",
+ "pulso-host",
+ "pulso-model",
+ "pulso-script",
  "image",
  "serde_json",
  "tempfile",
@@ -1475,33 +1475,33 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-av1enc"
+name = "pulso-av1enc"
 version = "0.23.1"
 dependencies = [
  "filmcraft-av1",
 ]
 
 [[package]]
-name = "effectcraft-cli"
+name = "pulso-cli"
 version = "0.23.1"
 dependencies = [
  "cpu-time",
- "effectcraft-automation",
- "effectcraft-engine",
- "effectcraft-gpu",
- "effectcraft-host",
- "effectcraft-render",
- "effectcraft-sam2",
- "effectcraft-segment",
- "effectcraft-time",
- "effectcraft-track",
- "effectcraft-ui-egui",
+ "pulso-automation",
+ "pulso-engine",
+ "pulso-gpu",
+ "pulso-host",
+ "pulso-render",
+ "pulso-sam2",
+ "pulso-segment",
+ "pulso-time",
+ "pulso-track",
+ "pulso-ui-egui",
  "image",
  "serde_json",
 ]
 
 [[package]]
-name = "effectcraft-color"
+name = "pulso-color"
 version = "0.23.1"
 dependencies = [
  "proptest",
@@ -1509,17 +1509,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-effects"
+name = "pulso-effects"
 version = "0.23.1"
 dependencies = [
  "chrono",
- "effectcraft-color",
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-project",
- "effectcraft-raster",
- "effectcraft-segment",
- "effectcraft-track",
+ "pulso-color",
+ "pulso-geom",
+ "pulso-keyframe",
+ "pulso-project",
+ "pulso-raster",
+ "pulso-segment",
+ "pulso-track",
  "log",
  "rayon",
  "serde",
@@ -1527,31 +1527,31 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-engine"
+name = "pulso-engine"
 version = "0.23.1"
 dependencies = [
  "chrono",
  "craft-docpath",
- "effectcraft-aep",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-geom",
- "effectcraft-interchange",
- "effectcraft-keyframe",
- "effectcraft-lottie",
- "effectcraft-model",
- "effectcraft-path",
- "effectcraft-pdf",
- "effectcraft-project",
- "effectcraft-psd",
- "effectcraft-raster",
- "effectcraft-render",
- "effectcraft-sam2",
- "effectcraft-segment",
- "effectcraft-svg",
- "effectcraft-text",
- "effectcraft-time",
- "effectcraft-track",
+ "pulso-aep",
+ "pulso-color",
+ "pulso-effects",
+ "pulso-geom",
+ "pulso-interchange",
+ "pulso-keyframe",
+ "pulso-lottie",
+ "pulso-model",
+ "pulso-path",
+ "pulso-pdf",
+ "pulso-project",
+ "pulso-psd",
+ "pulso-raster",
+ "pulso-render",
+ "pulso-sam2",
+ "pulso-segment",
+ "pulso-svg",
+ "pulso-text",
+ "pulso-time",
+ "pulso-track",
  "exr",
  "image",
  "kurbo",
@@ -1566,21 +1566,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-export"
+name = "pulso-export"
 version = "0.23.1"
 dependencies = [
- "effectcraft-av1enc",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-hevcenc",
- "effectcraft-keyframe",
- "effectcraft-media",
- "effectcraft-opusenc",
- "effectcraft-project",
- "effectcraft-raster",
- "effectcraft-render",
- "effectcraft-time",
- "effectcraft-vp9enc",
+ "pulso-av1enc",
+ "pulso-color",
+ "pulso-effects",
+ "pulso-hevcenc",
+ "pulso-keyframe",
+ "pulso-media",
+ "pulso-opusenc",
+ "pulso-project",
+ "pulso-raster",
+ "pulso-render",
+ "pulso-time",
+ "pulso-vp9enc",
  "exr",
  "filmcraft-aac",
  "filmcraft-h264enc",
@@ -1597,24 +1597,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-expr"
+name = "pulso-expr"
 version = "0.23.1"
 dependencies = [
  "boa_engine",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-path",
- "effectcraft-project",
- "effectcraft-render",
- "effectcraft-text",
- "effectcraft-time",
+ "pulso-color",
+ "pulso-effects",
+ "pulso-geom",
+ "pulso-keyframe",
+ "pulso-path",
+ "pulso-project",
+ "pulso-render",
+ "pulso-text",
+ "pulso-time",
  "serde_json",
 ]
 
 [[package]]
-name = "effectcraft-geom"
+name = "pulso-geom"
 version = "0.23.1"
 dependencies = [
  "proptest",
@@ -1622,19 +1622,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-gpu"
+name = "pulso-gpu"
 version = "0.23.1"
 dependencies = [
  "bytemuck",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-project",
- "effectcraft-raster",
- "effectcraft-render",
- "effectcraft-text",
- "effectcraft-time",
+ "pulso-color",
+ "pulso-effects",
+ "pulso-geom",
+ "pulso-keyframe",
+ "pulso-project",
+ "pulso-raster",
+ "pulso-render",
+ "pulso-text",
+ "pulso-time",
  "js-sys",
  "log",
  "pollster 1.0.1",
@@ -1645,41 +1645,41 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-helper-host"
+name = "pulso-helper-host"
 version = "0.23.1"
 dependencies = [
  "bytemuck",
- "effectcraft-effects",
+ "pulso-effects",
  "log",
  "serde",
  "serde_json",
 ]
 
 [[package]]
-name = "effectcraft-hevcenc"
+name = "pulso-hevcenc"
 version = "0.23.1"
 dependencies = [
  "filmcraft-hevc",
 ]
 
 [[package]]
-name = "effectcraft-host"
+name = "pulso-host"
 version = "0.23.1"
 dependencies = [
- "effectcraft-engine",
- "effectcraft-export",
- "effectcraft-expr",
- "effectcraft-helper-host",
- "effectcraft-interchange",
- "effectcraft-media",
- "effectcraft-pdf",
- "effectcraft-plugin",
- "effectcraft-project",
- "effectcraft-psd",
- "effectcraft-raster",
- "effectcraft-script",
- "effectcraft-svg",
- "effectcraft-time",
+ "pulso-engine",
+ "pulso-export",
+ "pulso-expr",
+ "pulso-helper-host",
+ "pulso-interchange",
+ "pulso-media",
+ "pulso-pdf",
+ "pulso-plugin",
+ "pulso-project",
+ "pulso-psd",
+ "pulso-raster",
+ "pulso-script",
+ "pulso-svg",
+ "pulso-time",
  "exr",
  "gif",
  "image",
@@ -1690,13 +1690,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-interchange"
+name = "pulso-interchange"
 version = "0.23.1"
 dependencies = [
- "effectcraft-color",
- "effectcraft-keyframe",
- "effectcraft-project",
- "effectcraft-time",
+ "pulso-color",
+ "pulso-keyframe",
+ "pulso-project",
+ "pulso-time",
  "filmcraft-color",
  "filmcraft-geom",
  "filmcraft-interchange",
@@ -1709,50 +1709,50 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-keyframe"
+name = "pulso-keyframe"
 version = "0.23.1"
 dependencies = [
- "effectcraft-color",
- "effectcraft-geom",
- "effectcraft-time",
+ "pulso-color",
+ "pulso-geom",
+ "pulso-time",
  "proptest",
  "serde",
  "serde_json",
 ]
 
 [[package]]
-name = "effectcraft-lottie"
+name = "pulso-lottie"
 version = "0.23.1"
 dependencies = [
  "craft-docpath",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-keyframe",
- "effectcraft-path",
- "effectcraft-project",
- "effectcraft-render",
- "effectcraft-text",
- "effectcraft-time",
+ "pulso-color",
+ "pulso-effects",
+ "pulso-keyframe",
+ "pulso-path",
+ "pulso-project",
+ "pulso-render",
+ "pulso-text",
+ "pulso-time",
  "kurbo",
  "serde_json",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "effectcraft-media"
+name = "pulso-media"
 version = "0.23.1"
 dependencies = [
  "craft-docpath",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-model",
- "effectcraft-pdf",
- "effectcraft-project",
- "effectcraft-psd",
- "effectcraft-raster",
- "effectcraft-render",
- "effectcraft-svg",
- "effectcraft-time",
+ "pulso-color",
+ "pulso-effects",
+ "pulso-model",
+ "pulso-pdf",
+ "pulso-project",
+ "pulso-psd",
+ "pulso-raster",
+ "pulso-render",
+ "pulso-svg",
+ "pulso-time",
  "exr",
  "filmcraft-aac",
  "filmcraft-codecs",
@@ -1772,10 +1772,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-model"
+name = "pulso-model"
 version = "0.23.1"
 dependencies = [
- "effectcraft-geom",
+ "pulso-geom",
  "image",
  "log",
  "miniz_oxide 0.9.1",
@@ -1785,32 +1785,32 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-opusenc"
+name = "pulso-opusenc"
 version = "0.23.1"
 dependencies = [
  "filmcraft-opus",
 ]
 
 [[package]]
-name = "effectcraft-path"
+name = "pulso-path"
 version = "0.23.1"
 dependencies = [
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-raster",
+ "pulso-geom",
+ "pulso-keyframe",
+ "pulso-raster",
  "kurbo",
  "linesweeper",
  "tiny-skia 0.12.0",
 ]
 
 [[package]]
-name = "effectcraft-pdf"
+name = "pulso-pdf"
 version = "0.23.1"
 dependencies = [
  "craft-pdf",
- "effectcraft-raster",
- "effectcraft-svg",
- "effectcraft-text",
+ "pulso-raster",
+ "pulso-svg",
+ "pulso-text",
  "image",
  "kurbo",
  "miniz_oxide 0.9.1",
@@ -1820,62 +1820,62 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-plugin"
+name = "pulso-plugin"
 version = "0.23.1"
 dependencies = [
- "effectcraft-effects",
- "effectcraft-keyframe",
- "effectcraft-project",
- "effectcraft-raster",
+ "pulso-effects",
+ "pulso-keyframe",
+ "pulso-project",
+ "pulso-raster",
  "serde_json",
  "wasmi",
 ]
 
 [[package]]
-name = "effectcraft-project"
+name = "pulso-project"
 version = "0.23.1"
 dependencies = [
  "craft-ecproj-format",
- "effectcraft-color",
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-time",
+ "pulso-color",
+ "pulso-geom",
+ "pulso-keyframe",
+ "pulso-time",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
 ]
 
 [[package]]
-name = "effectcraft-psd"
+name = "pulso-psd"
 version = "0.23.1"
 dependencies = [
  "miniz_oxide 0.9.1",
 ]
 
 [[package]]
-name = "effectcraft-raster"
+name = "pulso-raster"
 version = "0.23.1"
 dependencies = [
- "effectcraft-color",
- "effectcraft-geom",
+ "pulso-color",
+ "pulso-geom",
  "rayon",
  "tempfile",
 ]
 
 [[package]]
-name = "effectcraft-render"
+name = "pulso-render"
 version = "0.23.1"
 dependencies = [
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-model",
- "effectcraft-path",
- "effectcraft-project",
- "effectcraft-raster",
- "effectcraft-text",
- "effectcraft-time",
+ "pulso-color",
+ "pulso-effects",
+ "pulso-geom",
+ "pulso-keyframe",
+ "pulso-model",
+ "pulso-path",
+ "pulso-project",
+ "pulso-raster",
+ "pulso-text",
+ "pulso-time",
  "kurbo",
  "log",
  "lz4_flex",
@@ -1886,13 +1886,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-sam2"
+name = "pulso-sam2"
 version = "0.23.1"
 dependencies = [
  "bytemuck",
  "candle-core",
  "candle-nn",
- "effectcraft-segment",
+ "pulso-segment",
  "half",
  "log",
  "pollster 1.0.1",
@@ -1901,25 +1901,25 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-script"
+name = "pulso-script"
 version = "0.23.1"
 dependencies = [
  "boa_engine",
- "effectcraft-engine",
- "effectcraft-expr",
- "effectcraft-keyframe",
- "effectcraft-path",
- "effectcraft-project",
- "effectcraft-psd",
- "effectcraft-render",
- "effectcraft-time",
+ "pulso-engine",
+ "pulso-expr",
+ "pulso-keyframe",
+ "pulso-path",
+ "pulso-project",
+ "pulso-psd",
+ "pulso-render",
+ "pulso-time",
  "serde_json",
  "socket2",
  "web-time",
 ]
 
 [[package]]
-name = "effectcraft-segment"
+name = "pulso-segment"
 version = "0.23.1"
 dependencies = [
  "miniz_oxide 0.9.1",
@@ -1928,22 +1928,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-svg"
+name = "pulso-svg"
 version = "0.23.1"
 dependencies = [
- "effectcraft-geom",
- "effectcraft-path",
- "effectcraft-raster",
+ "pulso-geom",
+ "pulso-path",
+ "pulso-raster",
  "kurbo",
  "rayon",
  "roxmltree",
 ]
 
 [[package]]
-name = "effectcraft-text"
+name = "pulso-text"
 version = "0.23.1"
 dependencies = [
- "effectcraft-keyframe",
+ "pulso-keyframe",
  "harfrust",
  "kurbo",
  "skrifa",
@@ -1952,7 +1952,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-time"
+name = "pulso-time"
 version = "0.23.1"
 dependencies = [
  "proptest",
@@ -1960,11 +1960,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-track"
+name = "pulso-track"
 version = "0.23.1"
 dependencies = [
- "effectcraft-raster",
- "effectcraft-segment",
+ "pulso-raster",
+ "pulso-segment",
  "rayon",
  "serde",
  "serde_json",
@@ -1972,7 +1972,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-ui-egui"
+name = "pulso-ui-egui"
 version = "0.23.1"
 dependencies = [
  "bytemuck",
@@ -1980,19 +1980,19 @@ dependencies = [
  "craft-quit",
  "craft-ui",
  "craft-update",
- "effectcraft-color",
- "effectcraft-engine",
- "effectcraft-geom",
- "effectcraft-gpu",
- "effectcraft-host",
- "effectcraft-keyframe",
- "effectcraft-media",
- "effectcraft-path",
- "effectcraft-project",
- "effectcraft-render",
- "effectcraft-segment",
- "effectcraft-text",
- "effectcraft-time",
+ "pulso-color",
+ "pulso-engine",
+ "pulso-geom",
+ "pulso-gpu",
+ "pulso-host",
+ "pulso-keyframe",
+ "pulso-media",
+ "pulso-path",
+ "pulso-project",
+ "pulso-render",
+ "pulso-segment",
+ "pulso-text",
+ "pulso-time",
  "eframe",
  "egui",
  "egui_extras",
@@ -2013,20 +2013,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft-vp9enc"
+name = "pulso-vp9enc"
 version = "0.23.1"
 
 [[package]]
-name = "effectcraft-web"
+name = "pulso-web"
 version = "0.23.1"
 dependencies = [
- "effectcraft-engine",
- "effectcraft-export",
- "effectcraft-expr",
- "effectcraft-gpu",
- "effectcraft-host",
- "effectcraft-media",
- "effectcraft-ui-egui",
+ "pulso-engine",
+ "pulso-export",
+ "pulso-expr",
+ "pulso-gpu",
+ "pulso-host",
+ "pulso-media",
+ "pulso-ui-egui",
  "eframe",
  "egui",
  "js-sys",

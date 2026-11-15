@@ -3,11 +3,11 @@
 
 use std::sync::{Arc, Mutex};
 
-use effectcraft_engine::project::HdrMode;
-use effectcraft_engine::render::Image;
-use effectcraft_engine::viewer::{Channel, DisplayColor, DisplayPass, FrameEncoding, PassCurve, SimProfile, Simulation};
 use eframe::egui_wgpu;
 use eframe::wgpu;
+use pulso_engine::project::HdrMode;
+use pulso_engine::render::Image;
+use pulso_engine::viewer::{Channel, DisplayColor, DisplayPass, FrameEncoding, PassCurve, SimProfile, Simulation};
 
 use super::{DisplayGpu, Source};
 use crate::frames::F16Frame;
@@ -57,10 +57,8 @@ fn render_state(d: &Dev) -> egui_wgpu::RenderState {
 }
 
 /// A 17³ LUT that mixes channels and bends the curve (as an ICC profile's device does).
-fn test_lut(k: f64) -> Arc<effectcraft_engine::color::icc::Lut3d> {
-    Arc::new(effectcraft_engine::color::icc::Lut3d::bake(17, |c| {
-        [c[0].powf(1.3) * 0.9 + c[1] * 0.1, c[1] * 0.8 + c[2] * 0.2, (c[2] * 0.7 + c[0] * 0.3).sqrt() * k]
-    }))
+fn test_lut(k: f64) -> Arc<pulso_engine::color::icc::Lut3d> {
+    Arc::new(pulso_engine::color::icc::Lut3d::bake(17, |c| [c[0].powf(1.3) * 0.9 + c[1] * 0.1, c[1] * 0.8 + c[2] * 0.2, (c[2] * 0.7 + c[0] * 0.3).sqrt() * k]))
 }
 
 fn read(d: &Dev, tex: &wgpu::Texture, level: u32) -> (Vec<[u8; 4]>, [u32; 2]) {
@@ -96,7 +94,7 @@ fn bake(d: &Dev, gpu: &DisplayGpu, src: &Source, pass: &DisplayPass) -> (Vec<[u8
     let input = gpu.upload(&d.device, &d.queue, src, k, None);
     let out = DisplayGpu::output(&d.device, input.width(), input.height());
     let lut = match &pass.color {
-        Some(effectcraft_engine::viewer::PassColor::Lut(l)) => Some(gpu.lut(&d.device, &d.queue, l)),
+        Some(pulso_engine::viewer::PassColor::Lut(l)) => Some(gpu.lut(&d.device, &d.queue, l)),
         _ => None,
     };
     gpu.run(&d.device, &d.queue, &input, &out, &super::uniform(pass), lut.as_ref());
@@ -216,29 +214,29 @@ fn the_shader_is_the_reference() {
     let dcs = [
         None,
         DisplayColor::new(
-            Some(effectcraft_engine::project::ColorSpace::Srgb),
+            Some(pulso_engine::project::ColorSpace::Srgb),
             false,
-            effectcraft_engine::project::ColorSpace::Srgb,
+            pulso_engine::project::ColorSpace::Srgb,
             true,
-            effectcraft_engine::project::ColorSpace::DisplayP3,
+            pulso_engine::project::ColorSpace::DisplayP3,
             Simulation::default(),
             &Default::default(),
         ),
         DisplayColor::new(
-            Some(effectcraft_engine::project::ColorSpace::Srgb),
+            Some(pulso_engine::project::ColorSpace::Srgb),
             false,
-            effectcraft_engine::project::ColorSpace::Srgb,
+            pulso_engine::project::ColorSpace::Srgb,
             true,
-            effectcraft_engine::project::ColorSpace::Srgb,
+            pulso_engine::project::ColorSpace::Srgb,
             Simulation { profile: SimProfile::Rec709, preserve_rgb: false },
             &Default::default(),
         ),
         DisplayColor::new(
-            Some(effectcraft_engine::project::ColorSpace::Srgb),
+            Some(pulso_engine::project::ColorSpace::Srgb),
             false,
-            effectcraft_engine::project::ColorSpace::Srgb,
+            pulso_engine::project::ColorSpace::Srgb,
             true,
-            effectcraft_engine::project::ColorSpace::DisplayP3,
+            pulso_engine::project::ColorSpace::DisplayP3,
             Simulation { profile: SimProfile::Mac18, preserve_rgb: true },
             &Default::default(),
         ),
@@ -297,11 +295,11 @@ fn rgba8_frames_match_the_cpu_pass() {
         .collect();
     let img = Arc::new(egui::ColorImage::new([256, 16], px));
     let dc = DisplayColor::new(
-        Some(effectcraft_engine::project::ColorSpace::Srgb),
+        Some(pulso_engine::project::ColorSpace::Srgb),
         false,
-        effectcraft_engine::project::ColorSpace::Srgb,
+        pulso_engine::project::ColorSpace::Srgb,
         true,
-        effectcraft_engine::project::ColorSpace::DisplayP3,
+        pulso_engine::project::ColorSpace::DisplayP3,
         Simulation::default(),
         &Default::default(),
     );

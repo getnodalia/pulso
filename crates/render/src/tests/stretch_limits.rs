@@ -6,9 +6,9 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use effectcraft_color::Label;
-use effectcraft_project::{Footage, FootageKind, ItemId, ItemKind, LayerSource, Project, build, limits};
-use effectcraft_time::Tick;
+use pulso_color::Label;
+use pulso_project::{Footage, FootageKind, ItemId, ItemKind, LayerSource, Project, build, limits};
+use pulso_time::Tick;
 
 use super::{setup, solid};
 use crate::{FootageSource, Image, audio::mix_comp, render_frame};

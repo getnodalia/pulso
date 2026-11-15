@@ -4,12 +4,12 @@
 //! written and imported back; what cannot be remapped is reported; hostile remaps never panic.
 
 use crate::export::helpers::*;
-use effectcraft_aep::export::LossCategory;
-use effectcraft_aep::import::{ImportOptions, import};
-use effectcraft_aep::{Body, Chunk, parse};
-use effectcraft_keyframe::{Ease, Interp, Keyframe, Value};
-use effectcraft_project::{Expression, ItemKind, LayerSource, Project, Property};
-use effectcraft_time::FrameRate;
+use pulso_aep::export::LossCategory;
+use pulso_aep::import::{ImportOptions, import};
+use pulso_aep::{Body, Chunk, parse};
+use pulso_keyframe::{Ease, Interp, Keyframe, Value};
+use pulso_project::{Expression, ItemKind, LayerSource, Project, Property};
+use pulso_time::FrameRate;
 
 fn reimport(bytes: &[u8]) -> Project {
     let mut p = Project::default();
@@ -64,7 +64,7 @@ fn the_remap_fixtures_are_written_as_after_effects_wrote_them() {
         let (a, b) = (enabled_remaps(&bytes), enabled_remaps(&r.bytes));
         assert_eq!(a.len(), 1, "{name}");
         // In the bytes the exporter writes (`decoded`).
-        let d = |v: &[effectcraft_aep::Chunk<'static>]| v.iter().map(crate::export::helpers::decoded).collect::<Vec<_>>();
+        let d = |v: &[pulso_aep::Chunk<'static>]| v.iter().map(crate::export::helpers::decoded).collect::<Vec<_>>();
         assert_eq!(d(&a), d(&b), "{name}: the remap record differs from After Effects'");
         let p2 = reimport(&r.bytes);
         assert_eq!(remap_of(&p1), remap_of(&p2), "{name}");
@@ -118,7 +118,7 @@ fn remaps_built_in_code_come_back() {
         assert!(r.report.is_lossless(), "{name}: {:?}", r.report.losses);
         assert_eq!(r.report.exported.time_remaps, 1, "{name}");
         let file = parse(&r.bytes).expect("parse");
-        assert_eq!(effectcraft_aep::write(&file).expect("write"), r.bytes, "{name}");
+        assert_eq!(pulso_aep::write(&file).expect("write"), r.bytes, "{name}");
         let back = remap_of(&reimport(&r.bytes));
         assert_eq!(back.len(), 1, "{name}");
         let got = &back[0];
@@ -180,7 +180,7 @@ fn hostile_remaps_never_panic() {
     for prop in cases {
         let r = export_all(&remapped(prop));
         let file = parse(&r.bytes).expect("parse");
-        assert_eq!(effectcraft_aep::write(&file).expect("write"), r.bytes);
+        assert_eq!(pulso_aep::write(&file).expect("write"), r.bytes);
         let _ = reimport(&r.bytes);
     }
 }
