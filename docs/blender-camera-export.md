@@ -93,9 +93,9 @@ focus/f-stop, zoom, ground placement, malformed solves and write failures. To ad
 the generated artifact against an installed Blender's public API:
 
 ```sh
-EFFECTCRAFT_BLENDER=/path/to/blender cargo test -p effectcraft-engine tests::blender -- --nocapture
+PULSO_BLENDER=/path/to/blender cargo test -p pulso-engine tests::blender -- --nocapture
 ```
 
-Optionally set `EFFECTCRAFT_BLENDER_PLATE` to a local synthetic 640×360 video to exercise media
+Optionally set `PULSO_BLENDER_PLATE` to a local synthetic 640×360 video to exercise media
 loading and source-frame offsets. The oracle checks every synthetic point's projection through
 the imported camera on every frame, as well as animation, DOF, timing and scene preservation.

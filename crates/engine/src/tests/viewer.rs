@@ -2,9 +2,9 @@
 //! guides, the shape Pen, vertex add / delete / convert, motion-path key and tangent edits and
 //! the Graph Editor transform box. Every edit undoes.
 
-use effectcraft_keyframe::Value as KV;
-use effectcraft_project::LayerId;
-use effectcraft_time::Tick;
+use pulso_keyframe::Value as KV;
+use pulso_project::LayerId;
+use pulso_time::Tick;
 use serde_json::json;
 
 use crate::Session;
@@ -16,7 +16,7 @@ fn comp() -> Session {
     s
 }
 
-fn layer(s: &Session, id: u64) -> effectcraft_project::Layer {
+fn layer(s: &Session, id: u64) -> pulso_project::Layer {
     s.active_comp().unwrap().layer(LayerId(id)).unwrap().clone()
 }
 
@@ -96,7 +96,7 @@ fn layer_centre_lines_follow_the_edges() {
     let cid = s.active_comp_id().unwrap();
     let at = |s: &Session, f: SnapFeatures| {
         let comp = s.project.comp(cid).unwrap().clone();
-        let ctx = effectcraft_render::EvalCtx::new(&s.project, cid, &comp, Tick::ZERO);
+        let ctx = pulso_render::EvalCtx::new(&s.project, cid, &comp, Tick::ZERO);
         targets(&ctx, &[], SnapOptions { layers: true, features: f, guides: false, grid: false, grid_spacing: 0.0 })
     };
     let lines = |t: &[SnapTarget], l: LayerId| {
@@ -124,7 +124,7 @@ fn snap_targets_cover_layers_comp_guides_and_grid() {
     s.execute("view.addGuide", json!({"orientation": "vertical", "position": 77})).unwrap();
     let cid = s.active_comp_id().unwrap();
     let comp = s.project.comp(cid).unwrap().clone();
-    let ctx = effectcraft_render::EvalCtx::new(&s.project, cid, &comp, Tick::ZERO);
+    let ctx = pulso_render::EvalCtx::new(&s.project, cid, &comp, Tick::ZERO);
     let opts = crate::viewer::SnapOptions { layers: true, features: Default::default(), guides: true, grid: true, grid_spacing: 100.0 };
     let t = crate::viewer::targets(&ctx, &[LayerId(b)], opts);
     // Layer a's corner (270, 155) is a target; layer b (dragged) is not.
@@ -154,7 +154,7 @@ fn snapping_options_pick_the_targets() {
     s.execute("view.addGuide", json!({"orientation": "vertical", "position": 77})).unwrap();
     let cid = s.active_comp_id().unwrap();
     let comp = s.project.comp(cid).unwrap().clone();
-    let ctx = effectcraft_render::EvalCtx::new(&s.project, cid, &comp, Tick::ZERO);
+    let ctx = pulso_render::EvalCtx::new(&s.project, cid, &comp, Tick::ZERO);
     let opts = |features: SnapFeatures| SnapOptions { layers: true, features, guides: false, grid: false, grid_spacing: 0.0 };
     let all = targets(&ctx, &[], opts(SnapFeatures::default()));
     assert!(!all.iter().any(|t| t.source == SnapSource::Layer(LayerId(hidden))), "hidden layers are no targets");
@@ -195,7 +195,7 @@ fn collapsed_precomp_features_snap() {
     let cid = s.active_comp_id().unwrap();
     let at = |s: &Session, f: SnapFeatures| {
         let comp = s.project.comp(cid).unwrap().clone();
-        let ctx = effectcraft_render::EvalCtx::new(&s.project, cid, &comp, Tick::ZERO);
+        let ctx = pulso_render::EvalCtx::new(&s.project, cid, &comp, Tick::ZERO);
         targets(&ctx, &[], SnapOptions { layers: true, features: f, guides: false, grid: false, grid_spacing: 0.0 })
     };
     let corner = |t: &[crate::viewer::SnapTarget]| t.iter().any(|t| t.kind == SnapKind::Point && t.pos == [90.0, 60.0] && t.source == SnapSource::Layer(pre));
@@ -227,7 +227,7 @@ fn snapping_options_command_sets_and_toggles() {
 
 /// The display pass on 8-bit frames (sRGB, no HDR step): Show Channel and exposure.
 fn display_rgba8(px: [u8; 4], channel: Channel, colorized: bool, stops: f32) -> [u8; 4] {
-    let encoding = FrameEncoding { curve: PassCurve::Srgb, hdr: effectcraft_project::HdrMode::Clip };
+    let encoding = FrameEncoding { curve: PassCurve::Srgb, hdr: pulso_project::HdrMode::Clip };
     let mut v = [px];
     DisplayPass::new(channel, colorized, stops, encoding, None).apply_rgba8(&mut v);
     v[0]
@@ -292,7 +292,7 @@ fn snapshot_store_and_restore() {
     s.execute("layer.newSolid", json!({"color": "#0000ff", "width": 640, "height": 360})).unwrap();
     let snap = s.snapshot.clone().unwrap();
     assert_eq!(snap.image.get(10, 10), [1.0, 0.0, 0.0, 1.0]);
-    let now = s.render(s.active_comp_id().unwrap(), Tick::ZERO, effectcraft_render::RenderOpts { scale: 0.25, ..Default::default() });
+    let now = s.render(s.active_comp_id().unwrap(), Tick::ZERO, pulso_render::RenderOpts { scale: 0.25, ..Default::default() });
     assert_eq!(now.get(10, 10), [0.0, 0.0, 1.0, 1.0]);
     s.execute("view.showSnapshot", json!({"value": true})).unwrap();
     assert!(s.state.viewer.show_snapshot);
@@ -326,7 +326,7 @@ fn region_of_interest_renders_and_crops() {
     s.execute("view.setRegionOfInterest", json!({"rect": [200, 100, 240, 160]})).unwrap();
     let cid = s.active_comp_id().unwrap();
     let full = s.render(cid, Tick::ZERO, Default::default());
-    let roi = s.render(cid, Tick::ZERO, effectcraft_render::RenderOpts { roi: s.state.region_of_interest, ..Default::default() });
+    let roi = s.render(cid, Tick::ZERO, pulso_render::RenderOpts { roi: s.state.region_of_interest, ..Default::default() });
     assert_eq!((roi.width, roi.height), (240, 160));
     for (x, y) in [(0, 0), (30, 50), (239, 159), (119, 79)] {
         assert_eq!(roi.get(x, y), full.get(x + 200, y + 100));
@@ -341,7 +341,7 @@ fn region_of_interest_renders_and_crops() {
 
 // ---------------------------------------------------------------- shape pen and vertices
 
-fn shape_path(s: &Session, lid: u64, uid: u64) -> effectcraft_keyframe::ShapePath {
+fn shape_path(s: &Session, lid: u64, uid: u64) -> pulso_keyframe::ShapePath {
     let l = layer(s, lid);
     l.props.find_group(uid).unwrap().get("path").unwrap().value.as_path().unwrap().clone()
 }
@@ -355,7 +355,7 @@ fn shape_pen_builds_shape_group_and_renders() {
         .unwrap();
     let (lid, group, path) = (r["layer"].as_u64().unwrap(), r["group"].as_u64().unwrap(), r["path"].as_u64().unwrap());
     let l = layer(&s, lid);
-    assert!(matches!(l.source, effectcraft_project::LayerSource::Shape));
+    assert!(matches!(l.source, pulso_project::LayerSource::Shape));
     let g = l.props.find_group(group).unwrap();
     assert_eq!(g.name, "Shape 1");
     let items: Vec<&str> = g.sub("contents").unwrap().groups().map(|x| x.match_id.as_str()).collect();
@@ -445,8 +445,8 @@ fn shape_tool_options_paint_new_shapes() {
     let items = |s: &Session, g: u64| layer(s, lid).props.find_group(g).unwrap().sub("contents").unwrap().clone();
     let g = items(&s, r["group"].as_u64().unwrap());
     assert_eq!(g.groups().map(|x| x.match_id.as_str()).collect::<Vec<_>>(), ["ellipse", "stroke", "gfill"]);
-    let at = |g: &effectcraft_project::PropGroup, item: &str, prop: &str| g.groups().find(|x| x.match_id == item).unwrap().get(prop).unwrap().value.clone();
-    let multiply = effectcraft_color::BlendMode::ALL.iter().position(|m| *m == effectcraft_color::BlendMode::Multiply).unwrap() as u32;
+    let at = |g: &pulso_project::PropGroup, item: &str, prop: &str| g.groups().find(|x| x.match_id == item).unwrap().get(prop).unwrap().value.clone();
+    let multiply = pulso_color::BlendMode::ALL.iter().position(|m| *m == pulso_color::BlendMode::Multiply).unwrap() as u32;
     assert_eq!(at(&g, "gfill", "type"), KV::Enum(1));
     assert_eq!(at(&g, "gfill", "blend"), KV::Enum(multiply));
     assert_eq!(at(&g, "gfill", "opacity").as_f64(), 50.0);
@@ -537,7 +537,7 @@ fn vertex_add_delete_convert_on_shape_paths_and_masks_undo() {
 
 #[test]
 fn split_segment_keeps_curve_shape() {
-    use effectcraft_keyframe::ShapePath;
+    use pulso_keyframe::ShapePath;
     let mut sp = ShapePath {
         vertices: vec![[0.0, 0.0], [100.0, 0.0]],
         in_tangents: vec![[0.0; 2], [0.0, -50.0]],
@@ -639,7 +639,7 @@ fn graph_transform_box_scales_key_times_and_values() {
 
 #[test]
 fn each_comp_keeps_its_resolution_outside_the_undo_history_and_in_the_file() {
-    use effectcraft_project::Resolution;
+    use pulso_project::Resolution;
     let mut s = comp();
     let a = s.active_comp_id().unwrap();
     s.execute("layer.newSolid", json!({"name": "S", "color": "#ff0000", "width": 10, "height": 10})).unwrap();
@@ -712,8 +712,8 @@ fn polystar_type_switch_updates_inner_controls_and_undoes() {
     let star = group(&s);
     assert_eq!(star.get("innerRadius").unwrap().value, KV::Scalar(50.0));
     assert_eq!(star.get("innerRoundness").unwrap().value, KV::Scalar(0.0));
-    assert_eq!(star.get("innerRadius").unwrap().ui, effectcraft_project::ParamUi::Pixels);
-    assert_eq!(star.get("innerRoundness").unwrap().ui, effectcraft_project::ParamUi::Percent);
+    assert_eq!(star.get("innerRadius").unwrap().ui, pulso_project::ParamUi::Pixels);
+    assert_eq!(star.get("innerRoundness").unwrap().ui, pulso_project::ParamUi::Percent);
     let names: Vec<_> = star.children.iter().filter_map(|n| n.as_prop()).map(|p| p.match_id.as_str()).collect();
     assert_eq!(names, ["direction", "type", "points", "position", "rotation", "innerRadius", "outerRadius", "innerRoundness", "outerRoundness"]);
     assert_eq!(star.get("outerRadius"), polygon.get("outerRadius"));

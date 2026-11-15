@@ -5,10 +5,10 @@
 //! command fetches exactly that commit into a temporary directory, checks every file against the
 //! hashes of the lock file, and only then copies them to `DIR` (default `corpus/aep`, ignored by
 //! git). Any mismatch, missing file or malformed line fails the command and leaves `DIR` alone.
-//! Then run the tests with `EFFECTCRAFT_AEP_FIXTURES=<DIR>` (add `EFFECTCRAFT_AEP_FIXTURES_REQUIRED=1`
+//! Then run the tests with `PULSO_AEP_FIXTURES=<DIR>` (add `PULSO_AEP_FIXTURES_REQUIRED=1`
 //! so that a missing project fails its test).
 //!
-//! `EFFECTCRAFT_AEP_CORPUS_REPO` replaces the repository URL (a local clone works); the commit and
+//! `PULSO_AEP_CORPUS_REPO` replaces the repository URL (a local clone works); the commit and
 //! the hashes still come from the lock file.
 
 use std::path::{Component, Path, PathBuf};
@@ -163,14 +163,14 @@ pub fn run(root: &Path, args: &[String]) -> Result<(), String> {
     if up_to_date(&dest, &lock.files) {
         println!("aep-corpus: {} files in {} already match the pin {}", lock.files.len(), dest.display(), &lock.commit[..12]);
     } else {
-        let repo = std::env::var("EFFECTCRAFT_AEP_CORPUS_REPO").ok().filter(|r| !r.is_empty()).unwrap_or_else(|| lock.repo.clone());
-        let tmp = tempfile::Builder::new().prefix("effectcraft-aep-corpus-").tempdir().map_err(|e| format!("temporary folder: {e}"))?;
+        let repo = std::env::var("PULSO_AEP_CORPUS_REPO").ok().filter(|r| !r.is_empty()).unwrap_or_else(|| lock.repo.clone());
+        let tmp = tempfile::Builder::new().prefix("pulso-aep-corpus-").tempdir().map_err(|e| format!("temporary folder: {e}"))?;
         fetch(&repo, &lock.commit, tmp.path())?;
         let data = verify(tmp.path(), &lock.files)?;
         install(&dest, &lock.files, &data)?;
         println!("aep-corpus: {} files verified against {} and installed in {}", lock.files.len(), &lock.commit[..12], dest.display());
     }
-    println!("run the tests with:\n  EFFECTCRAFT_AEP_FIXTURES={} EFFECTCRAFT_AEP_FIXTURES_REQUIRED=1 cargo test -p effectcraft-aep", dest.display());
+    println!("run the tests with:\n  PULSO_AEP_FIXTURES={} PULSO_AEP_FIXTURES_REQUIRED=1 cargo test -p pulso-aep", dest.display());
     Ok(())
 }
 

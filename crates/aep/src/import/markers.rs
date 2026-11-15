@@ -1,22 +1,22 @@
 //! Layer and composition markers, and Time Remapping.
 //!
 //! Markers (aep-format.md 3.11; 122, 123, 249, 250, 347-349, 509, 510): the time is a key of the
-//! `mrst` property in its own time scale (layer time for layer markers, as EffectCraft keeps them),
+//! `mrst` property in its own time scale (layer time for layer markers, as Pulso keeps them),
 //! the duration counts 1/600 s, the strings are comment, chapter, URL, frame target and cue point
 //! name, then the cue type (event 4, navigation 5) and the cue parameters; the label is a byte of
 //! the marker header (347).
 //!
 //! Time Remapping (aep-format.md 3.4; 319, 354): an enabled remap is a keyed `ADBE Time Remapping`
 //! property whose plain one-component keys are layer time -> source time in seconds; it becomes
-//! EffectCraft's `timeRemap` property (seconds, keys in layer time) at the top of the layer's
+//! Pulso's `timeRemap` property (seconds, keys in layer time) at the top of the layer's
 //! properties, where the engine's Enable Time Remapping puts it.
 
 use crate::{Chunk, CueType, Layer as AepLayer, Marker as AepMarker, PropNode, Property as AepProp};
-use effectcraft_color::Label;
-use effectcraft_keyframe::Value;
-use effectcraft_project::build::Ids;
-use effectcraft_project::{CuePoint, Marker, Node, ParamUi, PropGroup};
-use effectcraft_time::Tick;
+use pulso_color::Label;
+use pulso_keyframe::Value;
+use pulso_project::build::Ids;
+use pulso_project::{CuePoint, Marker, Node, ParamUi, PropGroup};
+use pulso_time::Tick;
 
 use crate::import::props::{Kind, import_expression, import_keys};
 use crate::import::report::{Collector, LossCategory};
@@ -72,7 +72,7 @@ pub(crate) fn import_markers(list: Vec<AepMarker>, holder: &Chunk<'_>, what: &st
     out
 }
 
-/// The Time Remapping of `layer`, as EffectCraft's `timeRemap` property; `None` when the remap is
+/// The Time Remapping of `layer`, as Pulso's `timeRemap` property; `None` when the remap is
 /// off. `default_seconds` is the value before the first key (the source time at the in point).
 pub(crate) fn import_time_remap(layer: &AepLayer<'_, '_>, name: &str, tm: &TimeMap, ids: &mut Ids<'_>, col: &mut Collector) -> Option<Node> {
     let Some(PropNode::Property(p)) = layer.properties().and_then(|g| g.get("ADBE Time Remapping")) else { return None };

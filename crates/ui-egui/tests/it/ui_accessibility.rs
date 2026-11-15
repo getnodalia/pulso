@@ -10,19 +10,19 @@
 //! `widgets::checkbox` and the raw-painted row controls (`icon_toggle`, `scroll_bar`, hot-number
 //! values) are still in that state; naming every call site is separate work.
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
+use pulso_engine::Session;
+use pulso_ui_egui::PulsoApp;
+use pulso_ui_egui::dock::PanelKind;
 use serde_json::json;
 
-fn harness() -> Harness<'static, EffectcraftApp> {
+fn harness() -> Harness<'static, PulsoApp> {
     let mut s = Session::default();
     s.execute("file.openDemoProject", json!({})).unwrap();
     // A text layer under edit gives the Character / Paragraph panels their controls.
-    let _ = s.execute("layer.select", json!({"layers": ["EFFECTCRAFT"]}));
-    Harness::builder().with_size(egui::vec2(1680.0, 1020.0)).build_eframe(|_| EffectcraftApp::new(s))
+    let _ = s.execute("layer.select", json!({"layers": ["PULSO"]}));
+    Harness::builder().with_size(egui::vec2(1680.0, 1020.0)).build_eframe(|_| PulsoApp::new(s))
 }
 
 #[test]

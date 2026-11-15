@@ -1,6 +1,6 @@
 [package]
-name = "effectcraft-aep"
-description = "After Effects projects: the .aep (RIFX 'Egg!') / .aepx container as a lossless chunk tree with a typed view, import into an EffectCraft project and export back to .aep with every chunk built in code; each reports everything it does not carry over"
+name = "pulso-aep"
+description = "After Effects projects: the .aep (RIFX 'Egg!') / .aepx container as a lossless chunk tree with a typed view, import into an Pulso project and export back to .aep with every chunk built in code; each reports everything it does not carry over"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,11 +10,11 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-effectcraft-time = { workspace = true }
-effectcraft-color = { workspace = true }
-effectcraft-keyframe = { workspace = true }
-effectcraft-project = { workspace = true }
-effectcraft-effects = { workspace = true }
+pulso-time = { workspace = true }
+pulso-color = { workspace = true }
+pulso-keyframe = { workspace = true }
+pulso-project = { workspace = true }
+pulso-effects = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 

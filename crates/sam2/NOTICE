@@ -1,4 +1,4 @@
-EffectCraft SAM 2 (effectcraft-sam2)
+Pulso SAM 2 (pulso-sam2)
 Copyright the EffectCraft contributors.
 
 This crate is a Rust port of the SAM 2 implementation in Hugging Face `transformers`

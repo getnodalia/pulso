@@ -2,12 +2,12 @@
 
 use std::sync::Arc;
 
-use effectcraft_engine::project::Comp;
 use egui::{Id, Pos2, Rect, Stroke, StrokeKind, pos2};
+use pulso_engine::project::Comp;
 use serde_json::json;
 
 use super::{Row, RowKind, Rw, TMap, edge_scroll_speed, keys_in_box, row_height};
-use crate::EffectcraftApp;
+use crate::PulsoApp;
 
 #[derive(Clone)]
 struct Marquee {
@@ -49,7 +49,7 @@ fn id() -> Id {
 }
 
 /// Capture on press, before wheel handling, even if the drag threshold is not crossed yet.
-pub(super) fn prepare(app: &EffectcraftApp, ui: &egui::Ui, g: &Rw) {
+pub(super) fn prepare(app: &PulsoApp, ui: &egui::Ui, g: &Rw) {
     let ctx = &g.tl.ctx;
     let (pressed, down, released, escape, focused) =
         ctx.input(|i| (i.pointer.primary_pressed(), i.pointer.primary_down(), i.pointer.primary_released(), i.key_pressed(egui::Key::Escape), i.focused));
@@ -97,7 +97,7 @@ pub(super) fn prepare(app: &EffectcraftApp, ui: &egui::Ui, g: &Rw) {
 }
 
 /// Only the marquee owner scrolls, with the same bounded edge speed as a pick whip.
-pub(super) fn scroll(app: &mut EffectcraftApp, g: &Rw) {
+pub(super) fn scroll(app: &mut PulsoApp, g: &Rw) {
     let ctx = &g.tl.ctx;
     if let Some(drag) = ctx.data(|d| d.get_temp::<Marquee>(id()))
         && ctx.dragged_id() == Some(drag.owner)
@@ -137,15 +137,7 @@ impl Anchor {
 }
 
 /// Query all logical rows; the renderer's visible hit rows are not selection data.
-pub(super) fn targets(
-    comp: &Comp,
-    rows: &[Row],
-    tm: &TMap,
-    top: f32,
-    rh: f32,
-    paint: Rect,
-    selection: &SelectionBox,
-) -> (Vec<u64>, Vec<effectcraft_engine::KeyRef>) {
+pub(super) fn targets(comp: &Comp, rows: &[Row], tm: &TMap, top: f32, rh: f32, paint: Rect, selection: &SelectionBox) -> (Vec<u64>, Vec<pulso_engine::KeyRef>) {
     let mut layers = vec![];
     let mut y = top;
     for row in rows {
@@ -164,7 +156,7 @@ pub(super) fn targets(
 }
 
 /// Commit an owned primary release; otherwise paint without changing selection.
-pub(super) fn finish(app: &EffectcraftApp, ui: &egui::Ui, g: &mut Rw) {
+pub(super) fn finish(app: &PulsoApp, ui: &egui::Ui, g: &mut Rw) {
     let ctx = &g.tl.ctx;
     let Some(drag) = ctx.data(|d| d.get_temp::<Marquee>(id())) else { return };
     let released = ctx.input(|i| i.pointer.primary_released());

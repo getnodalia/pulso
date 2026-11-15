@@ -24,20 +24,20 @@ hicolor PNG, so it has the Linux margin and shadow.
 
 | File | What |
 |---|---|
-| `effectcraft.svg` | master: the portrait as a 1024 px image embedded in an SVG with the tile clip (canonical) |
-| `effectcraft-small.svg` | lighter 512 px version; also the web favicon where there is one |
-| `effectcraft-1024.png` | 1024 px render |
-| `effectcraft-macos-512.png` | runtime Dock icon on macOS, on Apple's 824/1024 grid |
-| `effectcraft.icns` | macOS icon (Apple grid) |
-| `effectcraft.ico` | Windows icon, 16–256 px; embedded in `effectcraft.exe` by `apps/effectcraft/build.rs` |
-| `hicolor/<n>x<n>/apps/ai.storyteller.effectcraft.png` | Linux icon theme, 16–512 px; the 256 px one is the runtime icon on Windows and Linux |
-| `hicolor/scalable/apps/ai.storyteller.effectcraft.svg` | Linux scalable icon |
+| `pulso.svg` | master: the portrait as a 1024 px image embedded in an SVG with the tile clip (canonical) |
+| `pulso-small.svg` | lighter 512 px version; also the web favicon where there is one |
+| `pulso-1024.png` | 1024 px render |
+| `pulso-macos-512.png` | runtime Dock icon on macOS, on Apple's 824/1024 grid |
+| `pulso.icns` | macOS icon (Apple grid) |
+| `pulso.ico` | Windows icon, 16–256 px; embedded in `pulso.exe` by `apps/pulso/build.rs` |
+| `hicolor/<n>x<n>/apps/dev.danielmiguelt.Pulso.png` | Linux icon theme, 16–512 px; the 256 px one is the runtime icon on Windows and Linux |
+| `hicolor/scalable/apps/dev.danielmiguelt.Pulso.svg` | Linux scalable icon |
 
-App ID: `ai.storyteller.effectcraft` (Wayland app ID, `packaging/linux/ai.storyteller.effectcraft.desktop`).
+App ID: `dev.danielmiguelt.Pulso` (Wayland app ID, `packaging/linux/dev.danielmiguelt.Pulso.desktop`).
 
 ## Regenerate
 
 The icon is a raster portrait, so the SVG files embed an image instead of traced paths. The
 derived files in this directory were rendered directly from the portrait. `packaging/icons.sh`
-still works on `effectcraft.svg` (resvg renders embedded images), but its output will differ slightly
+still works on `pulso.svg` (resvg renders embedded images), but its output will differ slightly
 from the committed files in resampling.

@@ -21,7 +21,7 @@ code in Pulso's own process, which conflicts with two non-negotiables:
 Pulso never loads native plug-in code into its own process. Native effects are served by
 **external effect helpers**: separate programs that Pulso starts as child processes and
 talks to over a small, versioned protocol. The core gains one generic, safe-Rust crate,
-`effectcraft-helper-host` (L3); format-specific hosts (OpenFX, ...) live in helper programs
+`pulso-helper-host` (L3); format-specific hosts (OpenFX, ...) live in helper programs
 that are built, released and installed separately.
 
 - **Crash containment.** The process boundary contains everything a helper does. A helper
@@ -40,7 +40,7 @@ that are built, released and installed separately.
   while rendering; nested renders through the same helper are supported.
 - **Discovery.** Pulso looks in `helpers/` next to the executable (and
   `Contents/Helpers` in a macOS bundle), `helpers/` in the settings folder, and
-  `EFFECTCRAFT_HELPER_PATH`. Helper programs are named `effectcraft-helper-*`.
+  `PULSO_HELPER_PATH`. Helper programs are named `pulso-helper-*`.
 - **Security.** Helpers are local programs the user installed, just like the plug-ins they host.
   Pulso runs only programs from those locations, passes them nothing beyond the protocol
   (no network, no project files), and runs no helper on the web build.
@@ -69,5 +69,5 @@ that are built, released and installed separately.
   separate program in its own repository (an example: [ec-extension-ofx](https://github.com/glumbis/ec-extension-ofx), unofficial) that reuses the
   existing Rust OpenFX host behind `serve()`. A C++ helper built on the OpenFX HostSupport
   library is an equally valid way to implement the same protocol.
-- Later: the ArtCraft launcher can install helpers into `helpers/` the same way it installs
+- Later: the Nodalia launcher can install helpers into `helpers/` the same way it installs
   apps.

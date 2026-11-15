@@ -306,7 +306,7 @@ mod tests {
         if let Some(t) = UNIX_EPOCH.checked_add(far) {
             assert_eq!(epoch_nanos(t), i128::try_from(far.as_nanos()).unwrap());
         }
-        let dir = std::env::temp_dir().join(format!("effectcraft-stamp-1969-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("pulso-stamp-1969-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let (a, b) = (dir.join("a.bin"), dir.join("b.bin"));

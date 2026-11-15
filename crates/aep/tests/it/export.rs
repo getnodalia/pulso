@@ -1,4 +1,4 @@
-//! export tests of effectcraft-aep.
+//! export tests of pulso-aep.
 
 #[macro_use]
 mod helpers;

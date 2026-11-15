@@ -1,6 +1,6 @@
 //! The Settings dialog (After Effects' Preferences): the page list on the left, the page on the
 //! right, OK / Cancel / Previous / Next. Pages are built from the engine's schema
-//! (`effectcraft_engine::prefs::pages`), so the dialog, `prefs.pages` and the docs agree. Edits
+//! (`pulso_engine::prefs::pages`), so the dialog, `prefs.pages` and the docs agree. Edits
 //! apply live; Cancel restores the settings from when the dialog opened, OK saves them.
 //!
 //! Automation ids: `settings.page.<id>`, `settings.<key>` (e.g. `settings.general.undoLevels`),
@@ -9,17 +9,17 @@
 //! cache's limit in effect, a label).
 
 use crate::i18n::{tr, tr_args};
-use effectcraft_engine::prefs::{APPEARANCE_MODES, DARK_THEMES, Item, Kind, LIGHT_THEMES, Page, pages};
-use effectcraft_engine::segment::Task;
 use egui::{Color32, RichText, vec2};
+use pulso_engine::prefs::{APPEARANCE_MODES, DARK_THEMES, Item, Kind, LIGHT_THEMES, Page, pages};
+use pulso_engine::segment::Task;
 use serde_json::{Value, json};
 
 use crate::a11y;
 use crate::theme::{ThemeKind, Tokens};
-use crate::{Dialog, EffectcraftApp};
+use crate::{Dialog, PulsoApp};
 
 /// Open the dialog on a page, remembering the settings for Cancel.
-pub fn open(app: &mut EffectcraftApp, page: &str) {
+pub fn open(app: &mut PulsoApp, page: &str) {
     if app.dialog != Some(Dialog::Settings) {
         app.dialog_state.prefs_snapshot = Some(app.session.prefs.clone());
     }
@@ -46,12 +46,12 @@ fn srgb_bytes(c: [f32; 3]) -> [u8; 3] {
     [col.r(), col.g(), col.b()]
 }
 
-fn reg(app: &mut EffectcraftApp, id: &str, r: &egui::Response, label: &str) {
+fn reg(app: &mut PulsoApp, id: &str, r: &egui::Response, label: &str) {
     app.auto.add(id, r.rect, label);
 }
 
 /// One page's rows.
-fn page_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, page: &Page, cur: &Value, t: &Tokens, acts: &mut Vec<Act>) {
+fn page_ui(app: &mut PulsoApp, ui: &mut egui::Ui, page: &Page, cur: &Value, t: &Tokens, acts: &mut Vec<Act>) {
     let get = |key: &str| cur.pointer(&format!("/{}", key.replace('.', "/"))).cloned().unwrap_or(Value::Null);
     let label_w = 250.0;
     for item in &page.items {
@@ -106,7 +106,7 @@ fn page_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, page: &Page, cur: &Value
             Item::Setting { key, label, kind, live } => {
                 let v = get(key);
                 let id = format!("settings.{key}");
-                let tip = (!live).then(|| tr("Stored, but not used by EffectCraft yet"));
+                let tip = (!live).then(|| tr("Stored, but not used by Pulso yet"));
                 let mut resp: Option<egui::Response> = None;
                 // What the control is set to, for assistive technology.
                 let mut value_text = String::new();
@@ -248,7 +248,7 @@ fn page_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, page: &Page, cur: &Value
 /// `settings.disk.cacheLimit`, labelled `limitMb=… maxMb=… reserveMb=… spaceLimited=… writes=…`
 /// (machine-readable, the same in every interface language). Nothing without an open disk cache.
 /// The maximum is the one applied: an edit applies at once (a dragged value on release).
-fn disk_cache_limit_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens) {
+fn disk_cache_limit_ui(app: &mut PulsoApp, ui: &mut egui::Ui, t: &Tokens) {
     let Some(dc) = app.session.disk_cache.clone() else { return };
     // (atomic reads: drawn every frame)
     let (max, limit, reserve, writes) = (dc.max_bytes(), dc.limit_bytes(), dc.reserve_bytes(), dc.accepts_writes());
@@ -270,16 +270,16 @@ fn disk_cache_limit_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens) 
 /// Size) whose limit in effect is `limit` bytes, leaving `reserve` bytes of its disk free (when
 /// known), and taking frame and layer writes (`writes`, [`DiskCache::accepts_writes`]).
 ///
-/// [`DiskCache::accepts_writes`]: effectcraft_engine::render::disk_cache::DiskCache::accepts_writes
+/// [`DiskCache::accepts_writes`]: pulso_engine::render::disk_cache::DiskCache::accepts_writes
 pub(crate) fn disk_cache_limit_lines(max: u64, limit: u64, reserve: Option<u64>, writes: bool) -> Vec<String> {
-    use effectcraft_engine::render::disk_cache::{MAX_DISK_RESERVE, MIN_DISK_RESERVE};
+    use pulso_engine::render::disk_cache::{MAX_DISK_RESERVE, MIN_DISK_RESERVE};
     const GB: f64 = (1u64 << 30) as f64;
     let mut lines = vec![tr_args("Disk cache limit in effect: {} MB", &[&(limit.min(max) >> 20)])];
     if limit < max {
         lines.push(match reserve {
-            Some(r) => tr_args("Limited by free disk space: EffectCraft keeps {} GB of this disk free.", &[&format!("{:.1}", r as f64 / GB)]),
+            Some(r) => tr_args("Limited by free disk space: Pulso keeps {} GB of this disk free.", &[&format!("{:.1}", r as f64 / GB)]),
             None => tr_args(
-                "Limited by free disk space: EffectCraft keeps 5% of the disk free (at least {} GB, at most {} GB).",
+                "Limited by free disk space: Pulso keeps 5% of the disk free (at least {} GB, at most {} GB).",
                 &[&(MIN_DISK_RESERVE >> 30), &(MAX_DISK_RESERVE >> 30)],
             ),
         });
@@ -290,7 +290,7 @@ pub(crate) fn disk_cache_limit_lines(max: u64, limit: u64, reserve: Option<u64>,
     lines
 }
 
-/// A small EffectCraft window painted with theme `kind`'s tokens: the Tools bar, the Project
+/// A small Pulso window painted with theme `kind`'s tokens: the Tools bar, the Project
 /// panel, the Composition panel, the Preview and Properties column and the Timeline with its
 /// layer bars.
 fn theme_preview(ui: &mut egui::Ui, kind: ThemeKind, width: f32) {
@@ -390,7 +390,7 @@ struct ThemeFamily<'a> {
 
 /// One theme family's card: its (translated) name, Active when the appearance shows it now, a preview of the
 /// chosen theme and a radio button per theme.
-fn theme_card(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, fam: ThemeFamily, acts: &mut Vec<Act>) {
+fn theme_card(app: &mut PulsoApp, ui: &mut egui::Ui, t: &Tokens, fam: ThemeFamily, acts: &mut Vec<Act>) {
     let ThemeFamily { key, title, active, cur, options } = fam;
     egui::Frame::new()
         .fill(t.field_bg)
@@ -449,7 +449,7 @@ fn theme_card(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, fam: Them
 
 /// Settings ▸ Appearance: Appearance Mode (Sync with System, Dark, Light) above the light and dark
 /// theme cards.
-fn appearance_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, cur: &Value, t: &Tokens, acts: &mut Vec<Act>) {
+fn appearance_ui(app: &mut PulsoApp, ui: &mut egui::Ui, cur: &Value, t: &Tokens, acts: &mut Vec<Act>) {
     let get = |key: &str| cur.pointer(&format!("/appearance/{key}")).and_then(Value::as_str).unwrap_or_default().to_string();
     let (mode, light, dark) = (get("appearanceMode"), get("lightTheme"), get("darkTheme"));
     ui.horizontal(|ui| {
@@ -507,7 +507,7 @@ pub fn human_bytes(b: u64) -> String {
 /// Settings ▸ Roto Brush and Settings ▸ Face Tracking: a task's models (`roto.models`,
 /// `face.models`): choose one; download, install from a file or remove the trained ones; who made
 /// them, their licence, size and source.
-fn models_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, acts: &mut Vec<Act>, task: Task) {
+fn models_ui(app: &mut PulsoApp, ui: &mut egui::Ui, t: &Tokens, acts: &mut Vec<Act>, task: Task) {
     let (prefix, user) = match task {
         Task::Mask => ("roto", "Roto Brush"),
         Task::Face => ("face", "Face tracking"),
@@ -518,7 +518,7 @@ fn models_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, acts: &mut
     for m in info["models"].as_array().into_iter().flatten() {
         let id = m["id"].as_str().unwrap_or_default().to_string();
         let name = m["name"].as_str().unwrap_or_default();
-        let classic = id == effectcraft_engine::segment::CLASSICAL;
+        let classic = id == pulso_engine::segment::CLASSICAL;
         let (installed, selected, active) =
             (m["installed"].as_bool().unwrap_or(false), m["selected"].as_bool().unwrap_or(false), m["active"].as_bool().unwrap_or(false));
         ui.add_space(6.0);
@@ -616,7 +616,7 @@ fn models_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, acts: &mut
 /// Settings ▸ Plug-in Library (`library.*`): search the community catalog, install, update and
 /// remove packages. Automation ids: `settings.library.query`, `settings.library.refresh`,
 /// `settings.library.updateAll`, `settings.library.<install|update|remove>.<package id>`.
-fn library_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, acts: &mut Vec<Act>) {
+fn library_ui(app: &mut PulsoApp, ui: &mut egui::Ui, t: &Tokens, acts: &mut Vec<Act>) {
     let query = app.dialog_state.library_query.clone();
     let Ok(info) = app.session.execute("library.list", json!({"query": query})) else { return };
     if !info["available"].as_bool().unwrap_or(false) {
@@ -633,7 +633,7 @@ fn library_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, acts: &mu
         ui.label(RichText::new(tr_args("Catalog fetched {} (UTC)", &[&when])).color(t.text_faint));
     }
     // A plug-in author's test catalog stays in use until Refresh fetches the community one.
-    if let Some(url) = info["catalog"].as_str().filter(|u| *u != effectcraft_engine::library::CATALOG_URL) {
+    if let Some(url) = info["catalog"].as_str().filter(|u| *u != pulso_engine::library::CATALOG_URL) {
         ui.label(RichText::new(tr_args("Test catalog: {} (Refresh returns to the community catalog)", &[&url])).color(t.warning));
     }
     if !has_catalog {
@@ -663,7 +663,7 @@ fn library_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, acts: &mu
 }
 
 /// The Plug-in Library's search field, Refresh (or Fetch Catalog) and Update All.
-fn library_toolbar_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, query: &str, packages: &[Value], has_catalog: bool, idle: bool, acts: &mut Vec<Act>) {
+fn library_toolbar_ui(app: &mut PulsoApp, ui: &mut egui::Ui, query: &str, packages: &[Value], has_catalog: bool, idle: bool, acts: &mut Vec<Act>) {
     ui.horizontal(|ui| {
         let mut q = query.to_string();
         let r = ui.add(egui::TextEdit::singleline(&mut q).hint_text(tr("Search plug-ins and effects")).desired_width(260.0));
@@ -690,7 +690,7 @@ fn library_toolbar_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, query: &str, 
 
 /// One package of the Plug-in Library (`library.list`'s entry `p`): name, state, details, links,
 /// actions and, when shown, its preview.
-fn library_card_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, p: &Value, idle: bool, acts: &mut Vec<Act>) {
+fn library_card_ui(app: &mut PulsoApp, ui: &mut egui::Ui, t: &Tokens, p: &Value, idle: bool, acts: &mut Vec<Act>) {
     let id = p["id"].as_str().unwrap_or_default().to_string();
     let s = |k: &str| p[k].as_str().unwrap_or_default().to_string();
     let installed = p["installed"].as_str().map(str::to_string);
@@ -704,10 +704,10 @@ fn library_card_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, p: &
                 ui.label(RichText::new(v).color(t.text_dim));
             }
             let state = match (&installed, restart, update) {
-                (_, true, _) => tr("Restart EffectCraft to finish").to_string(),
+                (_, true, _) => tr("Restart Pulso to finish").to_string(),
                 (Some(v), _, true) => tr_args("Installed {}: update available", &[v]),
                 (Some(v), _, _) => tr_args("Installed {}", &[v]),
-                (None, _, _) if newer_app && p["latest"].is_null() => tr("Needs a newer EffectCraft").to_string(),
+                (None, _, _) if newer_app && p["latest"].is_null() => tr("Needs a newer Pulso").to_string(),
                 _ => String::new(),
             };
             ui.label(RichText::new(state).color(if installed.is_some() { t.accent } else { t.text_dim }));
@@ -728,7 +728,7 @@ fn library_card_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, p: &
 }
 
 /// A package's author, licence, size, and links to its source and video.
-fn library_links_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, p: &Value, id: &str) {
+fn library_links_ui(app: &mut PulsoApp, ui: &mut egui::Ui, t: &Tokens, p: &Value, id: &str) {
     let s = |k: &str| p[k].as_str().unwrap_or_default().to_string();
     ui.horizontal_wrapped(|ui| {
         if !s("author").is_empty() {
@@ -761,7 +761,7 @@ fn library_links_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, p: 
 }
 
 /// A package's Preview / Install / Update / Remove buttons.
-fn library_actions_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &Value, id: &str, idle: bool, acts: &mut Vec<Act>) {
+fn library_actions_ui(app: &mut PulsoApp, ui: &mut egui::Ui, p: &Value, id: &str, idle: bool, acts: &mut Vec<Act>) {
     let installed = p["installed"].is_string();
     let available = !p["latest"].is_null();
     let showing = app.dialog_state.library_preview.as_deref() == Some(id);
@@ -800,7 +800,7 @@ fn library_actions_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &Value, id
 /// A package's live preview (`library.preview`): its effect at default settings on the sample
 /// frame, playing, with a Before/After split the user drags (automation id
 /// `settings.library.previewImage`), and the effect's parameters.
-fn library_preview_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, id: &str) {
+fn library_preview_ui(app: &mut PulsoApp, ui: &mut egui::Ui, t: &Tokens, id: &str) {
     let status = app.session.library.status();
     let Some(pv) = status.preview.filter(|v| v.id == id) else {
         // A failure shows under the list (the library's error).
@@ -878,7 +878,7 @@ fn library_preview_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, i
 
 /// Settings ▸ Disk ▸ Browser Storage (the web app's storage manager, `storage.*`): where the
 /// data lives, the origin's usage and quota, persistent storage, and Clear buttons.
-fn browser_storage_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, acts: &mut Vec<Act>) {
+fn browser_storage_ui(app: &mut PulsoApp, ui: &mut egui::Ui, t: &Tokens, acts: &mut Vec<Act>) {
     let Some(host) = app.session.storage.clone() else { return };
     let info = host.info();
     let u = |v: &Value| v.as_u64().unwrap_or(0);
@@ -953,7 +953,7 @@ fn browser_storage_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, t: &Tokens, a
 }
 
 /// Draw the editable label colors and names in Settings.
-fn labels_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, cur: &Value, acts: &mut Vec<Act>) {
+fn labels_ui(app: &mut PulsoApp, ui: &mut egui::Ui, cur: &Value, acts: &mut Vec<Act>) {
     ui.label(tr("Label Colors and Names:"));
     ui.add_space(4.0);
     let labels = cur.get("labels").and_then(Value::as_array).cloned().unwrap_or_default();
@@ -989,7 +989,7 @@ fn labels_ui(app: &mut EffectcraftApp, ui: &mut egui::Ui, cur: &Value, acts: &mu
 }
 
 /// Draw the Settings dialog, including its translated page list and the selected page's controls.
-pub fn show(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn show(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
     let all = pages();
     let mut page = app.dialog_state.settings_page.clone();
     if !all.iter().any(|p| p.id == page) {
@@ -1155,7 +1155,7 @@ pub fn show(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
             }
             Act::PickModel(task) => {
                 // The registry's file types for the task (`.pt`, `.task`).
-                let mut exts: Vec<&str> = effectcraft_engine::segment::models(task).filter_map(|m| m.file_name.rsplit_once('.').map(|x| x.1)).collect();
+                let mut exts: Vec<&str> = pulso_engine::segment::models(task).filter_map(|m| m.file_name.rsplit_once('.').map(|x| x.1)).collect();
                 exts.dedup();
                 let picked = app.hooks.pick_files.as_ref().map(|f| f(&exts)).unwrap_or_default();
                 let cmd = if task == Task::Face { "face.model.install" } else { "roto.model.install" };
@@ -1181,14 +1181,14 @@ pub fn show(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
 }
 
 /// Crash recovery: the previous session didn't exit cleanly; offer its latest auto-save.
-pub fn recovery(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn recovery(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
     let Some(r) = app.recovery.clone() else {
         app.dialog = None;
         return;
     };
     let mut choice: Option<&str> = None;
     super::dialogs::modal(ctx, "Recover Project", vec2(560.0, 230.0), t, |ui| {
-        ui.label(tr("EffectCraft didn't quit normally last time."));
+        ui.label(tr("Pulso didn't quit normally last time."));
         ui.add_space(6.0);
         if let Some(p) = &r.project {
             ui.label(tr_args("Project: {}", &[&p]));
@@ -1255,7 +1255,7 @@ mod tests {
     /// Install-only models must not offer a download that the command will reject.
     #[test]
     fn sam2_settings_offer_file_installation_without_downloads() {
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = PulsoApp::new(pulso_engine::Session::default());
         let ctx = egui::Context::default();
         let tokens = app.tokens;
         let mut actions = vec![];
@@ -1276,15 +1276,15 @@ mod tests {
     /// says when free disk space holds it lower (a 20 GB cache held at 0 showed nothing).
     #[test]
     fn the_disk_page_shows_the_limit_free_space_allows() {
-        use effectcraft_engine::render::disk_cache::DiskCache;
+        use pulso_engine::render::disk_cache::DiskCache;
         const GB: u64 = 1 << 30;
         let dir = std::env::temp_dir().join(format!("ec-settings-disk-limit-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = PulsoApp::new(pulso_engine::Session::default());
         let dc = DiskCache::open(&dir, 20 * GB).unwrap();
         app.session.disk_cache = Some(dc.clone());
         let page = pages().into_iter().find(|p| p.id == "disk").unwrap();
-        let shown = |app: &mut EffectcraftApp| {
+        let shown = |app: &mut PulsoApp| {
             // (one frame's elements: `find` returns the first match)
             app.auto = Default::default();
             let ctx = egui::Context::default();
@@ -1308,19 +1308,19 @@ mod tests {
         assert_eq!(shown(&mut app).unwrap(), "limitMb=0 maxMb=20480 reserveMb=10240 spaceLimited=true writes=false");
         assert_eq!(
             text(),
-            "Disk cache limit in effect: 0 MB Limited by free disk space: EffectCraft keeps 10.0 GB of this disk free. No room left: nothing is written to the disk cache until disk space is freed."
+            "Disk cache limit in effect: 0 MB Limited by free disk space: Pulso keeps 10.0 GB of this disk free. No room left: nothing is written to the disk cache until disk space is freed."
         );
         // 12 GB free: 2 GB for the cache.
         dc.set_disk_space(Some((4096 * GB, 12 * GB)));
         assert_eq!(shown(&mut app).unwrap(), "limitMb=2048 maxMb=20480 reserveMb=10240 spaceLimited=true writes=true");
-        assert_eq!(text(), "Disk cache limit in effect: 2048 MB Limited by free disk space: EffectCraft keeps 10.0 GB of this disk free.");
+        assert_eq!(text(), "Disk cache limit in effect: 2048 MB Limited by free disk space: Pulso keeps 10.0 GB of this disk free.");
         // A 100 GB disk keeps 5 GB.
         dc.set_disk_space(Some((100 * GB, 6 * GB)));
         assert_eq!(shown(&mut app).unwrap(), "limitMb=1024 maxMb=20480 reserveMb=5120 spaceLimited=true writes=true");
         // Without the disk's size, the rule from the constants.
         assert_eq!(
             disk_cache_limit_lines(20 * GB, GB, None, true)[1],
-            "Limited by free disk space: EffectCraft keeps 5% of the disk free (at least 2 GB, at most 10 GB)."
+            "Limited by free disk space: Pulso keeps 5% of the disk free (at least 2 GB, at most 10 GB)."
         );
         // No disk cache: no line.
         app.session.disk_cache = None;

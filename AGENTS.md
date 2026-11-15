@@ -88,10 +88,10 @@ reproduce an image (for example, point lists traced from someone else's icon).
    `crates/engine/src/demo.rs`, generators in `crates/effects`) are original work under the project licence
    and are listed in `ATTRIBUTION.md`.
 7. **When in doubt, leave it out** and draw or generate it yourself.
-8. **The one exception: first-party ArtCraft brand marks.** The ArtCraft name and logos in `docs/brand/`
+8. **The one exception: first-party Nodalia brand marks.** The Nodalia name and logos in `docs/brand/`
    are trademarks of the ArtCraft Team, not open source, usable only unmodified and only in the context of
    Pulso under `docs/brand/LICENSE-brand.txt` (forks and modified versions must remove them). They still
-   need a sidecar and an `ATTRIBUTION.md` row (licence `LicenseRef-ArtCraft-Trademark`). No other
+   need a sidecar and an `ATTRIBUTION.md` row (licence `LicenseRef-Nodalia-Trademark`). No other
    non-open asset is allowed, and this exception never covers third-party marks (Adobe, Discord, GitHub
    and other logos stay out; draw a generic icon instead).
 
@@ -115,15 +115,15 @@ reproduce an image (for example, point lists traced from someone else's icon).
 ## 3. Engineering rules
 
 - **Layering** (`cargo xtask layers`): nothing below L5 depends on egui/eframe/winit/rfd/cpal; L0–L4 build for wasm32.
-- **Exact time:** `effectcraft_time::Tick` (254 016 000 000/s). Keyframe times are layer time.
+- **Exact time:** `pulso_time::Tick` (254 016 000 000/s). Keyframe times are layer time.
 - **Property tree:** everything animatable is a `Property` in the layer's `PropGroup` tree, addressed by paths (`transform/position`, `effects/#1/blurriness`, `@uid`).
 - **Everything is a command** (`crates/engine`): id, label, menu path, shortcut, params, enabled(), run(). UI, CLI, control channel and MCP dispatch by id.
 - **Everything is agent-drivable:** every interactive widget registers an automation id; UI state is serde.
-- **Community links** (Help menu, About, header Discord button): https://discord.gg/artcraft, https://getartcraft.com, https://getartcraft.com/apps/effectcraft, https://github.com/storytold/effectcraft.
+- **Community links** (Help menu, About, header Discord button): https://github.com/getnodalia/pulso/issues, https://getnodalia.com, https://getnodalia.com/pulso, https://github.com/getnodalia/pulso.
 - **Quality gates** before every commit: `cargo xtask ci` (fmt, clippy -D warnings, tests, layers, assets, wasm).
 - New workspace crates include `[lints] workspace = true` in `Cargo.toml`. Production crate roots declare the crate-level lint attributes before modules; crate-level `//!` documentation may precede them.
 - **Commits:** one task id per commit (`M6.3: trim paths`). Only green states.
-- `cargo run -p effectcraft -- --control 9877` opens the desktop app with the JSON-lines control server (`docs/control-protocol.md`). For UI work, look at the result, including the headless `snapshot` example.
+- `cargo run -p pulso -- --control 9877` opens the desktop app with the JSON-lines control server (`docs/control-protocol.md`). For UI work, look at the result, including the headless `snapshot` example.
 - `plan/` is an optional gitignored notebook (`plan/aftereffects/` may hold reference notes and captures). Do not ask for it, do not stop when it is absent, and never commit those captures.
 - Read [`docs/gaps.md`](docs/gaps.md) and [`docs/target-app-parity.md`](docs/target-app-parity.md) before choosing work. Fidelity, reliability and stability (G1–G3) come before new features.
 - Workflows call getnodalia/foundation's reusable workflows pinned by commit; see the CI workflows section.

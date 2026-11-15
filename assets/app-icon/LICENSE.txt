@@ -1,4 +1,4 @@
-Pulso app icon (effectcraft.svg, effectcraft-small.svg and every file derived from them in this
+Pulso app icon (pulso.svg, pulso-small.svg and every file derived from them in this
 directory, and the web favicon where the project has one).
 
 The icon is a portrait of Eadweard Muybridge cut out, converted to black and white and placed over the

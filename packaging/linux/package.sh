@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Build and package EffectCraft for Linux (<arch> is x86_64 or aarch64, or riscv64 when cross-compiling):
+# Build and package Pulso for Linux (<arch> is x86_64 or aarch64, or riscv64 when cross-compiling):
 #
-#   $DIST/effectcraft-<version>-linux-<arch>.AppImage  any distro with glibc >= the build host's
-#   $DIST/effectcraft-<version>-linux-<arch>.AppImage.zsync  delta updates (needs zsyncmake)
-#   $DIST/effectcraft-<version>-linux-<arch>.deb       Debian, Ubuntu, Mint, Pop!_OS, ...
-#   $DIST/effectcraft-<version>-linux-<arch>.rpm       Fedora, openSUSE, RHEL, ...
-#   $DIST/effectcraft-<version>-linux-<arch>.tar.gz    plain FHS-style tree (bin/, share/)
+#   $DIST/pulso-<version>-linux-<arch>.AppImage  any distro with glibc >= the build host's
+#   $DIST/pulso-<version>-linux-<arch>.AppImage.zsync  delta updates (needs zsyncmake)
+#   $DIST/pulso-<version>-linux-<arch>.deb       Debian, Ubuntu, Mint, Pop!_OS, ...
+#   $DIST/pulso-<version>-linux-<arch>.rpm       Fedora, openSUSE, RHEL, ...
+#   $DIST/pulso-<version>-linux-<arch>.tar.gz    plain FHS-style tree (bin/, share/)
 #
 # Usage: packaging/linux/package.sh [--skip-build] [--formats "appimage deb rpm tar"]
 #
@@ -21,7 +21,7 @@ set -euo pipefail
 # shellcheck source=../env.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../env.sh"
 HERE="$ROOT/packaging/linux"
-APP_ID=ai.storyteller.effectcraft
+APP_ID=dev.danielmiguelt.Pulso
 
 SKIP_BUILD=0
 FORMATS="appimage deb rpm tar"
@@ -41,16 +41,16 @@ case "$ARCH" in
   aarch64 | arm64) ARCH=aarch64; DEB_ARCH=arm64 ;;
   *) echo "unsupported architecture $ARCH" >&2; exit 2 ;;
 esac
-export EFFECTCRAFT_MAINTAINER="${EFFECTCRAFT_MAINTAINER:-EffectCraft maintainers <effectcraft@storyteller.ai>}"
-BASENAME="effectcraft-$VERSION-linux-$ARCH"
+export PULSO_MAINTAINER="${PULSO_MAINTAINER:-Nodalia <https://github.com/getnodalia/pulso/issues>}"
+BASENAME="pulso-$VERSION-linux-$ARCH"
 
-echo "==> EffectCraft $VERSION for Linux $ARCH ($FORMATS)"
+echo "==> Pulso $VERSION for Linux $ARCH ($FORMATS)"
 
 if [[ "$SKIP_BUILD" = 0 ]]; then
   if [[ -n "${CROSS_TARGET:-}" ]]; then
-    (cd "$ROOT" && cargo build --release --locked -p effectcraft -p effectcraft-cli --target "$CROSS_TARGET")
+    (cd "$ROOT" && cargo build --release --locked -p pulso -p pulso-cli --target "$CROSS_TARGET")
   else
-    (cd "$ROOT" && cargo build --release --locked -p effectcraft -p effectcraft-cli)
+    (cd "$ROOT" && cargo build --release --locked -p pulso -p pulso-cli)
   fi
 fi
 BIN="$CARGO_TARGET_DIR/${CROSS_TARGET:+$CROSS_TARGET/}release"
@@ -59,13 +59,13 @@ STAGE="$WORK/root"
 rm -rf "$WORK"
 
 # ---- stage an FHS tree (shared by every format) -------------------------------------------------
-install -Dm755 "$BIN/effectcraft" "$STAGE/usr/bin/effectcraft"
-install -Dm755 "$BIN/effectcraft-cli" "$STAGE/usr/bin/effectcraft-cli"
-"${CROSS_COMPILE:-}strip" "$STAGE/usr/bin/effectcraft" "$STAGE/usr/bin/effectcraft-cli" 2>/dev/null || true
+install -Dm755 "$BIN/pulso" "$STAGE/usr/bin/pulso"
+install -Dm755 "$BIN/pulso-cli" "$STAGE/usr/bin/pulso-cli"
+"${CROSS_COMPILE:-}strip" "$STAGE/usr/bin/pulso" "$STAGE/usr/bin/pulso-cli" 2>/dev/null || true
 install -Dm644 "$HERE/$APP_ID.desktop" "$STAGE/usr/share/applications/$APP_ID.desktop"
 install -Dm644 "$HERE/$APP_ID.mime.xml" "$STAGE/usr/share/mime/packages/$APP_ID.xml"
 mkdir -p "$STAGE/usr/share/metainfo"
-sed -e "s/@VERSION@/$VERSION/g" -e "s/@DATE@/$EFFECTCRAFT_BUILD_DATE/g" \
+sed -e "s/@VERSION@/$VERSION/g" -e "s/@DATE@/$PULSO_BUILD_DATE/g" \
   "$HERE/$APP_ID.metainfo.xml.in" >"$STAGE/usr/share/metainfo/$APP_ID.metainfo.xml"
 mkdir -p "$STAGE/usr/share/icons"
 cp -R "$ROOT/assets/app-icon/hicolor" "$STAGE/usr/share/icons/"
@@ -73,8 +73,8 @@ cp -R "$ROOT/assets/app-icon/hicolor" "$STAGE/usr/share/icons/"
 # The .desktop names the icon dev.danielmiguelt.Pulso, the Nodalia name, so an icon theme can
 # tell this app from the Craft app that shares its ID.
 for f in "$STAGE"/usr/share/icons/hicolor/*/apps/"$APP_ID".{png,svg}; do cp "$f" "${f%/*}/dev.danielmiguelt.Pulso.${f##*.}"; done
-mkdir -p "$STAGE/usr/share/doc/effectcraft"
-copy_docs "$STAGE/usr/share/doc/effectcraft"
+mkdir -p "$STAGE/usr/share/doc/pulso"
+copy_docs "$STAGE/usr/share/doc/pulso"
 
 if command -v desktop-file-validate >/dev/null; then
   desktop-file-validate "$STAGE/usr/share/applications/$APP_ID.desktop"
@@ -132,11 +132,11 @@ if has appimage; then
     echo "no pinned AppImage runtime for $ARCH; build the AppImage on x86_64 or aarch64" >&2
     exit 2
   fi
-  APPDIR="$WORK/EffectCraft.AppDir"
+  APPDIR="$WORK/Pulso.AppDir"
   cp -R "$STAGE" "$APPDIR"
   # Keep sctk-adwaita's MIT notice in the AppImage.
-  install -Dm644 "$ROOT/NOTICE" "$APPDIR/usr/share/doc/effectcraft/NOTICE"
-  ln -s usr/bin/effectcraft "$APPDIR/AppRun"
+  install -Dm644 "$ROOT/NOTICE" "$APPDIR/usr/share/doc/pulso/NOTICE"
+  ln -s usr/bin/pulso "$APPDIR/AppRun"
   cp "$HERE/$APP_ID.desktop" "$APPDIR/$APP_ID.desktop"
   cp "$ROOT/assets/app-icon/hicolor/256x256/apps/$APP_ID.png" "$APPDIR/$APP_ID.png"
   cp "$ROOT/assets/app-icon/hicolor/256x256/apps/$APP_ID.png" "$APPDIR/dev.danielmiguelt.Pulso.png"
@@ -180,8 +180,8 @@ if has appimage; then
   # fetch only the blocks that changed in a newer release, through the .zsync published next to
   # each AppImage on GitHub Releases. `latest` is the newest published release that is not a
   # pre-release. A fork's builds point at its own releases through GITHUB_REPOSITORY.
-  REPO="${GITHUB_REPOSITORY:-storytold/effectcraft}"
-  UPDATE_INFO="gh-releases-zsync|${REPO%%/*}|${REPO#*/}|latest|effectcraft-*-linux-$ARCH.AppImage.zsync"
+  REPO="${GITHUB_REPOSITORY:-getnodalia/pulso}"
+  UPDATE_INFO="gh-releases-zsync|${REPO%%/*}|${REPO#*/}|latest|pulso-*-linux-$ARCH.AppImage.zsync"
   # Extract-and-run: works without FUSE (containers, CI). The output embeds the static runtime,
   # so users don't need libfuse2 either. With zsyncmake on the host (CI installs the zsync
   # package) appimagetool also writes the .zsync, into its working directory, hence the cd.
@@ -195,9 +195,9 @@ if has appimage; then
 fi
 
 if [[ -z "${CROSS_TARGET:-}" ]]; then
-  "$STAGE/usr/bin/effectcraft-cli" --version
+  "$STAGE/usr/bin/pulso-cli" --version
 elif [[ -n "${EMULATOR:-}" ]]; then
-  "$EMULATOR" "$STAGE/usr/bin/effectcraft-cli" --version
+  "$EMULATOR" "$STAGE/usr/bin/pulso-cli" --version
 fi
 echo "==> done"
 ls -lh "$DIST"

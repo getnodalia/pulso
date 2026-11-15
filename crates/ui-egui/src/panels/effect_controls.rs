@@ -15,18 +15,18 @@
 //!   Levels a histogram; Lumetri's curves, Colorama's output cycle, Glow's colour map and
 //!   Reshape's correspondence points have visual editors ([`super::fx_editors`]).
 
-use effectcraft_engine::geom::Mat3;
-use effectcraft_engine::keyframe::Value;
-use effectcraft_engine::project::{GroupKind, Layer, Node, ParamUi, PropGroup, Property};
-use effectcraft_engine::render::EvalCtx;
 use egui::{Align2, Color32, Rect, Sense, Stroke, pos2, vec2};
+use pulso_engine::geom::Mat3;
+use pulso_engine::keyframe::Value;
+use pulso_engine::project::{GroupKind, Layer, Node, ParamUi, PropGroup, Property};
+use pulso_engine::render::EvalCtx;
 use serde_json::json;
 
 use super::fx_widgets as fw;
 use crate::icons::{self, Icon};
 use crate::state::FxPick;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{PulsoApp, widgets};
 
 mod common;
 mod editors;

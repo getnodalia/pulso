@@ -16,7 +16,7 @@ and the layout into the image, so no bitmap is committed. The DMG still builds w
 The mounted volume is called `Pulso`, not `Pulso <version>`. The layout points at the background
 through an alias that includes the volume name, and Finder resolves it by that name: with a
 versioned name the window keeps its size and icon positions but shows no background (tested).
-The DMG file name (`effectcraft-<version>-macos-<arch>.dmg`) still carries the version.
+The DMG file name (`pulso-<version>-macos-<arch>.dmg`) still carries the version.
 
 ## Rules
 

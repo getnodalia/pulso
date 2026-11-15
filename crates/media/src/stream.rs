@@ -2,15 +2,15 @@
 //!
 //! Reading a file whole before opening it made a clip cost its full size in memory (twice while
 //! probing: the file's bytes plus the demuxer's copy), so a 45-minute movie took gigabytes just to
-//! import. FilmCraft's reader openers (MP4/MOV, Matroska/WebM, MXF, Ogg, MPEG-PS/TS) open from a
+//! import. Toma's reader openers (MP4/MOV, Matroska/WebM, MXF, Ogg, MPEG-PS/TS) open from a
 //! random-access [`ByteReader`]; [`FileReader`] serves them positional reads from the open file.
 //! Formats decoded in one go (stills, WAV, FLAC, MP3…) still read the whole file, as before.
 //! Builds without a native file system (wasm32) keep using in-memory bytes.
 
 use std::path::Path;
 
-use effectcraft_render::reads::FileStamp;
 use filmcraft_media::SharedSource;
+use pulso_render::reads::FileStamp;
 
 use crate::Result;
 

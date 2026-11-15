@@ -123,8 +123,8 @@ impl crate::Services for Stamps {
 
 /// The stored folder time (`sspc@118`) of the sequence item of an exported project.
 fn sequence_folder_time(bytes: &[u8]) -> u32 {
-    let file = effectcraft_aep::parse(bytes).unwrap();
-    let view = effectcraft_aep::Project::new(&file).unwrap();
+    let file = pulso_aep::parse(bytes).unwrap();
+    let view = pulso_aep::Project::new(&file).unwrap();
     let item = view.all_items().into_iter().find(|i| i.footage().is_some_and(|f| f.is_sequence)).expect("sequence");
     let sspc = item.chunk().child_list(b"Pin ").and_then(|pin| pin.child(b"sspc")).and_then(|c| c.bytes()).expect("sspc");
     u32::from_be_bytes(sspc[118..122].try_into().unwrap())
@@ -133,14 +133,14 @@ fn sequence_folder_time(bytes: &[u8]) -> u32 {
 /// A session whose project has one png sequence of three frames in `dir` (as `sep` joins them),
 /// recorded as stored in the document `document`.
 fn with_sequence(dir: &str, sep: &str, document: &str) -> (Session, std::sync::Arc<Stamps>) {
-    use effectcraft_project::{Footage, FootageKind, ItemKind};
+    use pulso_project::{Footage, FootageKind, ItemKind};
     let stamps = std::sync::Arc::new(Stamps::default());
     let mut s = Session { services: stamps.clone(), ..Default::default() };
     let files: Vec<String> = (1..=3).map(|k| format!("{dir}{sep}a_{k:04}.png")).collect();
     let mut f = Footage {
         path: files[0].clone(),
         kind: FootageKind::Sequence,
-        frame_rate: effectcraft_time::FrameRate::new(25, 1),
+        frame_rate: pulso_time::FrameRate::new(25, 1),
         sequence: files,
         width: 64,
         height: 48,
@@ -171,7 +171,7 @@ fn a_sequence_folder_is_looked_at_only_through_the_document_path_policy() {
     // Chosen in this session (imported or relinked by the user), the same path is followed as
     // given, like every other footage access.
     let f = s.project.items.values().find_map(|i| match &i.kind {
-        effectcraft_project::ItemKind::Footage(f) => Some(f.clone()),
+        pulso_project::ItemKind::Footage(f) => Some(f.clone()),
         _ => None,
     });
     s.stored_paths.allow(&f.unwrap());

@@ -4,13 +4,13 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, OnceLock};
 
-use effectcraft_project::{AlphaMode, Footage, FootageKind, ItemId};
-use effectcraft_raster::{Image, Px};
-use effectcraft_render::reads::{FileStamp, ReadFile, ReadFiles, ReadLog};
-use effectcraft_render::{FloatCurve, FootageSource};
-use effectcraft_time::{FrameRate, TICKS_PER_SECOND, Tick};
 use filmcraft_media::{FrameRequest, SharedSource};
 use image::metadata::Orientation;
+use pulso_project::{AlphaMode, Footage, FootageKind, ItemId};
+use pulso_raster::{Image, Px};
+use pulso_render::reads::{FileStamp, ReadFile, ReadFiles, ReadLog};
+use pulso_render::{FloatCurve, FootageSource};
+use pulso_time::{FrameRate, TICKS_PER_SECOND, Tick};
 
 use crate::convert::{AlphaOp, dynamic_to_image, frame_to_image_in, frame_to_image_scaled, turned};
 use crate::downmix::Order;
@@ -231,7 +231,7 @@ struct Inner {
     files: Mutex<HashMap<String, Arc<[u8]>>>,
     /// Parsed 3D models by path (`None`: failed to load; not retried until `forget`), with the
     /// files read for them (the model's and the resources it names).
-    models: Mutex<HashMap<String, (Option<Arc<effectcraft_model::Model>>, Arc<ReadFiles>)>>,
+    models: Mutex<HashMap<String, (Option<Arc<pulso_model::Model>>, Arc<ReadFiles>)>>,
     /// Decoded animated GIFs and WebPs by path, loaded by the first caller while the others wait (an
     /// `Err` is not retried until `forget`).
     gifs: Mutex<HashMap<Arc<str>, GifSlot>>,
@@ -276,10 +276,10 @@ impl AuxFootage {
     }
 }
 
-/// Decodes footage for the renderer: stills, image sequences and movies (FilmCraft codecs), plus
+/// Decodes footage for the renderer: stills, image sequences and movies (Toma codecs), plus
 /// audio. Thread-safe and cheap to clone (clones share decoders and cache).
 ///
-/// - One decoder per movie: FilmCraft's GOP cache keeps it positioned, so sequential frames
+/// - One decoder per movie: Toma's GOP cache keeps it positioned, so sequential frames
 ///   decode without re-seeking, and a seek decodes forward from the preceding sync sample.
 /// - Converted frames live in an LRU cache bounded by a byte budget ([`DEFAULT_BUDGET`]).
 /// - Sequential playback reads one frame ahead on a worker thread (native builds), so decoding
@@ -560,7 +560,7 @@ impl MediaPool {
 
     /// [`MediaPool::audio_samples`] straight from the decoder. The source is read at its own
     /// rate and resampled here (linear, by absolute sample position, so a range comes out the
-    /// same however it is split into reads). FilmCraft's MP4 reader, asked for another rate,
+    /// same however it is split into reads). Toma's MP4 reader, asked for another rate,
     /// applied the edit list's priming offset twice and ramped the start of every read: AAC
     /// footage not at the mix rate stuttered in previews and exports (#274).
     fn decode_audio(&self, footage: &Footage, start: Tick, frames: usize, rate: u32) -> Vec<f32> {
@@ -613,7 +613,7 @@ impl MediaPool {
             return Ok((*img).clone());
         }
         let (tw, th) = (((w as f64 * s).round() as u32).max(1), ((h as f64 * s).round() as u32).max(1));
-        Ok(effectcraft_raster::resample(&img, tw, th))
+        Ok(pulso_raster::resample(&img, tw, th))
     }
 }
 
@@ -623,7 +623,7 @@ impl Inner {
     }
 
     /// A 3D model file and its sibling resources (buffers, textures, MTL files), parsed once.
-    fn model(&self, path: &str) -> Option<Arc<effectcraft_model::Model>> {
+    fn model(&self, path: &str) -> Option<Arc<pulso_model::Model>> {
         let found = lock(&self.models).get(path).cloned();
         if let Some((m, files)) = found {
             reads::note_all(&files);
@@ -636,7 +636,7 @@ impl Inner {
                     let p = craft_docpath::resolve_absolute(uri, Some(std::path::Path::new(path))).ok()?;
                     self.read(&p.to_string_lossy()).ok().map(|b| b.to_vec())
                 };
-                effectcraft_model::load(path, &bytes, &resolve).map_err(|e| e.to_string())
+                pulso_model::load(path, &bytes, &resolve).map_err(|e| e.to_string())
             })
         });
         let m = match loaded {
@@ -797,7 +797,7 @@ impl Inner {
                 let rate = footage.frame_rate;
                 let n = Self::frame_count(rate, footage.duration);
                 let i = Self::frame_index(rate, t, n, footage.loop_count);
-                // A quarter into the frame in the file's own timing: FilmCraft rounds a request to
+                // A quarter into the frame in the file's own timing: Toma rounds a request to
                 // the track's nearest timestamp unit (halves up), so the middle of a frame would
                 // land on the next one when the timescale is the frame rate; a quarter still
                 // tolerates timestamps rounded either way.
@@ -907,7 +907,7 @@ impl Inner {
         if w == 0 || h == 0 || smaller || (w, h) == (img.width, img.height) {
             return img;
         }
-        effectcraft_raster::resample(&img, w, h)
+        pulso_raster::resample(&img, w, h)
     }
 
     fn decode(&self, loc: &Loc, footage: &Footage) -> Result<Image> {
@@ -998,7 +998,7 @@ impl FootageSource for MediaPool {
     fn set_conform_folder(&self, folder: Option<std::path::PathBuf>) {
         MediaPool::set_conform_folder(self, folder);
     }
-    fn model(&self, _item: ItemId, footage: &Footage) -> Option<Arc<effectcraft_model::Model>> {
+    fn model(&self, _item: ItemId, footage: &Footage) -> Option<Arc<pulso_model::Model>> {
         if footage.missing || footage.kind != FootageKind::Model {
             return None;
         }
@@ -1047,7 +1047,7 @@ impl FootageSource for MediaPool {
     }
 
     fn vector_frame(&self, _item: ItemId, footage: &Footage, scale: f64) -> Option<Arc<Image>> {
-        if footage.missing || !effectcraft_render::is_vector_footage(footage) {
+        if footage.missing || !pulso_render::is_vector_footage(footage) {
             return None;
         }
         let bytes = self.inner.read(&footage.path).ok()?;
@@ -1064,7 +1064,7 @@ impl FootageSource for MediaPool {
         wanted.learned.clear();
     }
 
-    fn aux(&self, _item: ItemId, footage: &Footage, t: Tick) -> Option<Arc<effectcraft_raster::AuxChannels>> {
+    fn aux(&self, _item: ItemId, footage: &Footage, t: Tick) -> Option<Arc<pulso_raster::AuxChannels>> {
         if footage.missing || !footage.has_video {
             return None;
         }
@@ -1095,7 +1095,7 @@ impl FootageSource for MediaPool {
 }
 
 /// `frames` stereo sample frames (interleaved) of `src` from sample `s0` at `rate` Hz, which
-/// FilmCraft serves as decoded when it is the source's own rate. Mono is duplicated to both
+/// Toma serves as decoded when it is the source's own rate. Mono is duplicated to both
 /// channels, multichannel sources (channels in `order`) are downmixed ([`crate::downmix`]); silence before the start. An error where decoding fails.
 fn read_stereo(src: &SharedSource, order: &Order, s0: i64, frames: usize, rate: u32) -> std::result::Result<Vec<f32>, String> {
     let mut out = vec![0.0; frames * 2];

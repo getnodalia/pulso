@@ -6,14 +6,14 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
-use effectcraft_color::Label;
-use effectcraft_effects::Buf;
-use effectcraft_export::render_queue::*;
-use effectcraft_export::{Job, JobOptions, Report, Sink, StorageQuota, export};
-use effectcraft_keyframe::{Keyframe, Value};
-use effectcraft_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid, build};
-use effectcraft_render::{Accelerator, AutoPick, FxStep, Image, NoFootage, Renderer};
-use effectcraft_time::{FrameRate, Tick};
+use pulso_color::Label;
+use pulso_effects::Buf;
+use pulso_export::render_queue::*;
+use pulso_export::{Job, JobOptions, Report, Sink, StorageQuota, export};
+use pulso_keyframe::{Keyframe, Value};
+use pulso_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid, build};
+use pulso_render::{Accelerator, AutoPick, FxStep, Image, NoFootage, Renderer};
+use pulso_time::{FrameRate, Tick};
 
 const W: u32 = 64;
 const H: u32 = 48;
@@ -388,7 +388,7 @@ fn wav_and_aiff_channels_and_formats() {
 
 #[test]
 fn cancelled_export_removes_only_files_it_opened() {
-    use effectcraft_export::ExportError;
+    use pulso_export::ExportError;
     let dir = std::env::temp_dir().join(format!("ec-cancel-owned-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let (p, cid) = project(FrameRate::new(25, 1), |_, _| {});
@@ -537,7 +537,7 @@ impl Accelerator for TimedAccel {
 /// The environment forces the compositor or the GPU frames in flight: the measured choice
 /// isn't what these tests check then.
 fn measurement_overridden() -> bool {
-    std::env::var_os(effectcraft_export::RENDERER_ENV).is_some() || std::env::var_os("EFFECTCRAFT_GPU_INFLIGHT").is_some()
+    std::env::var_os(pulso_export::RENDERER_ENV).is_some() || std::env::var_os("PULSO_GPU_INFLIGHT").is_some()
 }
 
 /// [`run_on`] on a pool of 8 threads (a batch of 8 frames: room to measure both compositors on
@@ -576,7 +576,7 @@ fn a_transfer_bound_gpu_job_renders_on_the_cpu() {
     let opts = || JobOptions { renderer: Some(&shared), ..Default::default() };
     let slow = TimedAccel::new(60, true);
     run_pooled(&p, cid, &s, "/r/b_[#####].png", opts(), &slow);
-    assert_eq!(*shared.lock().unwrap(), Some(effectcraft_render::Backend::Cpu));
+    assert_eq!(*shared.lock().unwrap(), Some(pulso_render::Backend::Cpu));
     let again = TimedAccel::new(0, true);
     let (frames, log) = run_pooled(&p, cid, &s, "/r/c_[#####].png", opts(), &again);
     assert_eq!(again.frames.load(Ordering::SeqCst), 0);
@@ -627,7 +627,7 @@ fn gpu_cpu_and_measured_jobs_write_the_same_frames() {
     let (cpu, log) = run_pooled(&p, cid, &s, "/i/a_[#####].png", JobOptions::default(), &echo);
     assert!(log.contains("Renderer: Software Rendering (the project's renderer)"), "{log}");
     p.settings.gpu_acceleration = true;
-    let gpu_slot = Mutex::new(Some(effectcraft_render::Backend::Gpu));
+    let gpu_slot = Mutex::new(Some(pulso_render::Backend::Gpu));
     let (gpu, _) = run_pooled(&p, cid, &s, "/i/b_[#####].png", JobOptions { renderer: Some(&gpu_slot), ..Default::default() }, &echo);
     let (auto, _) = run_pooled(&p, cid, &s, "/i/c_[#####].png", JobOptions::default(), &echo);
     assert_eq!(cpu.len(), 20);
@@ -637,7 +637,7 @@ fn gpu_cpu_and_measured_jobs_write_the_same_frames() {
 
 #[test]
 fn renderer_choice_follows_the_measurement() {
-    use effectcraft_export::{JobRenderer, pick_renderer};
+    use pulso_export::{JobRenderer, pick_renderer};
     assert_eq!(pick_renderer(Some(117.0), Some(68.0)), JobRenderer::Cpu);
     assert_eq!(pick_renderer(Some(68.0), Some(117.0)), JobRenderer::Gpu);
     // Ties and noise stay on the GPU: the CPU must be clearly faster.

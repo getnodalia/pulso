@@ -8,7 +8,7 @@ version = "0.23.1"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 rust-version = "1.95"
-repository = "https://github.com/storytold/effectcraft"
+repository = "https://github.com/getnodalia/pulso"
 
 [workspace.dependencies]
 craft-pdf = { git = "https://github.com/getnodalia/foundation", rev = "e11f9d9aebea5f6b8e74643c1ea1ed172ba5f545", version = "=0.1.0", default-features = false, features = ["read"] }
@@ -18,41 +18,41 @@ craft-ecproj-format = { version = "0.1.0", git = "https://github.com/getnodalia/
 # In-app updates from this app's GitHub releases, with the update windows for egui.
 nodalia-update = { git = "https://github.com/danielmigueltejedor/nodalia-design", rev = "d066d5d351f18f704bdfd8aad6f04b9e96a155e4", features = ["egui"] }
 # internal
-effectcraft-time = { path = "crates/time" }
-effectcraft-geom = { path = "crates/geom" }
-effectcraft-color = { path = "crates/color" }
-effectcraft-raster = { path = "crates/raster" }
-effectcraft-path = { path = "crates/path" }
-effectcraft-keyframe = { path = "crates/keyframe" }
-effectcraft-project = { path = "crates/project" }
-effectcraft-text = { path = "crates/text" }
-effectcraft-effects = { path = "crates/effects" }
-effectcraft-track = { path = "crates/track" }
-effectcraft-segment = { path = "crates/segment" }
-effectcraft-sam2 = { path = "crates/sam2" }
-effectcraft-model = { path = "crates/model" }
-effectcraft-render = { path = "crates/render" }
-effectcraft-gpu = { path = "crates/gpu" }
-effectcraft-media = { path = "crates/media" }
-effectcraft-export = { path = "crates/export" }
-effectcraft-expr = { path = "crates/expr" }
-effectcraft-lottie = { path = "crates/lottie" }
-effectcraft-interchange = { path = "crates/interchange" }
-effectcraft-pdf = { path = "crates/pdf" }
-effectcraft-psd = { path = "crates/psd" }
-effectcraft-aep = { path = "crates/aep" }
-effectcraft-vp9enc = { path = "crates/vp9enc" }
-effectcraft-svg = { path = "crates/svg" }
-effectcraft-engine = { path = "crates/engine" }
-effectcraft-host = { path = "crates/host" }
-effectcraft-ui-egui = { path = "crates/ui-egui" }
-effectcraft-automation = { path = "crates/automation" }
-effectcraft-opusenc = { path = "crates/opusenc" }
-effectcraft-script = { path = "crates/script" }
-effectcraft-hevcenc = { path = "crates/hevcenc" }
-effectcraft-av1enc = { path = "crates/av1enc" }
-effectcraft-plugin = { path = "crates/plugin" }
-effectcraft-helper-host = { path = "crates/helper-host" }
+pulso-time = { path = "crates/time" }
+pulso-geom = { path = "crates/geom" }
+pulso-color = { path = "crates/color" }
+pulso-raster = { path = "crates/raster" }
+pulso-path = { path = "crates/path" }
+pulso-keyframe = { path = "crates/keyframe" }
+pulso-project = { path = "crates/project" }
+pulso-text = { path = "crates/text" }
+pulso-effects = { path = "crates/effects" }
+pulso-track = { path = "crates/track" }
+pulso-segment = { path = "crates/segment" }
+pulso-sam2 = { path = "crates/sam2" }
+pulso-model = { path = "crates/model" }
+pulso-render = { path = "crates/render" }
+pulso-gpu = { path = "crates/gpu" }
+pulso-media = { path = "crates/media" }
+pulso-export = { path = "crates/export" }
+pulso-expr = { path = "crates/expr" }
+pulso-lottie = { path = "crates/lottie" }
+pulso-interchange = { path = "crates/interchange" }
+pulso-pdf = { path = "crates/pdf" }
+pulso-psd = { path = "crates/psd" }
+pulso-aep = { path = "crates/aep" }
+pulso-vp9enc = { path = "crates/vp9enc" }
+pulso-svg = { path = "crates/svg" }
+pulso-engine = { path = "crates/engine" }
+pulso-host = { path = "crates/host" }
+pulso-ui-egui = { path = "crates/ui-egui" }
+pulso-automation = { path = "crates/automation" }
+pulso-opusenc = { path = "crates/opusenc" }
+pulso-script = { path = "crates/script" }
+pulso-hevcenc = { path = "crates/hevcenc" }
+pulso-av1enc = { path = "crates/av1enc" }
+pulso-plugin = { path = "crates/plugin" }
+pulso-helper-host = { path = "crates/helper-host" }
 
 # foundation
 thiserror = "2"
@@ -82,7 +82,7 @@ image = { version = "0.25", default-features = false, features = ["png", "jpeg"]
 same-file = "1.0"
 tempfile = "3.27"
 
-# media codecs + containers: FilmCraft's pure-Rust crates, pinned to a revision (plan/adr/0001).
+# media codecs + containers: Toma's pure-Rust crates, pinned to a revision (plan/adr/0001).
 # Only `crates/media`, `crates/export` and `crates/interchange` may depend on these.
 filmcraft-codecs = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
 filmcraft-media = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
@@ -97,10 +97,10 @@ filmcraft-isobmff = { git = "https://github.com/getnodalia/foundation", rev = "d
 # container headers read for AAC channel layouts (crates/media)
 filmcraft-matroska = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
 filmcraft-mpegts = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
-# decoder used as the round-trip oracle of effectcraft-opusenc (crates/export dev-dependency)
+# decoder used as the round-trip oracle of pulso-opusenc (crates/export dev-dependency)
 filmcraft-opus = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
 filmcraft-vp9 = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
-# decoders used as the round-trip oracles of effectcraft-hevcenc / effectcraft-av1enc (dev-dependencies only)
+# decoders used as the round-trip oracles of pulso-hevcenc / pulso-av1enc (dev-dependencies only)
 filmcraft-hevc = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
 filmcraft-av1 = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
 # timeline interchange (EDL, FCP7 XML, FCPXML, OTIO) for Premiere Pro interop (crates/interchange only)
@@ -130,7 +130,7 @@ cpal = "0.16"
 # The operating system's interface language (MIT/Apache-2.0, no dependencies on desktop).
 sys-locale = "0.3"
 
-# Local co-development against a FilmCraft checkout next to this repo: uncomment.
+# Local co-development against a Toma checkout next to this repo: uncomment.
 # [patch."https://github.com/getnodalia/foundation"]
 # filmcraft-codecs = { path = "../filmcraft/crates/codecs" }
 # filmcraft-media = { path = "../filmcraft/crates/media" }
@@ -173,43 +173,43 @@ inherits = "dev"
 debug = true
 
 # Pixel hot loops: keep debug builds interactive.
-[profile.dev.package.effectcraft-raster]
+[profile.dev.package.pulso-raster]
 opt-level = 3
 
-[profile.dev.package.effectcraft-render]
+[profile.dev.package.pulso-render]
 opt-level = 3
 
-[profile.dev.package.effectcraft-gpu]
+[profile.dev.package.pulso-gpu]
 opt-level = 3
 
-[profile.dev.package.effectcraft-effects]
+[profile.dev.package.pulso-effects]
 opt-level = 3
 
-[profile.dev.package.effectcraft-track]
+[profile.dev.package.pulso-track]
 opt-level = 3
 
-[profile.dev.package.effectcraft-path]
+[profile.dev.package.pulso-path]
 opt-level = 3
 
-[profile.dev.package.effectcraft-media]
+[profile.dev.package.pulso-media]
 opt-level = 3
 
-[profile.dev.package.effectcraft-opusenc]
+[profile.dev.package.pulso-opusenc]
 opt-level = 3
 
-[profile.dev.package.effectcraft-export]
+[profile.dev.package.pulso-export]
 opt-level = 3
 
-[profile.dev.package.effectcraft-vp9enc]
+[profile.dev.package.pulso-vp9enc]
 opt-level = 3
 
-[profile.dev.package.effectcraft-hevcenc]
+[profile.dev.package.pulso-hevcenc]
 opt-level = 3
 
-[profile.dev.package.effectcraft-av1enc]
+[profile.dev.package.pulso-av1enc]
 opt-level = 3
 
-# FilmCraft codec hot loops (same settings as FilmCraft's own workspace).
+# Toma codec hot loops (same settings as Toma's own workspace).
 [profile.dev.package.filmcraft-h264]
 opt-level = 3
 

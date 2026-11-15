@@ -2,11 +2,11 @@
 //! the whole raster fits its pixel budget the frame is identical to rasterising the whole layer;
 //! close to the camera the raster stays small instead of growing to ~16 million pixels.
 
-use effectcraft_color::Label;
-use effectcraft_keyframe::{TextDoc, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{Comp, ItemId, ItemKind, Layer, LayerSource, Project};
-use effectcraft_time::{FrameRate, Tick};
+use pulso_color::Label;
+use pulso_keyframe::{TextDoc, Value};
+use pulso_project::build::{self, Ids};
+use pulso_project::{Comp, ItemId, ItemKind, Layer, LayerSource, Project};
+use pulso_time::{FrameRate, Tick};
 
 use crate::{NoFootage, RenderOpts, Renderer};
 
@@ -20,7 +20,7 @@ fn zoom() -> f64 {
 
 fn setup() -> (Project, ItemId, Comp) {
     let mut p = Project::default();
-    p.settings.bit_depth = effectcraft_project::BitDepth::Bpc32;
+    p.settings.bit_depth = pulso_project::BitDepth::Bpc32;
     let comp = Comp::new(W, H, FrameRate::FPS_30, Tick::from_seconds_f64(1.0));
     let cid = p.add_item("Comp", Label::Sandstone, None, ItemKind::Comp(comp.clone().into()));
     (p, cid, comp)
@@ -65,7 +65,7 @@ fn scene(l: impl FnOnce(&mut Project, &Comp) -> Layer) -> (Project, ItemId) {
     (p, cid)
 }
 
-fn frame(p: &Project, cid: ItemId, whole: bool) -> effectcraft_raster::Image {
+fn frame(p: &Project, cid: ItemId, whole: bool) -> pulso_raster::Image {
     let mut r = Renderer::new(p, &NoFootage, RenderOpts::default());
     r.whole_raster = whole;
     r.comp_frame(cid, Tick::ZERO)
@@ -167,7 +167,7 @@ type Keys<'a> = &'a [(f64, [f64; 3])];
 
 fn keyed(l: &mut Layer, path: &str, keys: Keys) {
     l.props.prop_mut(path).unwrap_or_else(|| panic!("no {path}")).keys =
-        keys.iter().map(|(t, v)| effectcraft_keyframe::Keyframe::new(Tick::from_seconds_f64(*t), Value::Vec3(*v))).collect();
+        keys.iter().map(|(t, v)| pulso_keyframe::Keyframe::new(Tick::from_seconds_f64(*t), Value::Vec3(*v))).collect();
 }
 
 /// A camera keyed through `pos` / `poi`, and the text keyed through `text_pos` (and turning about
@@ -184,7 +184,7 @@ fn moving(label: &str, pos: Keys, poi: Keys, text_pos: Keys, text_rot: &[(f64, f
     }
     if !text_rot.is_empty() {
         text.props.prop_mut("transform/rotationY").unwrap().keys =
-            text_rot.iter().map(|(t, v)| effectcraft_keyframe::Keyframe::new(Tick::from_seconds_f64(*t), Value::Scalar(*v))).collect();
+            text_rot.iter().map(|(t, v)| pulso_keyframe::Keyframe::new(Tick::from_seconds_f64(*t), Value::Scalar(*v))).collect();
     }
     let mut cam = build::layer(&mut p, &comp, "Camera", LayerSource::Camera, (W, H), None);
     set(&mut cam, "cameraOptions/zoom", Value::Scalar(zoom()));
@@ -221,7 +221,7 @@ fn moving(label: &str, pos: Keys, poi: Keys, text_pos: Keys, text_rot: &[(f64, f
             // Held at the cap whole: the clipped raster is sharper, and small.
             let buf = clipped.layer_buf(&ctx, layer).unwrap();
             assert!(buf.img.width as u64 * buf.img.height as u64 <= 16_500_000, "{label}: frame {f}");
-            let shows = |img: &effectcraft_raster::Image| img.data.iter().filter(|px| px[3] > 0.5).count();
+            let shows = |img: &pulso_raster::Image| img.data.iter().filter(|px| px[3] > 0.5).count();
             let (sa, sb) = (shows(&a), shows(&whole.comp_frame(cid, t)));
             // The same text shows (or none, the camera past it); coverage within a few percent.
             assert!(sa.abs_diff(sb) * 50 <= sb.max(1) + 50, "{label}: frame {f}: {sa} px of text, {sb} rasterised whole");
@@ -277,12 +277,11 @@ fn layer_space_reads_get_the_whole_layer() {
     let mut text = text3(&mut p, &comp, [W as f64 / 2.0, H as f64 / 2.0, -zoom() + 40.0], 0.0);
     text.switches.video = false;
     let text_id = text.id;
-    let sid =
-        p.add_item("Solid", Label::Red, None, ItemKind::Solid(effectcraft_project::Solid { color: [0.2, 0.6, 1.0], width: W, height: H, pixel_aspect: 1.0 }));
+    let sid = p.add_item("Solid", Label::Red, None, ItemKind::Solid(pulso_project::Solid { color: [0.2, 0.6, 1.0], width: W, height: H, pixel_aspect: 1.0 }));
     let mut solid = build::layer(&mut p, &comp, "Solid", LayerSource::Solid { item: sid }, (W, H), None);
-    let spec = effectcraft_effects::find("ec.channel.setmatte").unwrap();
+    let spec = pulso_effects::find("ec.channel.setmatte").unwrap();
     let mut next = p.next_id;
-    let mut g = effectcraft_effects::instantiate(spec, &mut Ids(&mut next), spec.name, [W as f64, H as f64]);
+    let mut g = pulso_effects::instantiate(spec, &mut Ids(&mut next), spec.name, [W as f64, H as f64]);
     p.next_id = next;
     g.prop_mut("takeMatteFromLayer").unwrap().value = Value::Layer(Some(text_id.0));
     solid.props.sub_mut("effects").unwrap().children.push(g.into());
@@ -300,9 +299,9 @@ fn layer_space_reads_get_the_whole_layer() {
 #[test]
 fn layers_with_effects_rasterise_whole() {
     let (mut p, cid) = scene(|p, c| text3(p, c, [W as f64 / 2.0, H as f64 / 2.0, -zoom() + 40.0], 0.0));
-    let spec = effectcraft_effects::find("ec.blur.gaussian").unwrap();
+    let spec = pulso_effects::find("ec.blur.gaussian").unwrap();
     let mut next = p.next_id;
-    let g = effectcraft_effects::instantiate(spec, &mut Ids(&mut next), spec.name, [W as f64, H as f64]);
+    let g = pulso_effects::instantiate(spec, &mut Ids(&mut next), spec.name, [W as f64, H as f64]);
     p.next_id = next;
     p.comp_mut(cid).unwrap().layers[0].props.sub_mut("effects").unwrap().children.push(g.into());
     assert_eq!(raster_px(&p, cid, false), raster_px(&p, cid, true));

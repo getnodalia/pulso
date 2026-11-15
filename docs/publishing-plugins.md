@@ -28,7 +28,7 @@ If you only want to use plug-ins, skip to [For users](#for-users).
 in plain Rust with no dependencies. Copy it into a new folder (and a new Git repository):
 
 ```sh
-cp -r effectcraft/examples/plugins/posterize-bands my-effect
+cp -r pulso/examples/plugins/posterize-bands my-effect
 cd my-effect
 rm -rf target
 git init
@@ -83,7 +83,7 @@ Load the module straight from the build folder:
 * **CLI:**
 
   ```sh
-  effectcraft-cli exec effect.plugins.load '{"path": "target/wasm32-unknown-unknown/release/my_effect.wasm"}'
+  pulso-cli exec effect.plugins.load '{"path": "target/wasm32-unknown-unknown/release/my_effect.wasm"}'
   ```
 
   The reply describes the effect, or says why the module was refused (a missing export, an
@@ -231,11 +231,11 @@ File URLs are absolute: `file:///home/me/glow-rings/index.json` on Linux and mac
 Use a separate settings folder, so the test doesn't touch your real installation:
 
 ```sh
-export EFFECTCRAFT_CONFIG_DIR="$PWD/ec-test"           # PowerShell: $env:EFFECTCRAFT_CONFIG_DIR = "$PWD\ec-test"
-effectcraft-cli exec library.refresh '{"catalog": "file:///home/me/glow-rings/index.json", "wait": true}'
-effectcraft-cli exec library.list
-effectcraft-cli exec library.preview '{"id": "io.github.yourname.glow-rings", "wait": true}'
-effectcraft-cli exec library.install '{"id": "io.github.yourname.glow-rings", "wait": true}'
+export PULSO_CONFIG_DIR="$PWD/ec-test"           # PowerShell: $env:PULSO_CONFIG_DIR = "$PWD\ec-test"
+pulso-cli exec library.refresh '{"catalog": "file:///home/me/glow-rings/index.json", "wait": true}'
+pulso-cli exec library.list
+pulso-cli exec library.preview '{"id": "io.github.yourname.glow-rings", "wait": true}'
+pulso-cli exec library.install '{"id": "io.github.yourname.glow-rings", "wait": true}'
 ```
 
 * `library.refresh` reads the catalog and keeps a copy, so the next commands (separate runs of
@@ -248,11 +248,11 @@ effectcraft-cli exec library.install '{"id": "io.github.yourname.glow-rings", "w
 * `library.install` installs it into the test settings folder and loads it.
 
 To look at the preview in the app, start the desktop app with the control channel
-(`effectcraft --control 9877`, with the same `EFFECTCRAFT_CONFIG_DIR` if you set one), point it at
+(`pulso --control 9877`, with the same `PULSO_CONFIG_DIR` if you set one), point it at
 your catalog, then open Settings ▸ Plug-in Library and press Preview on your package:
 
 ```sh
-effectcraft-cli exec library.refresh '{"catalog": "file:///home/me/glow-rings/index.json", "wait": true}' --bridge 9877
+pulso-cli exec library.refresh '{"catalog": "file:///home/me/glow-rings/index.json", "wait": true}' --bridge 9877
 ```
 
 The Refresh button in the app goes back to the community catalog.
@@ -334,10 +334,10 @@ Packages are installed in the `Plug-ins/Library` folder of the settings folder:
 |---|---|
 | macOS | `~/Library/Application Support/Pulso` |
 | Windows | `%APPDATA%\Pulso` |
-| Linux | `$XDG_CONFIG_HOME/effectcraft` or `~/.config/effectcraft` |
-| Portable (a `portable.txt` beside the executable) | `EffectCraftData` beside the executable |
+| Linux | `$XDG_CONFIG_HOME/pulso` or `~/.config/pulso` |
+| Portable (a `portable.txt` beside the executable) | `PulsoData` beside the executable |
 
-`EFFECTCRAFT_CONFIG_DIR` overrides it. In `Plug-ins/Library`:
+`PULSO_CONFIG_DIR` overrides it. In `Plug-ins/Library`:
 
 * `<id>/<version>/<id>.wasm`: each installed module.
 * `installed.json`: what is installed, with the SHA-256 each module was installed with. At start-up

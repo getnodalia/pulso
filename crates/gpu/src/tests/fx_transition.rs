@@ -4,10 +4,10 @@
 //! adjustment, and composited at 8 and 32 bpc; effects reading other layers also with a layer
 //! chosen.
 
-use effectcraft_keyframe::Value;
-use effectcraft_project::BitDepth;
-use effectcraft_render::RenderOpts;
-use effectcraft_time::Tick;
+use pulso_keyframe::Value;
+use pulso_project::BitDepth;
+use pulso_render::RenderOpts;
+use pulso_time::Tick;
 
 use crate::tests::{Scene, c, check, compare_at, effect_case, n, opts, set};
 

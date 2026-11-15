@@ -3,7 +3,7 @@
 //! made with (its MANIFEST).
 
 use crate::container::helpers::{assert_near, base_layer, first_comp, layer_named, layer_of_type, layer_shown_as, near, open};
-use effectcraft_aep::{
+use pulso_aep::{
     Caps, CueType, GradientType, ItemKind, Justification, LayerRef, LayerType, MaskMode, ParamKind, ParamValue, PolystarType, Project, PropNode, Rational,
     ShapeDetail, ShapeItem, TextDocument, ValueSource,
 };
@@ -206,7 +206,7 @@ fn one_mkif_per_mask_and_the_mode_none() {
 
 // ------------------------------------------------------------------ shapes (330-333)
 
-fn shape_group(name: &str) -> Option<effectcraft_aep::ShapeGroup> {
+fn shape_group(name: &str) -> Option<pulso_aep::ShapeGroup> {
     Some({
         let bytes = crate::common::try_fixture(name)?;
         let file = open(&bytes);
@@ -414,7 +414,7 @@ fn camera_zoom_and_depth_of_field() {
     // The default camera (256) has nothing but the default zoom.
     let (zoom, dof, ..) = skip!(camera("256-camera-two-node-default.aep"));
     assert_eq!((zoom.unwrap().source, dof.unwrap().value), (ValueSource::Default, false));
-    assert_eq!(zoom.unwrap().value, effectcraft_aep::DEFAULT_CAMERA_ZOOM);
+    assert_eq!(zoom.unwrap().value, pulso_aep::DEFAULT_CAMERA_ZOOM);
 }
 
 #[test]
@@ -425,8 +425,8 @@ fn light_colour_cone_angle_and_feather() {
             let file = open(&bytes);
             let project = Project::new(&file).unwrap();
             let layer = layer_of_type(&first_comp(&project), LayerType::Light);
-            assert_eq!(layer.header().unwrap().light_type(), Some(effectcraft_aep::LightType::Spot), "{name}");
-            let t = |x: Option<effectcraft_aep::Tracked<f64>>| x.map(|x| (x.value, x.source));
+            assert_eq!(layer.header().unwrap().light_type(), Some(pulso_aep::LightType::Spot), "{name}");
+            let t = |x: Option<pulso_aep::Tracked<f64>>| x.map(|x| (x.value, x.source));
             (layer.light_color().map(|c| (c.value, c.source)), t(layer.light_cone_angle()), t(layer.light_cone_feather()))
         })
     };
@@ -458,7 +458,7 @@ fn light_colour_cone_angle_and_feather() {
 
 // ------------------------------------------------------------------ marker data (347-349, 249)
 
-fn layer_markers(name: &str) -> Option<Vec<effectcraft_aep::Marker>> {
+fn layer_markers(name: &str) -> Option<Vec<pulso_aep::Marker>> {
     Some({
         let bytes = crate::common::try_fixture(name)?;
         let file = open(&bytes);

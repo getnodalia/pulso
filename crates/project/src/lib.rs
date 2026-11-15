@@ -1,4 +1,4 @@
-//! The EffectCraft document model.
+//! The Pulso document model.
 //!
 //! `Project` → items (folders, compositions, footage, solids) → `Comp` → `Layer` → property tree
 //! ([`props`]). Compositions, and each layer within them ([`Layers`]), sit behind `Arc` so undo
@@ -20,14 +20,14 @@ pub mod tracking;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-pub use effectcraft_color::ColorSpace;
-use effectcraft_color::{BlendMode, Label};
-use effectcraft_time::{FrameRate, Tick};
 pub use props::{Expression, FeatherFalloff, GroupKind, MaskMode, MaskMotionBlur, Node, ParamUi, PropGroup, Property, Uid, parse_path};
+pub use pulso_color::ColorSpace;
+use pulso_color::{BlendMode, Label};
+use pulso_time::{FrameRate, Tick};
 use serde::{Deserialize, Serialize};
 
-pub use effectcraft_keyframe as keyframe;
-pub use effectcraft_keyframe::{Keyframe, Value};
+pub use pulso_keyframe as keyframe;
+pub use pulso_keyframe::{Keyframe, Value};
 
 mod comp;
 mod dirty;

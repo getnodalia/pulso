@@ -2,7 +2,7 @@
 //! prefixed `fxd_`): 3D Channel Extract, Cryptomatte, Depth Matte, Depth of Field, EXtractoR,
 //! Fog 3D, ID Matte and IDentifier.
 //!
-//! The layer's auxiliary channels ([`effectcraft_raster::AuxChannels`]) go to the GPU as an
+//! The layer's auxiliary channels ([`pulso_raster::AuxChannels`]) go to the GPU as an
 //! extra texture at the aux resolution: the planes an effect reads are packed into its four
 //! channels (alpha = 1 marks "inside the aux image"). `fxd_lookup` resamples it nearest-neighbour
 //! onto the buffer grid with the CPU's exact index arithmetic (layer position × aux scale,
@@ -11,10 +11,10 @@
 //! colours, measured on the CPU) instead of the raw ranks. Fog 3D's Gradient Layer is rendered
 //! by the host on the CPU (it is another layer) and uploaded.
 
-use effectcraft_effects::{Buf, EffectCtx};
-use effectcraft_keyframe::Value;
-use effectcraft_raster::channels3d::BACKGROUND_DEPTH;
-use effectcraft_raster::{AuxChannels, Image};
+use pulso_effects::{Buf, EffectCtx};
+use pulso_keyframe::Value;
+use pulso_raster::channels3d::BACKGROUND_DEPTH;
+use pulso_raster::{AuxChannels, Image};
 
 use crate::context::{Enc, GpuImage, Params};
 use crate::effects::{GBuf, gaussian_blur};
@@ -164,7 +164,7 @@ fn fog(e: &mut Enc, ctx: &EffectCtx, b: GBuf, a: &AuxChannels) -> Option<GBuf> {
     let grad = if contrib > 0.0 && matches!(pr.get("gradientLayer"), Some(Value::Layer(Some(_)))) {
         ctx.layer_param("gradientLayer", true).map(|o| {
             let cpu = Buf { img: Image::new(b.img.width, b.img.height), offset: b.offset, scale: b.scale };
-            effectcraft_effects::util::fit_layer(ctx, &cpu, &o, true)
+            pulso_effects::util::fit_layer(ctx, &cpu, &o, true)
         })
     } else {
         None
@@ -268,20 +268,20 @@ fn identifier(e: &mut Enc, ctx: &EffectCtx, b: GBuf, a: &AuxChannels) -> Option<
 
 fn cryptomatte(e: &mut Enc, ctx: &EffectCtx, b: GBuf, a: &AuxChannels) -> Option<GBuf> {
     let pr = ctx.params;
-    let Some(layer) = effectcraft_effects::crypto_layer_named(a, pr.s("layerName"), pr.e("layer") as usize) else { return Some(b) };
+    let Some(layer) = pulso_effects::crypto_layer_named(a, pr.s("layerName"), pr.e("layer") as usize) else { return Some(b) };
     let manifest = a.manifests.iter().find(|(l, _)| *l == layer).map(|(_, m)| m.as_slice());
-    let sel = effectcraft_effects::selection_hashes(pr.s("selection"), manifest);
+    let sel = pulso_effects::selection_hashes(pr.s("selection"), manifest);
     // Per aux pixel: coverage-weighted ID colours (RGB) and the selection's coverage (A), on all
     // cores with the rank planes resolved once.
     // The ID colours are only read by the Colors display; Matte, Preview and Matte Only need the
     // matte alone.
     // `tests::fx_depth::cryptomatte_every_display_matches_the_cpu` guards this against the shader.
-    let what = effectcraft_effects::CryptoAux::for_display(pr.e("display"), pr.b("matteOnly"));
-    let img = effectcraft_effects::crypto_aux_image_with(a, &layer, &sel, what);
+    let what = pulso_effects::CryptoAux::for_display(pr.e("display"), pr.b("matteOnly"));
+    let img = pulso_effects::crypto_aux_image_with(a, &layer, &sel, what);
     let tex = e.g.upload_image(&img)?;
     let plane = lookup(e, &b, a, &tex, [0.5, 0.5], [0.0; 4]);
     let mut p = op(7);
-    p.u[0] = [7, pr.e("display"), pr.b("matteOnly") as u32, pr.b(effectcraft_effects::MATTE_ONLY_IN_ALPHA) as u32];
+    p.u[0] = [7, pr.e("display"), pr.b("matteOnly") as u32, pr.b(pulso_effects::MATTE_ONLY_IN_ALPHA) as u32];
     point(e, &p, b, &plane)
 }
 
@@ -293,8 +293,8 @@ fn extractor(e: &mut Enc, ctx: &EffectCtx, b: GBuf, a: Option<&AuxChannels>) -> 
     let (bp, wp) = (pr.f("blackPoint") as f32, pr.f("whitePoint") as f32);
     let unmult = pr.b("unMult");
     // `(copy)`: the input's own channel of the same position, never an aux channel.
-    let own = |k: usize, n: &str| effectcraft_effects::extractor_own_channel(k, n).and_then(|c| u32::try_from(c).ok());
-    let src_ch: Vec<Option<&[f32]>> = names.iter().map(|n| a.and_then(|a| effectcraft_effects::extractor_aux_channel(a, n))).collect();
+    let own = |k: usize, n: &str| pulso_effects::extractor_own_channel(k, n).and_then(|c| u32::try_from(c).ok());
+    let src_ch: Vec<Option<&[f32]>> = names.iter().map(|n| a.and_then(|a| pulso_effects::extractor_aux_channel(a, n))).collect();
     if src_ch.iter().all(Option::is_none) && bp == 0.0 && wp == 1.0 && !unmult && names.iter().enumerate().all(|(k, n)| own(k, n) == Some(k as u32)) {
         return Some(b);
     }

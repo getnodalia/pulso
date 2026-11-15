@@ -9,15 +9,15 @@
 
 use std::sync::{Arc, Mutex};
 
-use effectcraft_engine::color::Label;
-use effectcraft_engine::project::{Item, ItemId, ItemKind};
 use egui::{Align2, Color32, Rect, Sense, Stroke, pos2, vec2};
+use pulso_engine::color::Label;
+use pulso_engine::project::{Item, ItemId, ItemKind};
 use serde_json::json;
 
 use crate::icons::{self, Icon};
 use crate::panels::DragPayload;
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{PulsoApp, widgets};
 
 /// Item row height (After Effects' Project panel rows are compact, about 19 pt).
 const ROW_H: f32 = 19.0;
@@ -28,9 +28,9 @@ fn item_icon(it: &Item) -> Icon {
         ItemKind::Comp(_) => Icon::Comp,
         ItemKind::Solid(_) => Icon::Solid,
         ItemKind::Footage(f) => match f.kind {
-            effectcraft_engine::project::FootageKind::Still | effectcraft_engine::project::FootageKind::Sequence => Icon::Image,
-            effectcraft_engine::project::FootageKind::Audio => Icon::Audio,
-            effectcraft_engine::project::FootageKind::Model => Icon::Cube,
+            pulso_engine::project::FootageKind::Still | pulso_engine::project::FootageKind::Sequence => Icon::Image,
+            pulso_engine::project::FootageKind::Audio => Icon::Audio,
+            pulso_engine::project::FootageKind::Model => Icon::Cube,
             _ => Icon::Footage,
         },
     }
@@ -114,7 +114,7 @@ fn sort_by_size(items: &mut [&Item], desc: bool, mut size_of: impl FnMut(&Item) 
 }
 
 /// Where a drop at a row lands: into a folder row, else into the row's folder; `None` row = root.
-pub fn drop_folder(project: &effectcraft_engine::project::Project, row: Option<ItemId>) -> Option<ItemId> {
+pub fn drop_folder(project: &pulso_engine::project::Project, row: Option<ItemId>) -> Option<ItemId> {
     let it = project.item(row?)?;
     if it.is_folder() { Some(it.id) } else { it.parent }
 }
@@ -125,7 +125,7 @@ type PendingThumb = (u64, Arc<Mutex<Option<Option<(u32, u32, Vec<u8>)>>>>);
 /// Thumbnail of a comp (its current time) or footage (first frame), cached per item/revision.
 /// Rendered on a background thread (inline on wasm32): until the new one lands the previous
 /// thumbnail stays up, so selecting a big comp or editing it never stalls the panel.
-fn thumbnail(app: &EffectcraftApp, ctx: &egui::Context, it: &Item) -> Option<egui::TextureHandle> {
+fn thumbnail(app: &PulsoApp, ctx: &egui::Context, it: &Item) -> Option<egui::TextureHandle> {
     let key = egui::Id::unique(("proj-thumb", it.id.0));
     let pkey = egui::Id::unique(("proj-thumb-pending", it.id.0));
     let rev = app.session.revision;
@@ -198,7 +198,7 @@ fn edit_id() -> egui::Id {
 }
 
 /// Start renaming the selected item (Enter in the Project panel).
-pub fn begin_rename(app: &EffectcraftApp, ctx: &egui::Context) {
+pub fn begin_rename(app: &PulsoApp, ctx: &egui::Context) {
     if let Some(id) = app.session.state.project_selection.first()
         && let Some(it) = app.session.project.item(*id)
     {
@@ -233,7 +233,7 @@ fn selection_seen_id() -> egui::Id {
 
 /// The focused widget is one of the panel's rows, or nothing has keyboard focus: the panel's keys
 /// apply. Any other focused widget (a text field, a button reached with Tab) keeps them.
-fn keys_reach_rows(app: &EffectcraftApp, ctx: &egui::Context) -> bool {
+fn keys_reach_rows(app: &PulsoApp, ctx: &egui::Context) -> bool {
     match ctx.memory(|m| m.focused()) {
         None => app.ui.focused == crate::dock::PanelKind::Project,
         Some(f) => ctx.data(|d| d.get_temp::<ItemId>(focused_row_id())).is_some_and(|row| row_id(row) == f),
@@ -247,7 +247,7 @@ fn keys_reach_rows(app: &EffectcraftApp, ctx: &egui::Context) -> bool {
 /// else takes them: a dialog, an open menu, an inline rename. A row focused with Tab keeps them
 /// too, and keyboard focus then follows the selection, so a screen reader reads the new item.
 /// Returns the item the selection moved to.
-fn keyboard_nav(app: &mut EffectcraftApp, ctx: &egui::Context) -> Option<ItemId> {
+fn keyboard_nav(app: &mut PulsoApp, ctx: &egui::Context) -> Option<ItemId> {
     use egui::Key;
     let keys: Vec<(Key, egui::Modifiers)> = ctx.input(|i| {
         i.events
@@ -337,7 +337,7 @@ fn keyboard_nav(app: &mut EffectcraftApp, ctx: &egui::Context) -> Option<ItemId>
 
 /// Match names and dependency status, retain folder ancestors, and expand them while filtering.
 /// Iterative traversal bounds cyclic document trees and builds each folder's child list once.
-pub(crate) fn visible_rows(app: &EffectcraftApp) -> Vec<(ItemId, usize)> {
+pub(crate) fn visible_rows(app: &PulsoApp) -> Vec<(ItemId, usize)> {
     let project = &app.session.project;
     let q = app.ui.project_search.to_lowercase();
     let filtered = !q.is_empty() || app.ui.project_status != crate::state::ProjectStatus::All;
@@ -378,7 +378,7 @@ pub(crate) fn visible_rows(app: &EffectcraftApp) -> Vec<(ItemId, usize)> {
 /// Bring `items` into view: clear the panel's search, open every folder holding them, select
 /// them, and show and focus the Project panel. Used by Reveal Layer Source in Project and
 /// Reveal Composition in Project, so the item is visible even in a large, filtered project.
-pub(crate) fn reveal(app: &mut EffectcraftApp, ctx: &egui::Context, items: &[ItemId]) {
+pub(crate) fn reveal(app: &mut PulsoApp, ctx: &egui::Context, items: &[ItemId]) {
     let items: Vec<ItemId> = items.iter().copied().filter(|item| app.session.project.item(*item).is_some()).collect();
     if items.is_empty() {
         return;
@@ -404,7 +404,7 @@ pub(crate) fn reveal(app: &mut EffectcraftApp, ctx: &egui::Context, items: &[Ite
 }
 
 /// The selected item's thumbnail and details (with the comps that use it), or a hint.
-fn details_header(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, ctx: &egui::Context, head: Rect) {
+fn details_header(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, ctx: &egui::Context, head: Rect) {
     let t = app.tokens;
     let sel = app.session.state.project_selection.first().copied();
     if let Some(it) = sel.and_then(|i| app.session.project.item(i)).cloned() {
@@ -520,7 +520,7 @@ const MIN_NAME_W: f32 = 120.0;
 
 /// The Name column width that shows every listed name in full: indent, twirl and icon, the
 /// name, and room for a problem marker.
-fn name_fit(app: &EffectcraftApp, p: &egui::Painter, rows: &[(ItemId, usize)]) -> f32 {
+fn name_fit(app: &PulsoApp, p: &egui::Painter, rows: &[(ItemId, usize)]) -> f32 {
     rows.iter()
         .filter_map(|(id, depth)| {
             let it = app.session.project.item(*id)?;
@@ -532,7 +532,7 @@ fn name_fit(app: &EffectcraftApp, p: &egui::Painter, rows: &[(ItemId, usize)]) -
 
 /// [`name_fit`] of the listed rows: only an automatic width (or an invalid saved one) measures the
 /// names.
-fn auto_name_fit(app: &EffectcraftApp, p: &egui::Painter) -> f32 {
+fn auto_name_fit(app: &PulsoApp, p: &egui::Painter) -> f32 {
     if app.ui.project_name_w.is_some_and(f32::is_finite) { 0.0 } else { name_fit(app, p, &visible_rows(app)) }
 }
 
@@ -542,7 +542,7 @@ const MIN_OPTIONAL_VIEW: f32 = 40.0;
 
 /// The widest the Name column gets in a panel `width` points wide: the width less the Label
 /// column (40 points), and less [`MIN_OPTIONAL_VIEW`] while optional columns are shown.
-fn name_max_w(app: &EffectcraftApp, width: f32) -> f32 {
+fn name_max_w(app: &PulsoApp, width: f32) -> f32 {
     let optional = if app.ui.project_columns.iter().any(|k| COLUMNS.iter().any(|c| c.0 == k)) { MIN_OPTIONAL_VIEW } else { 0.0 };
     (width - 40.0 - optional).max(MIN_NAME_W)
 }
@@ -550,7 +550,7 @@ fn name_max_w(app: &EffectcraftApp, width: f32) -> f32 {
 /// Column positions. The Name column is as wide as the user dragged it, else wide enough for
 /// the names listed (`fit`), as After Effects shows full names; at most [`name_max_w`] (the
 /// optional columns scroll under it).
-fn layout_columns(app: &mut EffectcraftApp, rect: Rect, fit: f32) -> Columns {
+fn layout_columns(app: &mut PulsoApp, rect: Rect, fit: f32) -> Columns {
     let max_w = name_max_w(app, rect.width());
     let auto = (rect.width() * 0.40).clamp(MIN_NAME_W, 260.0).max(fit);
     let name_w = app.ui.project_name_w.filter(|w| w.is_finite()).unwrap_or(auto).clamp(MIN_NAME_W, max_w);
@@ -574,7 +574,7 @@ fn layout_columns(app: &mut EffectcraftApp, rect: Rect, fit: f32) -> Columns {
 }
 
 /// The column header row: sort labels with the sort arrow, and the Columns menu.
-fn draw_header(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, hdr: Rect, cl: &Columns) {
+fn draw_header(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, hdr: Rect, cl: &Columns) {
     let t = app.tokens;
     let Columns { cols, label_x, end_x, .. } = cl;
     let (label_x, end_x) = (*label_x, *end_x);
@@ -648,10 +648,10 @@ fn draw_header(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, h
 /// An item row's context menu: Composition Settings, Delete, Rename, Duplicate, labels and the
 /// footage commands.
 fn item_menu(
-    app: &mut EffectcraftApp,
+    app: &mut PulsoApp,
     ui: &mut egui::Ui,
     ctx: &egui::Context,
-    it: &effectcraft_engine::project::Item,
+    it: &pulso_engine::project::Item,
     id: ItemId,
     selected: bool,
     actions: &mut Vec<(String, serde_json::Value)>,
@@ -742,7 +742,7 @@ fn item_menu(
 /// The inline rename / comment field over `cell` when it is item `id`'s `field` being edited;
 /// returns whether it took the cell.
 fn cell_edit(
-    app: &mut EffectcraftApp,
+    app: &mut PulsoApp,
     ui: &mut egui::Ui,
     actions: &mut Vec<(String, serde_json::Value)>,
     editing: &Option<Editing>,
@@ -780,7 +780,7 @@ fn cell_edit(
 }
 
 /// A click on item `id`'s row: plain selects it, Shift extends from the anchor and Cmd toggles.
-fn select_click(app: &mut EffectcraftApp, ui: &egui::Ui, ctx: &egui::Context, id: ItemId, rows: &[(ItemId, usize)]) {
+fn select_click(app: &mut PulsoApp, ui: &egui::Ui, ctx: &egui::Context, id: ItemId, rows: &[(ItemId, usize)]) {
     let m = ui.input(|i| i.modifiers);
     let anchor_key = anchor_id();
     ctx.data_mut(|d| d.insert_temp(cursor_id(), id));
@@ -805,14 +805,14 @@ fn select_click(app: &mut EffectcraftApp, ui: &egui::Ui, ctx: &egui::Context, id
 
 /// Double-click opens the item, as in After Effects: a comp in its Timeline and the viewer, a
 /// folder toggles, footage (not data) and solids open in the Footage panel.
-fn open_item(app: &mut EffectcraftApp, it: &effectcraft_engine::project::Item, id: ItemId, actions: &mut Vec<(String, serde_json::Value)>) {
+fn open_item(app: &mut PulsoApp, it: &pulso_engine::project::Item, id: ItemId, actions: &mut Vec<(String, serde_json::Value)>) {
     match &it.kind {
         ItemKind::Comp(_) => actions.push(("comp.open".into(), json!({"comp": id.0}))),
         ItemKind::Folder if !app.ui.project_open_folders.remove(&id.0) => {
             app.ui.project_open_folders.insert(id.0);
         }
         // Footage (not data) and solids open in the Footage panel.
-        ItemKind::Footage(f) if f.kind != effectcraft_engine::project::FootageKind::Data => actions.push(("footage.open".into(), json!({"item": id.0}))),
+        ItemKind::Footage(f) if f.kind != pulso_engine::project::FootageKind::Data => actions.push(("footage.open".into(), json!({"item": id.0}))),
         ItemKind::Solid(_) => actions.push(("footage.open".into(), json!({"item": id.0}))),
         _ => {}
     }
@@ -828,7 +828,7 @@ struct DropState {
 
 /// Dragging an item or files over the list: drop outlines, moving items into folders, importing
 /// files and the drag ghost.
-fn drop_targets(app: &mut EffectcraftApp, ctx: &egui::Context, lp: &egui::Painter, list: Rect, ds: DropState, actions: &mut Vec<(String, serde_json::Value)>) {
+fn drop_targets(app: &mut PulsoApp, ctx: &egui::Context, lp: &egui::Painter, list: Rect, ds: DropState, actions: &mut Vec<(String, serde_json::Value)>) {
     let t = app.tokens;
     let DropState { dragging, row, hovering } = ds;
     // Dropping a dragged item on the list: into the folder under the pointer (or the folder of
@@ -880,7 +880,7 @@ fn drop_targets(app: &mut EffectcraftApp, ctx: &egui::Context, lp: &egui::Painte
 }
 
 /// The footer: Interpret Footage, New Folder, New Composition, the colour depth and the trash.
-fn footer(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, foot: Rect, actions: &mut Vec<(String, serde_json::Value)>) {
+fn footer(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, foot: Rect, actions: &mut Vec<(String, serde_json::Value)>) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     p.line_segment([foot.left_top(), foot.right_top()], Stroke::new(1.0, t.separator));
@@ -949,10 +949,10 @@ fn footer(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, foot: 
 /// The optional columns of a row (type, size, duration, fps, path, comment). Returns the comment
 /// cell's response so its clicks select the row and open its context menu.
 fn optional_cells(
-    app: &mut EffectcraftApp,
+    app: &mut PulsoApp,
     ui: &mut egui::Ui,
     g: &RowGeom,
-    it: &effectcraft_engine::project::Item,
+    it: &pulso_engine::project::Item,
     cl: &Columns,
     editing: &Option<Editing>,
     actions: &mut Vec<(String, serde_json::Value)>,
@@ -999,7 +999,7 @@ fn optional_cells(
 }
 
 /// Shift+wheel / trackpad over the list scrolls the optional columns sideways.
-fn hscroll_wheel(app: &mut EffectcraftApp, ui: &egui::Ui, list: Rect, overflow: f32) {
+fn hscroll_wheel(app: &mut PulsoApp, ui: &egui::Ui, list: Rect, overflow: f32) {
     if overflow > 0.0 && ui.rect_contains_pointer(list) {
         let (dx, dy, shift) = ui.input(|i| (i.smooth_scroll_delta.x, i.smooth_scroll_delta.y, i.modifiers.shift));
         let d = if dx.abs() > 0.0 {
@@ -1014,7 +1014,7 @@ fn hscroll_wheel(app: &mut EffectcraftApp, ui: &egui::Ui, list: Rect, overflow: 
 }
 
 /// Enter renames the selected item (Project panel focused, not typing).
-fn enter_renames(app: &mut EffectcraftApp, ctx: &egui::Context) {
+fn enter_renames(app: &mut PulsoApp, ctx: &egui::Context) {
     if app.ui.focused == crate::dock::PanelKind::Project
         && app.dialog.is_none()
         && keys_reach_rows(app, ctx)
@@ -1026,7 +1026,7 @@ fn enter_renames(app: &mut EffectcraftApp, ctx: &egui::Context) {
 }
 
 /// The warning marker at the end of the name cell for footage that can't be decoded.
-fn problem_marker(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &RowGeom, name_w: f32, id: ItemId, why: &str) {
+fn problem_marker(app: &mut PulsoApp, ui: &mut egui::Ui, g: &RowGeom, name_w: f32, id: ItemId, why: &str) {
     let t = app.tokens;
     let RowGeom { lp, list, r, .. } = *g;
     let m = Rect::from_center_size(pos2(r.min.x + name_w - 8.0, r.center().y), vec2(13.0, 12.0));
@@ -1037,7 +1037,7 @@ fn problem_marker(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &RowGeom, name
 }
 
 /// Selection box over the rows it touches (#203); Shift or Cmd/Ctrl adds to the selection.
-fn marquee_select(app: &mut EffectcraftApp, ctx: &egui::Context, lp: &egui::Painter, list: Rect, empty: &egui::Response, rows: &[(ItemId, usize)]) {
+fn marquee_select(app: &mut PulsoApp, ctx: &egui::Context, lp: &egui::Painter, list: Rect, empty: &egui::Response, rows: &[(ItemId, usize)]) {
     let t = app.tokens;
     let adding = ctx.input(|i| i.modifiers.shift || i.modifiers.command);
     if empty.clicked() && !adding {
@@ -1086,7 +1086,7 @@ struct RowGeom<'a> {
 
 /// Vertical scrolling: only the rows in view are drawn (and registered), so a project with
 /// thousands of items costs what one screenful does. Returns the scroll offset and its maximum.
-fn update_scroll(app: &mut EffectcraftApp, ui: &egui::Ui, ctx: &egui::Context, list: Rect, rows: &[(ItemId, usize)], moved: Option<ItemId>) -> (f32, f32) {
+fn update_scroll(app: &mut PulsoApp, ui: &egui::Ui, ctx: &egui::Context, list: Rect, rows: &[(ItemId, usize)], moved: Option<ItemId>) -> (f32, f32) {
     let content_h = rows.len() as f32 * ROW_H;
     let max_scroll = (content_h - list.height() + ROW_H).max(0.0);
     if ui.rect_contains_pointer(list) {
@@ -1120,7 +1120,7 @@ fn update_scroll(app: &mut EffectcraftApp, ui: &egui::Ui, ctx: &egui::Context, l
 }
 
 /// The folder's open / close twirl (Alt / Cmd-click twirls every folder inside it too).
-fn folder_twirl(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &RowGeom, it: &effectcraft_engine::project::Item) {
+fn folder_twirl(app: &mut PulsoApp, ui: &mut egui::Ui, g: &RowGeom, it: &pulso_engine::project::Item) {
     let t = app.tokens;
     let RowGeom { r, x0, .. } = *g;
     let open = app.ui.project_open_folders.contains(&it.id.0);
@@ -1152,13 +1152,7 @@ fn folder_twirl(app: &mut EffectcraftApp, ui: &mut egui::Ui, g: &RowGeom, it: &e
 }
 
 /// Proxy indicator: filled = the proxy is used, hollow = set but off. Click to switch.
-fn proxy_indicator(
-    app: &mut EffectcraftApp,
-    ui: &mut egui::Ui,
-    g: &RowGeom,
-    it: &effectcraft_engine::project::Item,
-    actions: &mut Vec<(String, serde_json::Value)>,
-) {
+fn proxy_indicator(app: &mut PulsoApp, ui: &mut egui::Ui, g: &RowGeom, it: &pulso_engine::project::Item, actions: &mut Vec<(String, serde_json::Value)>) {
     let t = app.tokens;
     let RowGeom { lp, list, r, x0 } = *g;
     if let Some(px) = it.proxy.as_ref() {
@@ -1186,10 +1180,10 @@ fn proxy_indicator(
 
 /// The label swatch: click for the label colour menu.
 fn label_swatch(
-    app: &mut EffectcraftApp,
+    app: &mut PulsoApp,
     ui: &mut egui::Ui,
     g: &RowGeom,
-    it: &effectcraft_engine::project::Item,
+    it: &pulso_engine::project::Item,
     label_x: f32,
     selected: bool,
     actions: &mut Vec<(String, serde_json::Value)>,
@@ -1218,7 +1212,7 @@ fn label_swatch(
 /// with selection, Shift/Cmd ranges, keyboard navigation, inline rename, drag-and-drop move,
 /// marquee selection and context menus. Only the rows in view are drawn. File commands are queued
 /// and run through [`crate::menus::invoke`] at the end, with failures shown in `app.ui.status`.
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut PulsoApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().clone();
     let ctx = ui.ctx().clone();
@@ -1347,7 +1341,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
         proxy_indicator(app, ui, &g, it, &mut actions);
         // Footage (or the proxy in use) that can't be decoded (no decoder for its codec /
         // profile): a warning marker at the end of the name cell, the reason on hover.
-        let problem = app.session.footage.item_problem(it).or_else(|| effectcraft_engine::render::missing_item_problem(it));
+        let problem = app.session.footage.item_problem(it).or_else(|| pulso_engine::render::missing_item_problem(it));
         let name_clip =
             Rect::from_min_max(pos2(x0 + 30.0, r.min.y), pos2(r.min.x + name_w + 4.0 - if problem.is_some() { 16.0 } else { 0.0 }, r.max.y)).intersect(list);
         if let Some(why) = &problem {
@@ -1442,7 +1436,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
 }
 
 /// Items a row's menu acts on: the selection when the row is selected, else the row's item.
-fn targets(app: &EffectcraftApp, id: ItemId, selected: bool) -> Vec<u64> {
+fn targets(app: &PulsoApp, id: ItemId, selected: bool) -> Vec<u64> {
     if selected { app.session.state.project_selection.iter().map(|i| i.0).collect() } else { vec![id.0] }
 }
 
@@ -1452,7 +1446,7 @@ fn label_index(l: Label) -> usize {
 }
 
 /// The column header's context menu: show or hide the optional columns.
-fn column_menu(app: &mut EffectcraftApp, resp: &egui::Response) {
+fn column_menu(app: &mut PulsoApp, resp: &egui::Response) {
     crate::widgets::context_menu(resp, |ui| {
         ui.label(egui::RichText::new(crate::i18n::tr("Columns")).weak());
         for (key, label, _) in COLUMNS {
@@ -1476,7 +1470,7 @@ pub fn set_column(cols: &mut Vec<String>, key: &str, on: bool) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use effectcraft_engine::project::{Footage, Project};
+    use pulso_engine::project::{Footage, Project};
 
     struct SizeFiles(std::path::PathBuf);
 
@@ -1484,7 +1478,7 @@ mod tests {
         fn new() -> Self {
             static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
             let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-            let path = std::env::temp_dir().join(format!("effectcraft-size-{}-{n}", std::process::id()));
+            let path = std::env::temp_dir().join(format!("pulso-size-{}-{n}", std::process::id()));
             std::fs::create_dir(&path).unwrap();
             Self(path)
         }
@@ -1509,7 +1503,7 @@ mod tests {
     /// them; a width the user dragged wins.
     #[test]
     fn the_name_column_fits_the_names_up_to_the_panel_width() {
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = PulsoApp::new(pulso_engine::Session::default());
         let rect = Rect::from_min_size(pos2(0.0, 0.0), vec2(700.0, 400.0));
         assert_eq!(layout_columns(&mut app, rect, 0.0).name_w, 260.0);
         assert_eq!(layout_columns(&mut app, rect, 400.0).name_w, 400.0);
@@ -1533,11 +1527,11 @@ mod tests {
 
     #[test]
     fn name_fit_measures_the_longest_listed_name_with_its_indent() {
-        let mut s = effectcraft_engine::Session::default();
+        let mut s = pulso_engine::Session::default();
         let p = std::sync::Arc::make_mut(&mut s.project);
         let folder = p.add_item("F", Label::Aqua, None, ItemKind::Folder);
         let long = p.add_item("A rather long composition name for the list", Label::Aqua, Some(folder), ItemKind::Folder);
-        let app = EffectcraftApp::new(s);
+        let app = PulsoApp::new(s);
         let ctx = egui::Context::default();
         let mut fit = (0.0, 0.0);
         ctx.run_ui(Default::default(), |ui| {
@@ -1664,23 +1658,23 @@ mod tests {
 
     #[test]
     fn folders_sort_with_items_by_name() {
-        let mut p = effectcraft_engine::project::Project::default();
-        let l = effectcraft_engine::color::Label::Yellow;
+        let mut p = pulso_engine::project::Project::default();
+        let l = pulso_engine::color::Label::Yellow;
         p.add_item("Solids", l, None, ItemKind::Folder);
         p.add_item("Precomps", l, None, ItemKind::Folder);
-        p.add_item("EffectCraft Intro", l, None, ItemKind::Folder);
+        p.add_item("Pulso Intro", l, None, ItemKind::Folder);
         let mut kids = p.children(None);
         sort_items(&mut kids, "name", false);
         let names: Vec<&str> = kids.iter().map(|i| i.name.as_str()).collect();
-        assert_eq!(names, ["EffectCraft Intro", "Precomps", "Solids"]);
+        assert_eq!(names, ["Pulso Intro", "Precomps", "Solids"]);
         sort_items(&mut kids, "name", true);
         assert_eq!(kids[0].name, "Solids");
     }
 
     #[test]
     fn drop_targets_and_column_toggles() {
-        let mut p = effectcraft_engine::project::Project::default();
-        let l = effectcraft_engine::color::Label::Yellow;
+        let mut p = pulso_engine::project::Project::default();
+        let l = pulso_engine::color::Label::Yellow;
         let f = p.add_item("F", l, None, ItemKind::Folder);
         let inner = p.add_item("I", l, Some(f), ItemKind::Folder);
         assert_eq!(drop_folder(&p, Some(f)), Some(f));
@@ -1698,17 +1692,17 @@ mod tests {
 mod availability_filter_tests {
     use super::*;
     use crate::state::ProjectStatus;
-    use effectcraft_engine::project::{Footage, Proxy};
+    use pulso_engine::project::{Footage, Proxy};
 
     #[test]
     fn status_and_search_keep_only_matching_items_and_their_folder_ancestors() {
-        let mut s = effectcraft_engine::Session::default();
+        let mut s = pulso_engine::Session::default();
         let p = Arc::make_mut(&mut s.project);
         let folder = p.add_item("Shots", Label::None, None, ItemKind::Folder);
         let missing =
             p.add_item("Lost plate", Label::None, Some(folder), ItemKind::Footage(Footage { path: "/gone.png".into(), missing: true, ..Default::default() }));
         let present = p.add_item("Other plate", Label::None, None, ItemKind::Footage(Footage { path: "/here.png".into(), ..Default::default() }));
-        let mut app = EffectcraftApp::new(s);
+        let mut app = PulsoApp::new(s);
         app.ui.project_status = ProjectStatus::Missing;
         app.ui.project_search = "plate".into();
         assert_eq!(visible_rows(&app), vec![(folder, 0), (missing, 1)]);
@@ -1720,12 +1714,12 @@ mod availability_filter_tests {
 
     #[test]
     fn unused_missing_proxy_is_in_the_missing_filter() {
-        let mut s = effectcraft_engine::Session::default();
+        let mut s = pulso_engine::Session::default();
         let p = Arc::make_mut(&mut s.project);
         let id = p.add_item("Plate", Label::None, None, ItemKind::Footage(Footage { path: "/original.png".into(), ..Default::default() }));
         p.item_mut(id).unwrap().proxy =
             Some(Box::new(Proxy { footage: Footage { path: "/proxy.png".into(), missing: true, ..Default::default() }, enabled: false }));
-        let mut app = EffectcraftApp::new(s);
+        let mut app = PulsoApp::new(s);
         app.ui.project_status = ProjectStatus::Missing;
         assert_eq!(visible_rows(&app), vec![(id, 0)]);
     }

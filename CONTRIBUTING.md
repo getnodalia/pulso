@@ -24,7 +24,7 @@ whose `Libs` line names your system's `libasound` (usually `libasound.so.2`); ev
 that variable set.
 
 ```sh
-cargo run -p effectcraft -- --demo       # the desktop app, with the demo project
+cargo run -p pulso -- --demo       # the desktop app, with the demo project
 cargo test --workspace
 cargo xtask ci                           # what every commit must pass (dev-profile checks and tests)
 ```
@@ -34,7 +34,7 @@ still name the file and line, but a debugger cannot show local variables. For an
 debugger session use the `dev-full` profile, which is the same build with full debug info:
 
 ```sh
-cargo run --profile dev-full -p effectcraft -- --demo
+cargo run --profile dev-full -p pulso -- --demo
 ```
 
 ### Windows
@@ -49,7 +49,7 @@ opening links from the app. With MSYS2:
 ```powershell
 C:\msys64\usr\bin\pacman.exe -S --needed mingw-w64-x86_64-gcc
 $env:PATH = "C:\msys64\mingw64\bin;$env:PATH"
-cargo +stable-x86_64-pc-windows-gnu run -p effectcraft -- --demo
+cargo +stable-x86_64-pc-windows-gnu run -p pulso -- --demo
 ```
 
 An older MinGW earlier on `PATH` can break the build: CodeBlocks' GCC 8.1 fails to link
@@ -105,5 +105,5 @@ rustflags = ["-C", "link-self-contained=yes", "-L", "native=C:/gnu-import-libs"]
 
 ## Talk to us
 
-Questions, ideas and bug reports are welcome on [Discord](https://discord.gg/artcraft) and in
+Questions, ideas and bug reports are welcome on [Discord](https://github.com/getnodalia/pulso/issues) and in
 GitHub issues.

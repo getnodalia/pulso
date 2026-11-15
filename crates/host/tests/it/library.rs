@@ -3,16 +3,16 @@
 
 use std::path::{Path, PathBuf};
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::{GroupKind, LayerId, Node};
-use effectcraft_engine::segment::sha256;
+use pulso_engine::Session;
+use pulso_engine::project::{GroupKind, LayerId, Node};
+use pulso_engine::segment::sha256;
 use serde_json::{Value, json};
 
 use super::plugins::wat_plugin;
 
 /// A fresh folder for one test: the plug-ins folder and the catalog's files.
 fn tmp(name: &str) -> PathBuf {
-    let d = std::env::temp_dir().join(format!("effectcraft-library-{name}-{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("pulso-library-{name}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
     std::fs::create_dir_all(d.join("served")).unwrap();
     d
@@ -26,7 +26,7 @@ fn file_url(p: &Path) -> String {
 
 /// A host session that installs into `dir`.
 fn session(dir: &Path) -> Session {
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     s.plugins_dir = Some(dir.join("Plug-ins"));
     s
 }
@@ -141,7 +141,7 @@ fn a_wrong_checksum_or_a_bad_module_installs_nothing() {
     let e = s.execute("library.install", json!({"id": "org.test.web", "wait": true})).unwrap_err().to_string();
     assert!(e.contains("isn't on GitHub"), "{e}");
     let e = s.execute("library.install", json!({"id": "org.test.future", "wait": true})).unwrap_err().to_string();
-    assert!(e.contains("no release for this EffectCraft"), "{e}");
+    assert!(e.contains("no release for this Pulso"), "{e}");
     assert_eq!(package(&s.execute("library.list", json!({})).unwrap(), "org.test.future")["needsNewerApp"], true);
     let lib = dir.join("Plug-ins").join("Library");
     for id in ["org.test.badsum", "org.test.garbage", "org.test.web"] {

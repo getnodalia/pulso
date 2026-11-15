@@ -4,12 +4,12 @@
 
 use std::sync::Arc;
 
-use effectcraft_geom::{Vec3, vec3};
-use effectcraft_keyframe::Value as KV;
-use effectcraft_project::{Footage, FootageKind, GroupKind, ItemId, Layer, LayerId, LayerSource, LightKind, Project};
-use effectcraft_render::three_d::camera::{is_two_node, layer_frame};
-use effectcraft_render::{EvalCtx, FootageSource, RenderOpts};
-use effectcraft_time::{FrameRate, Tick};
+use pulso_geom::{Vec3, vec3};
+use pulso_keyframe::Value as KV;
+use pulso_project::{Footage, FootageKind, GroupKind, ItemId, Layer, LayerId, LayerSource, LightKind, Project};
+use pulso_render::three_d::camera::{is_two_node, layer_frame};
+use pulso_render::{EvalCtx, FootageSource, RenderOpts};
+use pulso_time::{FrameRate, Tick};
 use serde_json::{Value, json};
 
 use crate::{Importer, Session};
@@ -64,7 +64,7 @@ fn assert_stereo_controls(ctl: &Layer) {
     assert_eq!(ctl.name, "Stereo 3D Controls");
     assert!(!ctl.switches.video);
     let fx = ctl.effects().unwrap().groups().next().unwrap().clone();
-    assert!(matches!(&fx.kind, GroupKind::Effect { effect } if effect == effectcraft_effects::controls::STEREO_CONTROLS));
+    assert!(matches!(&fx.kind, GroupKind::Effect { effect } if effect == pulso_effects::controls::STEREO_CONTROLS));
     assert_eq!(fx.get("sceneDepth").unwrap().value, KV::Scalar(4.0));
 }
 
@@ -75,7 +75,7 @@ fn assert_eye_comp(s: &Session, src: ItemId, ec: ItemId, name: &str, x: f64) {
     assert_eq!((c.width, c.height), (640, 360));
     assert_eq!(c.layers.len(), 2);
     let cam = &c.layers[0];
-    assert!(cam.is_camera() && effectcraft_render::three_d::camera::is_two_node(cam));
+    assert!(cam.is_camera() && pulso_render::three_d::camera::is_two_node(cam));
     assert!(close3(v3(cam, "transform/position"), [x, 180.0, -800.0], 1e-6), "{:?}", v3(cam, "transform/position"));
     // Parallel eyes (no convergence): each looks straight ahead.
     assert!(close3(v3(cam, "transform/poi"), [x, 180.0, 0.0], 1e-6), "{:?}", v3(cam, "transform/poi"));
@@ -382,7 +382,7 @@ fn reexpressed_orientation_preserves_key_count_across_the_whole_property() {
     let orientation = layer_in(&s, cid(&s), light);
     let keys = &orientation.props.prop("transform/orientation").unwrap().keys;
     let last = keys.iter().rev().nth(1).expect("the penultimate key");
-    assert_ne!(last.out_interp, effectcraft_keyframe::Interp::Linear, "the last segment keeps its authored easing");
+    assert_ne!(last.out_interp, pulso_keyframe::Interp::Linear, "the last segment keeps its authored easing");
 }
 
 // ---------------------------------------------------------------- from 3D model
@@ -411,12 +411,12 @@ fn eased_orientation_under_x_parent_keeps_motion_between_keys() {
 struct DiskModels;
 
 impl FootageSource for DiskModels {
-    fn frame(&self, _: ItemId, _: &Footage, _: Tick) -> Option<Arc<effectcraft_raster::Image>> {
+    fn frame(&self, _: ItemId, _: &Footage, _: Tick) -> Option<Arc<pulso_raster::Image>> {
         None
     }
-    fn model(&self, _: ItemId, f: &Footage) -> Option<Arc<effectcraft_model::Model>> {
+    fn model(&self, _: ItemId, f: &Footage) -> Option<Arc<pulso_model::Model>> {
         let bytes = std::fs::read(&f.path).ok()?;
-        effectcraft_model::load(&f.path, &bytes, &|_| None).ok().map(Arc::new)
+        pulso_model::load(&f.path, &bytes, &|_| None).ok().map(Arc::new)
     }
 }
 
@@ -424,7 +424,7 @@ struct ModelImporter;
 
 impl Importer for ModelImporter {
     fn probe(&self, path: &str) -> Result<Footage, String> {
-        effectcraft_model::format_of(path).ok_or("not a model")?;
+        pulso_model::format_of(path).ok_or("not a model")?;
         Ok(Footage { path: path.into(), kind: FootageKind::Model, frame_rate: FrameRate::FPS_30, codec: "glTF".into(), ..Default::default() })
     }
 }
@@ -498,7 +498,7 @@ fn cameras_and_lights_from_model() {
 
 // ---------------------------------------------------------------- environment background
 
-fn px(img: &effectcraft_raster::Image, x: u32, y: u32) -> [f32; 4] {
+fn px(img: &pulso_raster::Image, x: u32, y: u32) -> [f32; 4] {
     img.data[(y * img.width + x) as usize]
 }
 

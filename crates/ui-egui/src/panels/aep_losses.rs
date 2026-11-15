@@ -13,7 +13,7 @@ use egui::vec2;
 use serde_json::{Value, json};
 
 use crate::theme::Tokens;
-use crate::{Dialog, EffectcraftApp};
+use crate::{Dialog, PulsoApp};
 
 /// The conversion waiting on the prompt: its command, params and the dry run's report.
 #[derive(Clone, Debug, Default)]
@@ -27,14 +27,14 @@ pub struct Pending {
 const DETAILS: usize = 3;
 
 /// Whether the prompt is showing with a conversion waiting on it.
-pub fn asking(app: &EffectcraftApp) -> bool {
+pub fn asking(app: &PulsoApp) -> bool {
     app.dialog == Some(Dialog::AepLosses) && app.dialog_state.aep_losses.command.is_some()
 }
 
 /// The projects of a prompt another dialog replaced (Save changes? on quitting) before it was
 /// answered: its import's file, then its queue. Taken, so they are tried again instead of waiting
 /// for an answer that never comes (a replaced export is dropped: it wrote nothing).
-pub fn take_unanswered(app: &mut EffectcraftApp) -> Vec<String> {
+pub fn take_unanswered(app: &mut PulsoApp) -> Vec<String> {
     if app.dialog == Some(Dialog::AepLosses) {
         return Vec::new();
     }
@@ -48,7 +48,7 @@ pub fn take_unanswered(app: &mut EffectcraftApp) -> Vec<String> {
 /// Whether command `id` with `params` needs the prompt first. When it does, the prompt opens
 /// holding the command and the caller must not run it. `Err` when the dry run fails (the file
 /// cannot be read or is not a project), with the message.
-pub fn guard(app: &mut EffectcraftApp, id: &str, params: &Value) -> Result<bool, String> {
+pub fn guard(app: &mut PulsoApp, id: &str, params: &Value) -> Result<bool, String> {
     if !matches!(id, "file.importAep" | "file.exportAep")
         || params.get("allowLosses") == Some(&Value::Bool(true))
         || params.get("dryRun") == Some(&Value::Bool(true))
@@ -92,7 +92,7 @@ pub fn lines(report: &Value) -> Vec<(String, Vec<String>)> {
 
 /// Draw the prompt for the conversion waiting on it: its losses by category, Cancel and Import /
 /// Export Anyway (Escape cancels).
-pub fn show(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
+pub fn show(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
     let Some((id, _, report)) = app.dialog_state.aep_losses.command.clone() else {
         app.dialog = None;
         return;
@@ -141,7 +141,7 @@ pub fn show(app: &mut EffectcraftApp, ctx: &egui::Context, t: &Tokens) {
 
 /// The prompt's answer: Cancel (`false`) drops the conversion, Import / Export Anyway runs it
 /// with `allowLosses`.
-fn finish(app: &mut EffectcraftApp, ctx: &egui::Context, go: bool) {
+fn finish(app: &mut PulsoApp, ctx: &egui::Context, go: bool) {
     let Some((id, params, _)) = app.dialog_state.aep_losses.command.take() else {
         app.dialog = None;
         return;
@@ -188,7 +188,7 @@ mod tests {
     /// showing they are tried at once (a missing file is an error naming it).
     #[test]
     fn projects_wait_only_behind_a_showing_prompt() {
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = PulsoApp::new(pulso_engine::Session::default());
         app.dialog_state.aep_losses.command = Some(("file.importAep".into(), json!({"path": "/a/One.aep"}), json!({})));
         app.dialog = Some(Dialog::AepLosses);
         assert!(crate::menus::import_aep_projects(&mut app, vec!["/no/such/Two.aep".into(), "/no/such/Three.aep".into()]).is_empty());
@@ -205,7 +205,7 @@ mod tests {
     /// import tries its project and queue first, then the new one.
     #[test]
     fn a_replaced_prompt_holds_nothing_back() {
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = PulsoApp::new(pulso_engine::Session::default());
         app.dialog_state.aep_losses.command = Some(("file.importAep".into(), json!({"path": "/no/such/One.aep"}), json!({})));
         app.dialog_state.aep_losses.queue = vec!["/no/such/Two.aep".into()];
         app.dialog = Some(Dialog::UnsavedChanges);
@@ -219,12 +219,12 @@ mod tests {
     /// A new prompt keeps an unanswered one's projects: they wait behind it.
     #[test]
     fn a_new_prompt_keeps_an_unanswered_ones_projects() {
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = PulsoApp::new(pulso_engine::Session::default());
         app.dialog_state.aep_losses.command = Some(("file.importAep".into(), json!({"path": "/a/One.aep"}), json!({})));
         app.dialog_state.aep_losses.queue = vec!["/a/Two.aep".into()];
         app.dialog = Some(Dialog::UnsavedChanges);
         // Rec. 2020 has no After Effects counterpart: exporting asks.
-        std::sync::Arc::make_mut(&mut app.session.project).settings.working_space = Some(effectcraft_engine::color::ColorSpace::Rec2020);
+        std::sync::Arc::make_mut(&mut app.session.project).settings.working_space = Some(pulso_engine::color::ColorSpace::Rec2020);
         let dir = TempDir::new();
         assert_eq!(guard(&mut app, "file.exportAep", &json!({"path": dir.0.join("out.aep").to_string_lossy()})), Ok(true));
         assert_eq!(app.dialog, Some(Dialog::AepLosses));
@@ -233,7 +233,7 @@ mod tests {
 
     #[test]
     fn agents_and_consented_calls_are_not_asked() {
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = PulsoApp::new(pulso_engine::Session::default());
         assert_eq!(guard(&mut app, "file.importAep", &json!({"path": "x.aep", "allowLosses": true})), Ok(false));
         assert_eq!(guard(&mut app, "file.importAep", &json!({"path": "x.aep", "dryRun": true})), Ok(false));
         assert_eq!(guard(&mut app, "file.open", &json!({"path": "x.aep"})), Ok(false));
@@ -247,10 +247,10 @@ mod tests {
     #[test]
     fn cancel_changes_nothing_and_continue_exports_with_the_losses() {
         let ctx = egui::Context::default();
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = PulsoApp::new(pulso_engine::Session::default());
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         // Rec. 2020 has no After Effects counterpart: the export reports it.
-        std::sync::Arc::make_mut(&mut app.session.project).settings.working_space = Some(effectcraft_engine::color::ColorSpace::Rec2020);
+        std::sync::Arc::make_mut(&mut app.session.project).settings.working_space = Some(pulso_engine::color::ColorSpace::Rec2020);
         let dir = TempDir::new();
         let path = dir.0.join("out.aep");
         let params = json!({"path": path.to_string_lossy()});
@@ -266,8 +266,8 @@ mod tests {
 
     #[test]
     fn a_false_consent_still_asks() {
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
-        std::sync::Arc::make_mut(&mut app.session.project).settings.working_space = Some(effectcraft_engine::color::ColorSpace::Rec2020);
+        let mut app = PulsoApp::new(pulso_engine::Session::default());
+        std::sync::Arc::make_mut(&mut app.session.project).settings.working_space = Some(pulso_engine::color::ColorSpace::Rec2020);
         let dir = TempDir::new();
         let params = json!({"path": dir.0.join("out.aep").to_string_lossy(), "allowLosses": false, "dryRun": false});
         assert_eq!(guard(&mut app, "file.exportAep", &params), Ok(true));
@@ -298,15 +298,15 @@ mod tests {
     #[test]
     fn a_lossy_import_asks_and_import_anyway_imports() {
         // The combined effects project of the test corpus (opt-in, the folder named by
-        // `EFFECTCRAFT_AEP_FIXTURES`) has effects outside the importer's table.
-        let path = std::env::var_os("EFFECTCRAFT_AEP_FIXTURES").filter(|d| !d.is_empty()).map(|d| std::path::PathBuf::from(d).join("effects.aep"));
+        // `PULSO_AEP_FIXTURES`) has effects outside the importer's table.
+        let path = std::env::var_os("PULSO_AEP_FIXTURES").filter(|d| !d.is_empty()).map(|d| std::path::PathBuf::from(d).join("effects.aep"));
         let Some(path) = path.filter(|p| p.is_file()) else {
-            assert!(std::env::var_os("EFFECTCRAFT_AEP_FIXTURES_REQUIRED").is_none_or(|v| v.is_empty()), "fixture effects.aep missing");
+            assert!(std::env::var_os("PULSO_AEP_FIXTURES_REQUIRED").is_none_or(|v| v.is_empty()), "fixture effects.aep missing");
             println!("SKIPPED: fixture effects.aep missing");
             return;
         };
         let ctx = egui::Context::default();
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = PulsoApp::new(pulso_engine::Session::default());
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         let params = json!({"path": path.to_string_lossy()});
         assert_eq!(guard(&mut app, "file.importAep", &params), Ok(true));

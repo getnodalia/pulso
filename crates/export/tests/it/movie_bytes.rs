@@ -6,14 +6,14 @@
 //! skipped and before blended pixels were quantised as they were drawn: those changes must not
 //! move a single byte.
 
-use effectcraft_color::{BlendMode, Label};
-use effectcraft_export::render_queue::{OutputFormat, OutputModule, RenderSettings, TimeSpan};
-use effectcraft_export::{Job, Sink, export};
-use effectcraft_keyframe::{Keyframe, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid};
-use effectcraft_render::NoFootage;
-use effectcraft_time::{FrameRate, Tick};
+use pulso_color::{BlendMode, Label};
+use pulso_export::render_queue::{OutputFormat, OutputModule, RenderSettings, TimeSpan};
+use pulso_export::{Job, Sink, export};
+use pulso_keyframe::{Keyframe, Value};
+use pulso_project::build::{self, Ids};
+use pulso_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid};
+use pulso_render::NoFootage;
+use pulso_time::{FrameRate, Tick};
 
 fn fnv1a(data: &[u8]) -> u64 {
     data.iter().fold(0xcbf2_9ce4_8422_2325u64, |h, &b| (h ^ b as u64).wrapping_mul(0x100_0000_01b3))
@@ -94,8 +94,8 @@ fn export_bytes(format: OutputFormat, name: &str) -> Vec<u8> {
 #[test]
 fn h264_movie_bytes_are_pinned() {
     let data = export_bytes(OutputFormat::H264, "/out/pinned.mp4");
-    // FilmCraft 09aaf9b's encoder lists its settings in the first frame's user-data SEI (211
-    // bytes where 0.1.1's name took 50): 161 bytes more than the FilmCraft 2c5ba7a pin. The encoder's
+    // Toma 09aaf9b's encoder lists its settings in the first frame's user-data SEI (211
+    // bytes where 0.1.1's name took 50): 161 bytes more than the Toma 2c5ba7a pin. The encoder's
     // version string "0.8.0" -> "0.12.0" in that SEI adds one more byte (and one to the size fields).
     assert_eq!((data.len(), fnv1a(&data)), (104_342, 17_327_612_315_319_115_693), "H.264 MP4");
 }

@@ -1,15 +1,15 @@
 //! The helper protocol end to end against a fake helper, written in safe Rust with
-//! [`effectcraft_helper_host::serve`]. This binary is both sides: started with
-//! `--effectcraft-helper` it is the helper, otherwise it runs the checks, starting itself as
+//! [`pulso_helper_host::serve`]. This binary is both sides: started with
+//! `--pulso-helper` it is the helper, otherwise it runs the checks, starting itself as
 //! the helper. (`harness = false`: libtest would reject the helper argument.)
 
 use std::io::Write;
 use std::sync::Arc;
 use std::time::Duration;
 
-use effectcraft_effects::plugin::{EffectPlugin, PluginFrame, PluginHost, PluginImage, PluginManifest, PluginParam, PluginParamKind, PluginParams, plugin};
-use effectcraft_helper_host::protocol::{HELPER_ARG, Reply, reply_line};
-use effectcraft_helper_host::serve::{Provider, serve};
+use pulso_effects::plugin::{EffectPlugin, PluginFrame, PluginHost, PluginImage, PluginManifest, PluginParam, PluginParamKind, PluginParams, plugin};
+use pulso_helper_host::protocol::{HELPER_ARG, Reply, reply_line};
+use pulso_helper_host::serve::{Provider, serve};
 
 fn manifest(id: &str, params: Vec<PluginParam>) -> PluginManifest {
     PluginManifest {
@@ -100,7 +100,7 @@ impl EffectPlugin for Fake {
                 let mut junk = vec![0xffu8; 1 << 20];
                 junk.push(b'\n');
                 err.write_all(&junk).map_err(|e| format!("stderr: {e}"))?;
-                // EffectCraft must still be reading.
+                // Pulso must still be reading.
                 std::thread::sleep(Duration::from_millis(300));
                 err.write_all(b"still talking\n").map_err(|e| format!("stderr: {e}"))?;
                 frame.pixels.iter_mut().for_each(|p| *p = [1.0, 0.0, 0.0, 1.0]);
@@ -190,20 +190,20 @@ fn run_checks() -> bool {
         Err(e) => return check("current exe", false, e),
     };
     let state = std::env::temp_dir().join(format!("ec-fake-helper-state-{}", std::process::id()));
-    effectcraft_helper_host::blocklist::set_state_dir(state.clone());
+    pulso_helper_host::blocklist::set_state_dir(state.clone());
     let mut all = true;
 
     // Discovery + describe.
-    let r = effectcraft_helper_host::scan_paths(std::slice::from_ref(&exe), false);
+    let r = pulso_helper_host::scan_paths(std::slice::from_ref(&exe), false);
     let loaded = r["loaded"].as_array().map_or(0, Vec::len);
     all &= check("scan registers the helper's effects", loaded == 6, &r);
     all &= check("helper warnings are reported", r["errors"].to_string().contains("a warning"), &r);
     all &= check(
         "a second scan doesn't start it twice",
-        effectcraft_helper_host::scan_paths(std::slice::from_ref(&exe), false)["helpers"].as_array().is_some_and(Vec::is_empty),
+        pulso_helper_host::scan_paths(std::slice::from_ref(&exe), false)["helpers"].as_array().is_some_and(Vec::is_empty),
         "",
     );
-    let list = effectcraft_helper_host::list();
+    let list = pulso_helper_host::list();
     all &= check("list names the helper", list["helpers"][0]["name"] == "Fake" && list["helpers"][0]["running"] == true, &list);
 
     // Plain render through the exchange file.
@@ -252,7 +252,7 @@ fn run_checks() -> bool {
     let r = render("org.test.helper.invert", &mut px, 2, 2, 1.0, false);
     all &= check("the helper restarts for the next render", r.is_ok() && px[0][0] == 1.0, &r);
     // A render that starts the stopped helper itself (no padding request first) succeeds.
-    effectcraft_helper_host::stop_all();
+    pulso_helper_host::stop_all();
     let r = plugin("org.test.helper.invert").ok_or("invert is not registered").and_then(|p| {
         let m = p.manifest().clone();
         let mut px = vec![[0.0, 0.0, 0.0, 1.0]; 4];
@@ -270,10 +270,10 @@ fn run_checks() -> bool {
     let r = render("org.test.helper.crash", &mut vec![[0.0; 4]; 4], 2, 2, 1.0, false);
     all &= check("repeat offenders are blocked", r.as_ref().is_err_and(|e| e.contains("turned off")), &r);
     all &= check("the block list is saved", std::fs::read_to_string(state.join("helper_blocklist.txt")).is_ok_and(|t| t.contains("org.test.helper.crash")), "");
-    let r = effectcraft_helper_host::scan_paths(&[], true);
-    all &= check("retry clears the block list", !effectcraft_helper_host::blocklist::is_blocked("org.test.helper.crash"), &r);
+    let r = pulso_helper_host::scan_paths(&[], true);
+    all &= check("retry clears the block list", !pulso_helper_host::blocklist::is_blocked("org.test.helper.crash"), &r);
 
-    // A hang is cut off by the timeout, also while EffectCraft is writing to a helper that
+    // A hang is cut off by the timeout, also while Pulso is writing to a helper that
     // stopped reading.
     let t0 = std::time::Instant::now();
     let r = render("org.test.helper.hang", &mut vec![[0.0; 4]; 4], 2, 2, 1.0, false);
@@ -289,12 +289,11 @@ fn run_checks() -> bool {
     let starts: Vec<_> = (0..4).map(|_| render("org.test.helper.invert", &mut vec![[0.0; 4]; 4], 2, 2, 1.0, false)).collect();
     all &= check(
         "a helper that can't start doesn't block the effect",
-        starts.iter().all(|r| r.as_ref().is_err_and(|e| e.contains("keeps stopping")))
-            && !effectcraft_helper_host::blocklist::is_blocked("org.test.helper.invert"),
+        starts.iter().all(|r| r.as_ref().is_err_and(|e| e.contains("keeps stopping"))) && !pulso_helper_host::blocklist::is_blocked("org.test.helper.invert"),
         &starts,
     );
 
-    effectcraft_helper_host::stop_all();
+    pulso_helper_host::stop_all();
     let _ = std::fs::remove_dir_all(&state);
     all
 }
@@ -320,7 +319,7 @@ fn main() {
         return;
     }
     // Keep the hang check short.
-    effectcraft_helper_host::client::set_render_timeout(Duration::from_secs(3));
+    pulso_helper_host::client::set_render_timeout(Duration::from_secs(3));
     if !run_checks() {
         std::process::exit(1);
     }

@@ -56,7 +56,7 @@ the 168 live AE samples.
 ## Auto-Bezier spatial tangents
 
 Measured on 10 October 2026 with After Effects 2026 (26.3) by running the original
-`examples/ae-spatial-tangents.jsx` in both hosts (`AfterFX.exe -r` and `effectcraft-cli script`):
+`examples/ae-spatial-tangents.jsx` in both hosts (`AfterFX.exe -r` and `pulso-cli script`):
 three original Position paths, ten keys, with even and uneven key timing. The script pins spatial
 interpolation to auto-Bezier, since an AE preference can default new keys to linear.
 
@@ -129,12 +129,12 @@ Paths: a plain rectangle starts at its top-right corner and runs clockwise (0–
 edge and 50 px of the bottom); with Roundness 40 it starts where the top-right arc meets the right
 edge. Start 70 / End 30 draws 30–70 %. Pulso started at the top-left corner (and the rounded
 rectangle elsewhere), so trimmed rectangles drew the wrong segment (86 of 5184 grid points off,
-now 5 at stroke edges). `effectcraft_path::rect` now draws AE's order, which also gives Convert to
+now 5 at stroke edges). `pulso_path::rect` now draws AE's order, which also gives Convert to
 Bezier AE's vertex order. Regression test: `rectangles_start_where_after_effects_starts_them`.
 
 ## Still unmeasured
 
-Rendered frame comparisons now have a deterministic `effectcraft_effects::fidelity::compare_frames`
+Rendered frame comparisons now have a deterministic `pulso_effects::fidelity::compare_frames`
 helper. Corpus runners can use it with locally generated host/reference frames and fail on either a
 mean or maximum channel error without committing proprietary renders.
 

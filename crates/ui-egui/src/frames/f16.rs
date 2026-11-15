@@ -2,10 +2,10 @@
 //! rendered frame's full range, without the HDR step, so viewer exposure, Compand / Tone Map and
 //! the display colour run on it in the display pass (`crate::display_gpu`), in that order.
 
-use effectcraft_engine::render::Image;
-use effectcraft_engine::viewer::{DisplayPass, FrameEncoding};
 use half::f16;
 use half::slice::{HalfBitsSliceExt, HalfFloatSliceExt};
+use pulso_engine::render::Image;
+use pulso_engine::viewer::{DisplayPass, FrameEncoding};
 use rayon::prelude::*;
 
 /// Values converted per piece: 16 KB of input, so the piece stays in L1 while its non-finite

@@ -1,6 +1,6 @@
 use super::*;
 
-impl EffectcraftApp {
+impl PulsoApp {
     /// The size of the viewer frame's texture (CPU frames; fitted to the GPU's texture limit).
     pub fn viewer_texture_size(&self) -> Option<[usize; 2]> {
         self.viewer_tex.as_ref().map(|(t, _, _)| t.size())
@@ -16,7 +16,7 @@ impl EffectcraftApp {
         if self.viewer_image.is_none()
             && let Some(f) = &self.viewer_f16
         {
-            let pass = effectcraft_engine::viewer::DisplayPass::new(effectcraft_engine::viewer::Channel::Rgb, false, 0.0, f.encoding, None);
+            let pass = pulso_engine::viewer::DisplayPass::new(pulso_engine::viewer::Channel::Rgb, false, 0.0, f.encoding, None);
             self.viewer_image = Some(Arc::new(f.to_color_image(&pass)));
         }
         let to_image = |bytes: Vec<u8>, w: u32, h: u32| {
@@ -144,7 +144,7 @@ impl EffectcraftApp {
 
     /// The frame series a preview with options `o` plays: at its Resolution, or the one the
     /// viewer shows with Auto (it follows the zoom). The Preview panel's cache bar counts it.
-    pub fn preview_series(&self, comp: ItemId, o: &effectcraft_engine::preview::PreviewPreset) -> FrameKey {
+    pub fn preview_series(&self, comp: ItemId, o: &pulso_engine::preview::PreviewPreset) -> FrameKey {
         match o.resolution.factor(o.custom_resolution) {
             Some(n) => self.frame_series(comp, 1.0 / f64::from(n)),
             None => self.shown_series(comp),
@@ -207,7 +207,7 @@ impl EffectcraftApp {
             draft: self.ui.viewer.fast_preview || draft,
             view: self.session.view_camera(comp),
             roi,
-            backend: effectcraft_engine::render::Backend::Auto,
+            backend: pulso_engine::render::Backend::Auto,
             nested_switches: self.session.prefs.general.switches_affect_nested_comps,
             draft_shadows: self.session.prefs.three_d.realtime_shadows,
             // 32 bpc: half-float frames without the HDR step; the display pass applies it after

@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use crate::{Services, Session};
-use effectcraft_project::{Footage, FootageKind, ItemId, ItemKind, Project};
+use pulso_project::{Footage, FootageKind, ItemId, ItemKind, Project};
 
 #[derive(Clone, PartialEq)]
 pub(crate) struct Source {
@@ -272,7 +272,7 @@ impl Update {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use effectcraft_project::Proxy;
+    use pulso_project::Proxy;
     use serde_json::json;
     use std::sync::{
         Mutex,

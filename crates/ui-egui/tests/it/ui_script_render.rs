@@ -5,10 +5,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, TryRecvError};
 use std::time::{Duration, Instant};
 
-use effectcraft_engine::project::render_queue::OutputFormat;
-use effectcraft_engine::{ExportJob, ExportResult, Exporter};
-use effectcraft_ui_egui::{ControlRequest, EffectcraftApp};
 use egui_kittest::Harness;
+use pulso_engine::project::render_queue::OutputFormat;
+use pulso_engine::{ExportJob, ExportResult, Exporter};
+use pulso_ui_egui::{ControlRequest, PulsoApp};
 use serde_json::{Value, json};
 
 struct Gate(AtomicBool);
@@ -20,7 +20,7 @@ impl Exporter for Gate {
         let end = Instant::now() + Duration::from_secs(3);
         while !self.0.load(Ordering::SeqCst) {
             if !progress(0, 10) {
-                return Err(effectcraft_engine::render_queue::CANCELLED.into());
+                return Err(pulso_engine::render_queue::CANCELLED.into());
             }
             if Instant::now() > end {
                 return Err("test exporter waited for a blocked UI".into());
@@ -31,16 +31,16 @@ impl Exporter for Gate {
     }
 }
 
-fn harness() -> (Harness<'static, EffectcraftApp>, Arc<Gate>, std::sync::mpsc::Sender<ControlRequest>) {
+fn harness() -> (Harness<'static, PulsoApp>, Arc<Gate>, std::sync::mpsc::Sender<ControlRequest>) {
     let gate = Arc::new(Gate(AtomicBool::new(false)));
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     s.exporter = Some(gate.clone());
     s.prefs.auto_save.enabled = false;
     s.execute("comp.new", json!({"width": 16, "height": 16, "duration": 1})).unwrap();
     let path = std::env::temp_dir().join(format!("ec-ui-script-render-{}.mp4", std::process::id()));
     s.execute("renderQueue.add", json!({"output": path.to_string_lossy()})).unwrap();
     let (tx, rx) = std::sync::mpsc::channel();
-    let h = Harness::builder().with_size(egui::vec2(1000.0, 700.0)).build_eframe(|_| EffectcraftApp::new(s).with_control(rx));
+    let h = Harness::builder().with_size(egui::vec2(1000.0, 700.0)).build_eframe(|_| PulsoApp::new(s).with_control(rx));
     (h, gate, tx)
 }
 
@@ -50,7 +50,7 @@ fn send(tx: &std::sync::mpsc::Sender<ControlRequest>, method: &str, params: Valu
     reply
 }
 
-fn finish(h: &mut Harness<'_, EffectcraftApp>, reply: &Receiver<Value>) -> Value {
+fn finish(h: &mut Harness<'_, PulsoApp>, reply: &Receiver<Value>) -> Value {
     let end = Instant::now() + Duration::from_secs(4);
     loop {
         h.run_steps(1);
@@ -173,7 +173,7 @@ fn malformed_waiting_render_params_return_an_error() {
     assert!(!h.state().session.is_rendering());
 }
 
-fn wait_worker(h: &Harness<'_, EffectcraftApp>) {
+fn wait_worker(h: &Harness<'_, PulsoApp>) {
     let end = Instant::now() + Duration::from_secs(4);
     while h.state().session.is_rendering() {
         assert!(Instant::now() < end, "render worker did not finish");
@@ -183,7 +183,7 @@ fn wait_worker(h: &Harness<'_, EffectcraftApp>) {
 
 #[test]
 fn direct_render_reply_keeps_its_items_after_queue_removal_and_a_new_render() {
-    use effectcraft_ui_egui::control::{Outcome, handle};
+    use pulso_ui_egui::control::{Outcome, handle};
 
     for no_running_jobs in [false, true] {
         let (mut h, gate, _tx) = harness();
@@ -245,7 +245,7 @@ fn completed_direct_render_reply_is_not_delayed_by_a_later_script_render() {
 
 #[test]
 fn replacing_project_before_render_poll_returns_an_explicit_error() {
-    use effectcraft_ui_egui::control::{Outcome, handle};
+    use pulso_ui_egui::control::{Outcome, handle};
 
     let (mut h, gate, _tx) = harness();
     let request = ControlRequest::new("engine.execute", json!({"command": "renderQueue.render"})).0;

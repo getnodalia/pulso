@@ -4,12 +4,12 @@
 
 use std::path::{Path, PathBuf};
 
-use effectcraft_color::{ColorSpace, Conversion, Label};
-use effectcraft_export::render_queue::{Channels, OutputFormat, OutputModule, RenderSettings, TimeSpan};
-use effectcraft_export::{Job, export};
-use effectcraft_project::{BitDepth, Comp, HdrMode, ItemId, ItemKind, LayerSource, Project, Solid, build};
-use effectcraft_render::NoFootage;
-use effectcraft_time::{FrameRate, Tick};
+use pulso_color::{ColorSpace, Conversion, Label};
+use pulso_export::render_queue::{Channels, OutputFormat, OutputModule, RenderSettings, TimeSpan};
+use pulso_export::{Job, export};
+use pulso_project::{BitDepth, Comp, HdrMode, ItemId, ItemKind, LayerSource, Project, Solid, build};
+use pulso_render::NoFootage;
+use pulso_time::{FrameRate, Tick};
 
 const W: u32 = 48;
 const H: u32 = 16;
@@ -17,7 +17,7 @@ const H: u32 = 16;
 const BANDS: [[f32; 3]; 3] = [[0.2, 0.5, 0.9], [0.85, 0.9, 0.95], [4.0, 2.0, 0.5]];
 
 fn out_dir(name: &str) -> PathBuf {
-    let d = std::env::temp_dir().join(format!("effectcraft-exr-scene-{}-{name}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("pulso-exr-scene-{}-{name}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
     std::fs::create_dir_all(&d).expect("mkdir");
     d
@@ -64,8 +64,8 @@ fn half_project(depth: BitDepth, hdr: HdrMode, ws: Option<ColorSpace>, linearize
     let w = W / 3 * 2;
     let sid = p.add_item("Half", Label::Red, None, ItemKind::Solid(Solid { color: HALF, width: w, height: H, pixel_aspect: 1.0 }));
     let mut l = build::layer(&mut p, &comp, "Half", LayerSource::Solid { item: sid }, (w, H), None);
-    l.props.prop_mut("transform/position").expect("position").value = effectcraft_keyframe::Value::Vec3([w as f64 / 2.0, H as f64 / 2.0, 0.0]);
-    l.props.prop_mut("transform/opacity").expect("opacity").value = effectcraft_keyframe::Value::Scalar(50.0);
+    l.props.prop_mut("transform/position").expect("position").value = pulso_keyframe::Value::Vec3([w as f64 / 2.0, H as f64 / 2.0, 0.0]);
+    l.props.prop_mut("transform/opacity").expect("opacity").value = pulso_keyframe::Value::Scalar(50.0);
     comp.layers.push(l);
     let cid = p.add_item("Comp 1", Label::Sandstone, None, ItemKind::Comp(comp.into()));
     (p, cid)
@@ -378,7 +378,7 @@ fn exr_holds_scene_linear_values_in_output_primaries() {
             // Linearized Rec. 2020 working space, sRGB output.
             (ColorSpace::Rec2020, ColorSpace::Srgb, Conversion::new(ColorSpace::Rec2020, false, ColorSpace::Srgb, true).expect("matrix").apply(band)),
             // Linearized sRGB in and out.
-            (ColorSpace::Srgb, ColorSpace::Srgb, band.map(effectcraft_color::srgb_to_linear)),
+            (ColorSpace::Srgb, ColorSpace::Srgb, band.map(pulso_color::srgb_to_linear)),
         ];
         for (ws, out, want) in cases {
             let (p, cid) = project(BitDepth::Bpc32, mode, Some(ws), true, Some(out));
@@ -414,14 +414,14 @@ fn exr_decodes_with_the_output_curve() {
     let [_, _, band] = BANDS;
     // A linearized sRGB working space (same primaries as Rec. 709): the authored colour, decoded.
     let (p, cid) = project(BitDepth::Bpc32, HdrMode::Clip, Some(ColorSpace::Srgb), true, Some(ColorSpace::Rec709));
-    assert_near(exr_centre(&p, cid, "curve-709"), band.map(effectcraft_color::srgb_to_linear), "Rec. 709 output");
+    assert_near(exr_centre(&p, cid, "curve-709"), band.map(pulso_color::srgb_to_linear), "Rec. 709 output");
     // Unmanaged at 2.4: the solid's colour is encoded with the 2.4 power curve.
     let (mut p, cid) = project(BitDepth::Bpc32, HdrMode::Clip, None, false, None);
     p.settings.working_gamma = 2.4;
     assert_near(exr_centre(&p, cid, "curve-gamma24"), band.map(|v| v.powf(2.4)), "Working Gamma 2.4");
     // Working Gamma 2.2 keeps the sRGB curve.
     let (p, cid) = project(BitDepth::Bpc32, HdrMode::Clip, None, false, None);
-    assert_near(exr_centre(&p, cid, "curve-gamma22"), band.map(effectcraft_color::srgb_to_linear), "Working Gamma 2.2");
+    assert_near(exr_centre(&p, cid, "curve-gamma22"), band.map(pulso_color::srgb_to_linear), "Working Gamma 2.2");
 }
 
 /// The `chromaticities` attribute of an EXR file: red, green, blue, white (CIE xy), or `None`.

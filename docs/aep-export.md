@@ -36,10 +36,10 @@ by the crate (After Effects accepts a file without one too).
 
 ```text
 Pulso Project --plan--> ProjectPlan (file units, losses reported)
-                    --emit--> chunk tree built in code --effectcraft_aep::write--> bytes
+                    --emit--> chunk tree built in code --pulso_aep::write--> bytes
 ```
 
-Where it lives: the `export` module of `crates/aep` (`effectcraft_aep::export`, **L3**, next to the importer; no file
+Where it lives: the `export` module of `crates/aep` (`pulso_aep::export`, **L3**, next to the importer; no file
 access of its own, builds for wasm32). The command wrapper is in `crates/engine/src/cmd/aep.rs`.
 API: `export(&Project, &ExportOptions) -> Result<ExportResult { bytes, report }, AepExportError>` and
 the dry run `analyze(&Project) -> ExportReport`. A refused or failed export writes nothing.
@@ -53,7 +53,7 @@ the dry run `analyze(&Project) -> ExportReport`. A refused or failed export writ
   losses to export anyway`. With `allowLosses: true` it writes the file and returns the same report.
 - `dryRun: true` returns only the report. The result is `{path, bytes, report}`. The path is
   confined like every other file-writing command (`crates/automation/src/confine.rs`). From the
-  shell: `effectcraft-cli exec file.exportAep '{"path":"out.aep","allowLosses":true}' in.ecproj --json`.
+  shell: `pulso-cli exec file.exportAep '{"path":"out.aep","allowLosses":true}' in.ecproj --json`.
 
 ## What is exported
 
@@ -69,7 +69,7 @@ the dry run `analyze(&Project) -> ExportReport`. A refused or failed export writ
 | Precompositions | a composition shown as a layer of another: the layer's source is the composition item, the using composition lists each composition it shows once (`idpi`); the anchor is a fraction of the composition's size; precompositions nest to any depth, a loop is reported |
 | Text | point and box text: the text (paragraphs, CR / LF / CRLF as After Effects' CR), per paragraph the justification (left, right, centre and the four justified variants, codes 3-6), first-line / start / end indent, space before / after, hanging punctuation, composer and direction (paragraph slots `/1`-`/5`, `/21`, `/29`, `/33`), per style run the font (PostScript name), size, fill and stroke colour, tracking, automatic or explicit leading, faux bold and italic, all caps and small caps, horizontal / vertical scale, baseline shift, automatic kerning (metrics, optical, none), ligatures, tsume, whether fill and stroke are drawn, stroke width and stroke over fill (style slots `/6`, `/7`, `/9`, `/11`, `/18`, `/36`, `/56`-`/58`, `/63`, as the importer decodes them, 538-569; written only where they differ from the prototype; read back in After Effects, R43), the justification of a right-to-left paragraph relative to its direction (R43), superscript and subscript (style slot `/13`: normal text is written 0, 527; the prototypes and After Effects' scripted default hold 1 = superscript, drawn at 58.3 % size, 526); the box; the anchor in pixels; the name only when it is not the text's first line; text animators: Anchor Point, Position, Scale, Skew, Skew Axis, Rotation, Opacity, Fill / Stroke Color, Stroke Width, Tracking, Line Spacing, Blur, Character Offset with keys and expressions, range selectors (Start / End / Offset in percent or index units, Units, Based On, Mode, Amount, Shape, Smoothness, Ease High / Low, Randomize Order, Random Seed; R48) |
 | Footage | png, jpeg, OpenEXR, TIFF, Targa, (flat) Photoshop, Illustrator and EPS stills, png, OpenEXR and jpeg sequences, mp4 and mov clips (also conformed to another rate, R38), WAV audio: the path (a sequence's folder and numbering), size, duration, native frame rate, the name (none stored when it is the file's, as After Effects does); After Effects re-reads everything else from the file when it opens the project |
-| Effects | every effect of the table the importer reads (`effectcraft_aep::effect_map`, one table for both directions): Tint, Gradient Ramp, Exposure, Invert, Fast Box Blur, Gaussian Blur, Drop Shadow, Timewarp, Glow, Fill, Hue/Saturation (master and colorize), Levels (RGB), Directional Blur, Radial Blur, CC Radial Blur, Venetian Blinds, Channel Blur, Black & White, Tritone, Luma Key, Simple Choker, Matte Choker, Transform, Brightness & Contrast, Turbulent Displace, Fractal Noise, Beam, CC Radial Fast Blur, Noise, Levels (Individual Controls), Corner Pin, Grid, Sharpen, Linear Color Key, Radial Wipe, Remove Color Matting, CC Bend It, CC Power Pin, 4-Color Gradient, Change Color, Extract, Noise HLS, Scatter, CC Light Sweep, Compound Blur, Displacement Map, Set Matte, Gaussian Blur (Legacy), Pixel Motion Blur and the Slider, Angle, Checkbox, Color, Point and Layer expression controls: the instance name, every parameter that differs from its default (colours, points, fixed, integer and float sliders, angles, popups by item name, checkboxes, layer parameters: the `tdpi` of their always-present record holds the owning layer's id by default, 0 for None (Pulso's unset Layer Control, or the explicit `NO_LAYER` of the other effects), or the named layer's id, 320 / 321 / 904; Layer Control's companion source choice is not reported (After Effects has none for it); the 27 effects of batch 6 (903-905) and the Layer Control are written from prototypes but not yet read back in After Effects), expressions on parameters, Hue/Saturation's master values and Levels' RGB values (arbitrary data), keys on colours, points and fixed / float sliders (time, linear / bezier / hold, the ease of sliders and points, labels), in stack order, several instances of a type per layer and per project (R24-R27, R45) |
+| Effects | every effect of the table the importer reads (`pulso_aep::effect_map`, one table for both directions): Tint, Gradient Ramp, Exposure, Invert, Fast Box Blur, Gaussian Blur, Drop Shadow, Timewarp, Glow, Fill, Hue/Saturation (master and colorize), Levels (RGB), Directional Blur, Radial Blur, CC Radial Blur, Venetian Blinds, Channel Blur, Black & White, Tritone, Luma Key, Simple Choker, Matte Choker, Transform, Brightness & Contrast, Turbulent Displace, Fractal Noise, Beam, CC Radial Fast Blur, Noise, Levels (Individual Controls), Corner Pin, Grid, Sharpen, Linear Color Key, Radial Wipe, Remove Color Matting, CC Bend It, CC Power Pin, 4-Color Gradient, Change Color, Extract, Noise HLS, Scatter, CC Light Sweep, Compound Blur, Displacement Map, Set Matte, Gaussian Blur (Legacy), Pixel Motion Blur and the Slider, Angle, Checkbox, Color, Point and Layer expression controls: the instance name, every parameter that differs from its default (colours, points, fixed, integer and float sliders, angles, popups by item name, checkboxes, layer parameters: the `tdpi` of their always-present record holds the owning layer's id by default, 0 for None (Pulso's unset Layer Control, or the explicit `NO_LAYER` of the other effects), or the named layer's id, 320 / 321 / 904; Layer Control's companion source choice is not reported (After Effects has none for it); the 27 effects of batch 6 (903-905) and the Layer Control are written from prototypes but not yet read back in After Effects), expressions on parameters, Hue/Saturation's master values and Levels' RGB values (arbitrary data), keys on colours, points and fixed / float sliders (time, linear / bezier / hold, the ease of sliders and points, labels), in stack order, several instances of a type per layer and per project (R24-R27, R45) |
 | Layer styles | the nine styles and Blending Options (Fill Opacity, channel switches, Blend Interior, Blend Ranges; the composition's Global Light on every styled layer) on solid, footage, precomposition, text and shape layers: a record for every parameter that differs from After Effects' default, keys on scalars, expressions (R51) |
 | Track mattes | alpha, alpha inverted, luma, luma inverted, with any exported layer of the composition as the matte (R39) |
 | Markers | composition and layer markers: time, duration, comment, chapter, URL, frame target, cue point (event or navigation, name, parameters), label (R40) |
@@ -209,7 +209,7 @@ AE re-save of the same file differed.
 | `y3` | 300 layers x 20 keys, 50 fps | 300 layers | not run |
 | `x0` | empty project | opens, the `Solids` folder only | not run |
 | `x7` | no layers, an empty folder, duplicate names, a project folder named `Solids` with two solids, a one-frame composition | 8 items, one `Solids` folder with the two solids and the hidden null solid, duplicate names kept | not run |
-| `cli1` | written by `effectcraft-cli run --empty comp.new layer.newSolid layer.newNull prop.addKey ... file.exportAep` (the command path itself) | solid + null layer, Position and Rotation keys, expression `wiggle(1,20)` | not run |
+| `cli1` | written by `pulso-cli run --empty comp.new layer.newSolid layer.newNull prop.addKey ... file.exportAep` (the command path itself) | solid + null layer, Position and Rotation keys, expression `wiggle(1,20)` | not run |
 | `z1` | 6 rates, 6 compositions, folder, 100 character and umlaut solid names, nulls, keys, expressions | 6 rates, durations, 16 items | identical (only noise) |
 | `objects\o1` | shape layer (groups, rect, ellipse, path, fills, stroke, group transforms), luma track matte, layer and composition markers, two-node camera, spot and point light | every value read back (READBACK.md there); shapes render identical to Pulso but for edges, the lit 3D card the same geometry with Pulso a little brighter | camera / light transform sets rebuilt, marker session bytes filled |
 | `stretch\s2` | three solids moving with two linear Position keys each, stretched 200 %, 50 % and 150 % from 0.4 s | key times in comp time 0 / 4, 0 / 2, 1.9 / 4.9 s; renders identical to Pulso at 1, 2, 3, 4.5 s (max 1 level) | not run |
@@ -256,17 +256,17 @@ difference.
 ## How fidelity is checked in this repository
 
 - `crates/aep/tests/it/export/built.rs`: projects built in code are exported and parsed back with
-  `effectcraft-aep`; every exported field of the composition header, the layer header, the solids,
+  `pulso-aep`; every exported field of the composition header, the layer header, the solids,
   the Transform values, the keys (time, interpolation, value) and the expressions is compared; the
   container is consistent (writes back byte for byte); the report, the refusal and the JSON round
   trip; the output is deterministic; an export holds no local data.
-- `crates/aep/tests/it/export/roundtrip.rs`: every case of the corpus (opt-in, `EFFECTCRAFT_AEP_FIXTURES`) is imported,
+- `crates/aep/tests/it/export/roundtrip.rs`: every case of the corpus (opt-in, `PULSO_AEP_FIXTURES`) is imported,
   exported and imported again; the two imported projects are equal for the exported subset (more
   than 100 compositions, masks included).
 - `crates/aep/tests/it/export/masks.rs`: masks built in code (all seven modes, inverted, feather,
   opacity, expansion, open path and hexagon with tangents, path keys with hold and label, feather
   keys with per-dimension ease, a 400 x 300 source) are exported and parsed back with
-  `effectcraft-aep` (name, mode, invert, counter, values with their default/stored state, vertices
+  `pulso-aep` (name, mode, invert, counter, values with their default/stored state, vertices
   and tangents in pixels, the box, open bit, key records), then imported and compared field by
   field; every mask fixture goes through import, export and import; what cannot be written is
   reported; hostile masks (70 000 vertices, a single point, a line, a lopsided path, 1e300, a

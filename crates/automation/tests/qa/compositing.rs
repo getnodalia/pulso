@@ -185,7 +185,7 @@ fn alpha_renders(qa: &mut Qa, stage: &Value) {
     let refa = alpha_frame(qa, stage.clone());
     assert!(px(&refa, 2, 2)[3] < 40 && px(&refa, 50, 45)[3] == 255, "render_frame transparent keeps alpha: {:?} {:?}", px(&refa, 2, 2), px(&refa, 50, 45));
     // ProRes 4444 carries alpha in the frame; WebM VP9 as a second VP9 stream in BlockAdditions
-    // (AlphaMode 1), which FilmCraft's Matroska reader decodes into the frame's alpha plane.
+    // (AlphaMode 1), which Toma's Matroska reader decodes into the frame's alpha plane.
     for path in [mov, webm] {
         let r = qa.exec("file.import", json!({"paths": [path]}));
         assert_eq!(r["errors"], json!([]));
@@ -213,6 +213,6 @@ fn compositing_matte_blend_adjustment_3d_and_alpha_renders() {
 
 fn alpha_frame(qa: &mut Qa, comp: Value) -> Img {
     let c = qa.try_tool("render_frame", json!({"comp": comp, "time": 0, "max_side": 0, "transparent": true})).unwrap();
-    let png = effectcraft_automation::base64::decode(c[0]["data"].as_str().unwrap()).unwrap();
+    let png = pulso_automation::base64::decode(c[0]["data"].as_str().unwrap()).unwrap();
     image::load_from_memory(&png).unwrap().to_rgba8()
 }

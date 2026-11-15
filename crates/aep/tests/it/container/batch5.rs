@@ -2,7 +2,7 @@
 //! durations, 509 and 510).
 
 use crate::container::helpers::{first_comp, open};
-use effectcraft_aep::Project;
+use pulso_aep::Project;
 
 #[test]
 fn two_composition_markers_in_time_order_with_label_and_duration() {
@@ -37,7 +37,7 @@ fn shape_value(name: &str, path: &[&str]) -> Option<Option<Vec<f64>>> {
         let comp = first_comp(&project);
         let layer = comp.layers().next().expect("S");
         match layer.properties()?.find(path)? {
-            effectcraft_aep::PropNode::Property(p) => p.static_value(),
+            pulso_aep::PropNode::Property(p) => p.static_value(),
             _ => None,
         }
     })
@@ -89,13 +89,13 @@ fn shape_values_are_stored_as_shown() {
         let project = Project::new(&file).expect("project");
         let comp = first_comp(&project);
         let layer = comp.layers().next().expect("S");
-        let Some(effectcraft_aep::PropNode::Group(g)) = layer.properties().and_then(|p| p.find(&at(&["ADBE Vectors Group", item]))) else { panic!("{item}") };
-        assert!(g.entries().iter().all(|e| !matches!(e.node, effectcraft_aep::PropNode::Property(p) if p.flags() == Some(1))), "{item} has a value record");
+        let Some(pulso_aep::PropNode::Group(g)) = layer.properties().and_then(|p| p.find(&at(&["ADBE Vectors Group", item]))) else { panic!("{item}") };
+        assert!(g.entries().iter().all(|e| !matches!(e.node, pulso_aep::PropNode::Property(p) if p.flags() == Some(1))), "{item} has a value record");
     }
 }
 
 /// The baseline option of the first style run of the first text layer.
-fn script_of(name: &str) -> Option<effectcraft_aep::FontBaseline> {
+fn script_of(name: &str) -> Option<pulso_aep::FontBaseline> {
     Some({
         let bytes = crate::common::try_fixture(name)?;
         let file = open(&bytes);
@@ -110,7 +110,7 @@ fn script_of(name: &str) -> Option<effectcraft_aep::FontBaseline> {
 
 #[test]
 fn superscript_and_subscript_are_style_slot_13() {
-    use effectcraft_aep::FontBaseline;
+    use pulso_aep::FontBaseline;
     // The character state the corpus was made in is superscript (526, and 243, 517).
     assert_eq!(skip!(script_of("526-text-point-HHHH-default.aep")), FontBaseline::Superscript);
     assert_eq!(skip!(script_of("243-text-multiline-A-CR-B.aep")), FontBaseline::Superscript);
@@ -131,7 +131,7 @@ fn a_wrapping_box_text() {
     assert_eq!(doc.style_runs[0].font_size, 100.0);
 }
 
-fn layer_l<T>(name: &str, f: impl Fn(&effectcraft_aep::Layer<'_, '_>) -> T) -> Option<T> {
+fn layer_l<T>(name: &str, f: impl Fn(&pulso_aep::Layer<'_, '_>) -> T) -> Option<T> {
     Some({
         let bytes = crate::common::try_fixture(name)?;
         let file = open(&bytes);

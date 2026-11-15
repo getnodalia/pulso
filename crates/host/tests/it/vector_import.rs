@@ -1,15 +1,15 @@
 //! Photoshop and SVG import through the fully wired session (media decoding included): pixels
 //! of imported compositions, SVG footage at any scale, and Create Shapes from Vector Layer.
 
-use effectcraft_engine::render::RenderOpts;
-use effectcraft_project::ItemId;
-use effectcraft_psd::Rect;
-use effectcraft_psd::write::*;
-use effectcraft_raster::Image;
+use pulso_engine::render::RenderOpts;
+use pulso_project::ItemId;
+use pulso_psd::Rect;
+use pulso_psd::write::*;
+use pulso_raster::Image;
 use serde_json::json;
 
 fn tmp(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("effectcraft-host-vector-{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("pulso-host-vector-{}", std::process::id()));
     std::fs::create_dir_all(&d).unwrap();
     d.join(name).to_string_lossy().to_string()
 }
@@ -48,7 +48,7 @@ fn psd_doc() -> WDoc {
 /// Straight-alpha over of the layers as Photoshop composites them (normal blending), as the
 /// merged image to compare the imported composition with.
 fn reference(bytes: &[u8]) -> Vec<[f32; 4]> {
-    let p = effectcraft_psd::Psd::parse(bytes.to_vec()).unwrap();
+    let p = pulso_psd::Psd::parse(bytes.to_vec()).unwrap();
     let mut acc = vec![[0.0f32; 4]; (p.width * p.height) as usize];
     for l in p.layers.iter().filter(|l| l.has_pixels() && !l.hidden) {
         let px = p.layer_pixels(l.index, true).unwrap();
@@ -74,7 +74,7 @@ fn psd_composition_renders_like_the_document() {
     let bytes = write(&doc);
     let path = tmp("layers.psd");
     std::fs::write(&path, &bytes).unwrap();
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     // Footage (merged image).
     let r = s.execute_checked("file.import", json!({"paths": [path]})).unwrap();
     let merged_item = r["items"][0].as_u64().unwrap();
@@ -83,13 +83,13 @@ fn psd_composition_renders_like_the_document() {
     for kind in ["composition", "compositionLayerSizes"] {
         let r = s.execute_checked("file.import", json!({"paths": [path], "importAs": kind})).unwrap();
         let cid = ItemId(r["comps"][0].as_u64().unwrap());
-        renders.push(s.render(cid, effectcraft_time::Tick::ZERO, RenderOpts::default()));
+        renders.push(s.render(cid, pulso_time::Tick::ZERO, RenderOpts::default()));
     }
     // The merged footage in a comp of the same size.
     s.execute("comp.new", json!({"name": "Merged", "width": 64, "height": 48, "frameRate": 30, "duration": 1})).unwrap();
     s.execute("layer.addItem", json!({"item": merged_item})).unwrap();
     let mcid = s.active_comp_id().unwrap();
-    let merged_img = s.render(mcid, effectcraft_time::Tick::ZERO, RenderOpts::default());
+    let merged_img = s.render(mcid, pulso_time::Tick::ZERO, RenderOpts::default());
     let expected = Image { width: 64, height: 48, data: merged.iter().map(|p| [p[0] * p[3], p[1] * p[3], p[2] * p[3], p[3]]).collect() };
     assert!(mean_diff(&merged_img, &expected) < 2.0 / 255.0, "merged footage");
     for (i, img) in renders.iter().enumerate() {
@@ -106,16 +106,16 @@ fn psd_composition_renders_like_the_document() {
 fn psd_16bit_cmyk_composition_imports() {
     let mut doc = psd_doc();
     doc.depth = 16;
-    doc.mode = effectcraft_psd::ColorMode::Cmyk;
+    doc.mode = pulso_psd::ColorMode::Cmyk;
     doc.rle = false;
     let bytes = write(&doc);
     let merged = reference(&bytes);
     let path = tmp("layers16.psd");
     std::fs::write(&path, &bytes).unwrap();
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     let r = s.execute_checked("file.import", json!({"paths": [path], "importAs": "composition"})).unwrap();
     let cid = ItemId(r["comps"][0].as_u64().unwrap());
-    let img = s.render(cid, effectcraft_time::Tick::ZERO, RenderOpts::default());
+    let img = s.render(cid, pulso_time::Tick::ZERO, RenderOpts::default());
     let expected = Image { width: 64, height: 48, data: merged.iter().map(|p| [p[0] * p[3], p[1] * p[3], p[2] * p[3], p[3]]).collect() };
     let d = mean_diff(&img, &expected);
     assert!(d < 2.0 / 255.0, "mean diff {d}");
@@ -129,18 +129,18 @@ fn svg_footage_and_shapes_from_vector_layer() {
     for (name, bytes) in [("basic-shapes.svg", SVG), ("paths-gradients.svg", SVG2)] {
         let path = tmp(name);
         std::fs::write(&path, bytes).unwrap();
-        let mut s = effectcraft_host::session();
+        let mut s = pulso_host::session();
         let r = s.execute_checked("file.import", json!({"paths": [path]})).unwrap();
         assert_eq!(r["errors"], json!([]), "{r}");
         let item = r["items"][0].as_u64().unwrap();
-        let doc = effectcraft_svg::parse(bytes).unwrap();
+        let doc = pulso_svg::parse(bytes).unwrap();
         let (w, h) = doc.pixel_size();
         s.execute("comp.new", json!({"name": "V", "width": w, "height": h, "frameRate": 30, "duration": 1})).unwrap();
         let lid = s.execute_checked("layer.addItem", json!({"item": item})).unwrap()["layer"].as_u64().unwrap();
         let cid = s.active_comp_id().unwrap();
-        let t = effectcraft_time::Tick::ZERO;
+        let t = pulso_time::Tick::ZERO;
         let foot = s.render(cid, t, RenderOpts::default());
-        let direct = effectcraft_svg::rasterize(&doc, w, h, 1.0);
+        let direct = pulso_svg::rasterize(&doc, w, h, 1.0);
         assert!(mean_diff(&foot, &direct) < 1.0 / 255.0, "{name}: footage = rasterised SVG");
         s.execute("layer.select", json!({"layers": [lid]})).unwrap();
         let r = s.execute_checked("layer.create", json!({"op": "shapesFromVector"})).unwrap();
@@ -156,7 +156,7 @@ fn svg_footage_and_shapes_from_vector_layer() {
         s.execute("prop.set", json!({"layer": sid, "path": "transform/position", "value": [0, 0]})).unwrap();
         s.execute("prop.set", json!({"layer": sid, "path": "transform/anchor", "value": [0, 0]})).unwrap();
         let big = s.render(cid, t, RenderOpts::default());
-        let direct3 = effectcraft_svg::rasterize(&doc, w, h, 3.0);
+        let direct3 = pulso_svg::rasterize(&doc, w, h, 3.0);
         let d3 = mean_diff(&big, &direct3);
         assert!(d3 < 0.03, "{name}: ×3 mean diff {d3}");
     }
@@ -166,9 +166,9 @@ fn svg_footage_and_shapes_from_vector_layer() {
 fn svg_footage_continuously_rasterizes() {
     let path = tmp("cr.svg");
     std::fs::write(&path, SVG).unwrap();
-    let doc = effectcraft_svg::parse(SVG).unwrap();
+    let doc = pulso_svg::parse(SVG).unwrap();
     let (w, h) = doc.pixel_size();
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     let item = s.execute_checked("file.import", json!({"paths": [path]})).unwrap()["items"][0].as_u64().unwrap();
     s.execute("comp.new", json!({"name": "C", "width": w, "height": h, "frameRate": 30, "duration": 1})).unwrap();
     let lid = s.execute_checked("layer.addItem", json!({"item": item})).unwrap()["layer"].as_u64().unwrap();
@@ -176,8 +176,8 @@ fn svg_footage_continuously_rasterizes() {
         s.execute("prop.set", json!({"layer": lid, "path": k, "value": v})).unwrap();
     }
     let cid = s.active_comp_id().unwrap();
-    let t = effectcraft_time::Tick::ZERO;
-    let want = effectcraft_svg::rasterize(&doc, w, h, 3.0);
+    let t = pulso_time::Tick::ZERO;
+    let want = pulso_svg::rasterize(&doc, w, h, 3.0);
     let soft = mean_diff(&s.render(cid, t, RenderOpts::default()), &want);
     s.execute("layer.setSwitch", json!({"layers": [lid], "switch": "collapse", "value": true})).unwrap();
     let sharp = mean_diff(&s.render(cid, t, RenderOpts::default()), &want);
@@ -193,7 +193,7 @@ fn layered_pdf() -> Vec<u8> {
 q 30 0 40 80 re W n 0 0.8 0 rg 0 35 120 10 re f Q\nEMC\n";
     let page = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 120 80] /Resources << /Properties << /L0 5 0 R /L1 6 0 R >> /Pattern << /P0 7 0 R >> >> /Contents 4 0 R >>";
     let pattern = "<< /PatternType 2 /Shading << /ShadingType 2 /ColorSpace /DeviceRGB /Coords [0 0 0 80] /Function << /FunctionType 2 /Domain [0 1] /C0 [0.9 0.9 1] /C1 [0.2 0.4 0.9] /N 1 >> /Extend [true true] >> >>";
-    effectcraft_pdf::write::pdf(
+    pulso_pdf::write::pdf(
         &[
             (1, "<< /Type /Catalog /Pages 2 0 R >>".into(), None),
             (2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(), None),
@@ -210,31 +210,31 @@ q 30 0 40 80 re W n 0 0.8 0 rg 0 35 120 10 re f Q\nEMC\n";
 #[test]
 fn pdf_and_ai_footage_layers_and_shapes_from_vector_layer() {
     let bytes = layered_pdf();
-    let doc = effectcraft_pdf::parse(&bytes).unwrap();
+    let doc = pulso_pdf::parse(&bytes).unwrap();
     let (w, h) = doc.pixel_size();
     assert_eq!((w, h), (120, 80));
-    let direct = effectcraft_svg::rasterize(&doc, w, h, 1.0);
+    let direct = pulso_svg::rasterize(&doc, w, h, 1.0);
     for name in ["art.pdf", "art.ai"] {
         let path = tmp(name);
         std::fs::write(&path, &bytes).unwrap();
-        let mut s = effectcraft_host::session();
+        let mut s = pulso_host::session();
         let r = s.execute_checked("file.import", json!({"paths": [path]})).unwrap();
         assert_eq!(r["errors"], json!([]), "{r}");
         let item = r["items"][0].as_u64().unwrap();
-        let effectcraft_project::ItemKind::Footage(f) = &s.project.item(ItemId(item)).unwrap().kind else { panic!() };
+        let pulso_project::ItemKind::Footage(f) = &s.project.item(ItemId(item)).unwrap().kind else { panic!() };
         assert_eq!(f.codec, if name.ends_with(".ai") { "AI" } else { "PDF" });
         assert_eq!((f.width, f.height), (120, 80));
         s.execute("comp.new", json!({"name": "V", "width": w, "height": h, "frameRate": 30, "duration": 1})).unwrap();
         let lid = s.execute_checked("layer.addItem", json!({"item": item})).unwrap()["layer"].as_u64().unwrap();
         let cid = s.active_comp_id().unwrap();
-        let t = effectcraft_time::Tick::ZERO;
+        let t = pulso_time::Tick::ZERO;
         let foot = s.render(cid, t, RenderOpts::default());
         assert!(mean_diff(&foot, &direct) < 1.0 / 255.0, "{name}: footage = rasterised page");
         // Continuously Rasterize at 300 %.
         for (k, v) in [("transform/anchor", json!([0, 0])), ("transform/position", json!([0, 0])), ("transform/scale", json!([300, 300]))] {
             s.execute("prop.set", json!({"layer": lid, "path": k, "value": v})).unwrap();
         }
-        let want = effectcraft_svg::rasterize(&doc, w, h, 3.0);
+        let want = pulso_svg::rasterize(&doc, w, h, 3.0);
         let soft = mean_diff(&s.render(cid, t, RenderOpts::default()), &want);
         s.execute("layer.setSwitch", json!({"layers": [lid], "switch": "collapse", "value": true})).unwrap();
         let sharp = mean_diff(&s.render(cid, t, RenderOpts::default()), &want);
@@ -261,7 +261,7 @@ fn pdf_and_ai_footage_layers_and_shapes_from_vector_layer() {
     let path = tmp("layers.ai");
     std::fs::write(&path, &bytes).unwrap();
     for import_as in ["composition", "compositionLayerSizes"] {
-        let mut s = effectcraft_host::session();
+        let mut s = pulso_host::session();
         let r = s.execute_checked("file.import", json!({"paths": [path], "importAs": import_as})).unwrap();
         let cid = ItemId(r["comps"][0].as_u64().unwrap());
         let comp = s.project.comp(cid).unwrap();
@@ -269,12 +269,12 @@ fn pdf_and_ai_footage_layers_and_shapes_from_vector_layer() {
         assert_eq!(names, vec!["Art", "Sky"]);
         assert_eq!((comp.width, comp.height), (120, 80));
         let art = comp.layers[0].id.0;
-        let img = s.render(cid, effectcraft_time::Tick::ZERO, RenderOpts::default());
+        let img = s.render(cid, pulso_time::Tick::ZERO, RenderOpts::default());
         let d = mean_diff(&img, &direct);
         assert!(d < 1.0 / 255.0, "layered comp vs page {d}");
         // Each layer's footage shows only its layer.
         s.execute("layer.setSwitch", json!({"layers": [art], "switch": "video", "value": false})).unwrap();
-        let sky = s.render(cid, effectcraft_time::Tick::ZERO, RenderOpts::default());
+        let sky = s.render(cid, pulso_time::Tick::ZERO, RenderOpts::default());
         assert_eq!(sky.get(5, 5), img.get(5, 5));
         let p = sky.get(60, 30);
         assert!(p[2] > p[0], "only sky under the art {p:?}");
@@ -299,18 +299,18 @@ fn psd_smart_object_imports_its_embedded_document() {
     d.linked = vec![("so-1".into(), "inner.psd".into(), *b"8BPS", inner_bytes)];
     let path = tmp("smart.psd");
     std::fs::write(&path, write(&d)).unwrap();
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     let r = s.execute_checked("file.import", json!({"paths": [path], "importAs": "composition"})).unwrap();
     assert_eq!(r["errors"], json!([]), "{r}");
     let cid = ItemId(r["comps"][0].as_u64().unwrap());
     let comp = s.project.comp(cid).unwrap();
     let placed = comp.layers.iter().find(|l| l.name == "Placed").unwrap();
-    let effectcraft_project::LayerSource::Footage { item } = placed.source else { panic!("footage layer") };
-    let effectcraft_project::ItemKind::Footage(f) = &s.project.item(item).unwrap().kind else { panic!() };
+    let pulso_project::LayerSource::Footage { item } = placed.source else { panic!("footage layer") };
+    let pulso_project::ItemKind::Footage(f) = &s.project.item(item).unwrap().kind else { panic!() };
     assert_eq!((f.width, f.height), (20, 10));
     assert_eq!(f.layer.as_ref().unwrap().embedded.as_deref(), Some("so-1"));
     assert!(s.project.item(item).unwrap().name.contains("inner.psd"));
-    let img = s.render(cid, effectcraft_time::Tick::ZERO, RenderOpts::default());
+    let img = s.render(cid, pulso_time::Tick::ZERO, RenderOpts::default());
     // Rotated a quarter clockwise: the red half is on top (rows 4–24), green below.
     let (red, green) = (img.get(30, 14), img.get(30, 34));
     assert!(red[0] > 0.95 && red[1] < 0.05, "{red:?}");
@@ -324,20 +324,20 @@ fn eps_footage_imports() {
         b"%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 40 20\n1 0 0 setrgbcolor 0 0 20 20 rectfill 0 0 1 setrgbcolor newpath 30 10 8 0 360 arc fill\n%%EOF\n";
     let path = tmp("shape.eps");
     std::fs::write(&path, eps).unwrap();
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     let r = s.execute_checked("file.import", json!({"paths": [path]})).unwrap();
     assert_eq!(r["errors"], json!([]), "{r}");
     let item = r["items"][0].as_u64().unwrap();
     s.execute("comp.new", json!({"name": "E", "width": 40, "height": 20, "frameRate": 30, "duration": 1})).unwrap();
     s.execute_checked("layer.addItem", json!({"item": item})).unwrap();
     let cid = s.active_comp_id().unwrap();
-    let img = s.render(cid, effectcraft_time::Tick::ZERO, RenderOpts::default());
+    let img = s.render(cid, pulso_time::Tick::ZERO, RenderOpts::default());
     assert!(img.get(10, 10)[0] > 0.99 && img.get(30, 10)[2] > 0.99, "{:?} {:?}", img.get(10, 10), img.get(30, 10));
 }
 
 /// A two-page PDF: page 2 has text in a non-embedded standard font inside a page-wide clip.
 fn two_page_pdf() -> Vec<u8> {
-    effectcraft_pdf::write::pdf(
+    pulso_pdf::write::pdf(
         &[
             (1, "<< /Type /Catalog /Pages 2 0 R >>".into(), None),
             (2, "<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>".into(), None),
@@ -359,23 +359,23 @@ fn pdf_pages_text_and_clips_to_masks() {
     let bytes = two_page_pdf();
     let path = tmp("pages.pdf");
     std::fs::write(&path, &bytes).unwrap();
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     // Page 2 as footage (File ▸ Import ▸ Page), named after its page.
     let r = s.execute_checked("file.import", json!({"paths": [path], "page": 2})).unwrap();
     assert_eq!(r["errors"], json!([]), "{r}");
     let item = ItemId(r["items"][0].as_u64().unwrap());
     let it = s.project.item(item).unwrap();
     assert_eq!(it.name, "pages.pdf (Page 2)");
-    let effectcraft_project::ItemKind::Footage(f) = &it.kind else { panic!() };
+    let pulso_project::ItemKind::Footage(f) = &it.kind else { panic!() };
     assert_eq!((f.width, f.height, f.page), (100, 60, 1));
     assert!(s.execute_checked("file.import", json!({"paths": [path], "page": 3})).unwrap()["errors"][0].as_str().unwrap().contains("no page 3"));
     assert!(s.execute("file.import", json!({"paths": [path], "page": 0})).is_err());
-    let doc = effectcraft_pdf::parse_page(&bytes, 1).unwrap();
-    let direct = effectcraft_svg::rasterize(&doc, 100, 60, 1.0);
+    let doc = pulso_pdf::parse_page(&bytes, 1).unwrap();
+    let direct = pulso_svg::rasterize(&doc, 100, 60, 1.0);
     s.execute("comp.new", json!({"name": "P", "width": 100, "height": 60, "frameRate": 30, "duration": 1})).unwrap();
     let lid = s.execute_checked("layer.addItem", json!({"item": item.0})).unwrap()["layer"].as_u64().unwrap();
     let cid = s.active_comp_id().unwrap();
-    let t = effectcraft_time::Tick::ZERO;
+    let t = pulso_time::Tick::ZERO;
     let foot = s.render(cid, t, RenderOpts::default());
     assert!(mean_diff(&foot, &direct) < 1.0 / 255.0, "page 2 footage");
     // Text drew (yellow glyphs over the blue page).
@@ -386,9 +386,9 @@ fn pdf_pages_text_and_clips_to_masks() {
     s.execute("layer.select", json!({"layers": [lid]})).unwrap();
     let sid = s.execute_checked("layer.create", json!({"op": "shapesFromVector"})).unwrap()["layers"][0].as_u64().unwrap();
     let c = s.active_comp().unwrap();
-    let l = c.layer(effectcraft_project::LayerId(sid)).unwrap();
+    let l = c.layer(pulso_project::LayerId(sid)).unwrap();
     assert_eq!(l.masks().map(|m| m.groups().count()), Some(1));
-    fn names(g: &effectcraft_project::PropGroup, out: &mut Vec<String>) {
+    fn names(g: &pulso_project::PropGroup, out: &mut Vec<String>) {
         for c in g.groups() {
             out.push(c.name.clone());
             names(c, out);
@@ -434,22 +434,22 @@ fn psd_smart_objects_with_perspective_and_warp_bake_as_placed() {
         )),
     ];
     d2.linked = vec![("so-2".into(), "inner.psd".into(), *b"8BPS", inner_bytes)];
-    let parsed = effectcraft_psd::Psd::parse(write(&d2)).unwrap();
+    let parsed = pulso_psd::Psd::parse(write(&d2)).unwrap();
     let so = parsed.layers.iter().find_map(|l| l.smart_object.clone()).unwrap();
     assert_eq!(so.warp.as_ref().map(|w| w.style.as_str()), Some("warpArc"));
-    let mut s = effectcraft_host::session();
-    let render = |s: &mut effectcraft_engine::Session, doc: &WDoc, file: &str| {
+    let mut s = pulso_host::session();
+    let render = |s: &mut pulso_engine::Session, doc: &WDoc, file: &str| {
         let path = tmp(file);
         std::fs::write(&path, write(doc)).unwrap();
         let r = s.execute_checked("file.import", json!({"paths": [path], "importAs": "composition"})).unwrap();
         assert_eq!(r["errors"], json!([]), "{r}");
         let cid = ItemId(r["comps"][0].as_u64().unwrap());
         let placed = s.project.comp(cid).unwrap().layers.iter().any(|l| {
-            let effectcraft_project::LayerSource::Footage { item } = l.source else { return false };
-            matches!(&s.project.item(item).unwrap().kind, effectcraft_project::ItemKind::Footage(f) if f.layer.as_ref().is_some_and(|x| x.placed))
+            let pulso_project::LayerSource::Footage { item } = l.source else { return false };
+            matches!(&s.project.item(item).unwrap().kind, pulso_project::ItemKind::Footage(f) if f.layer.as_ref().is_some_and(|x| x.placed))
         });
         assert!(placed, "{file}: baked as placed");
-        s.render(cid, effectcraft_time::Tick::ZERO, RenderOpts::default())
+        s.render(cid, pulso_time::Tick::ZERO, RenderOpts::default())
     };
     let img = render(&mut s, &d, "pinned.psd");
     let (red, green) = (img.get(24, 24), img.get(40, 24));
@@ -475,7 +475,7 @@ fn image_pdf_with(boxes: &str) -> Vec<u8> {
     // 8×8 pixels in quadrants: red, green / white, black.
     let quad = |x: usize, y: usize| -> [u8; 3] { [[[255, 0, 0], [0, 255, 0]], [[255, 255, 255], [0, 0, 0]]][y / 4][x / 4] };
     let px: Vec<u8> = (0..64).flat_map(|i| quad(i % 8, i / 8)).collect();
-    effectcraft_pdf::write::pdf(
+    pulso_pdf::write::pdf(
         &[
             (1, "<< /Type /Catalog /Pages 2 0 R >>".into(), None),
             (2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(), None),
@@ -490,17 +490,17 @@ fn image_pdf_with(boxes: &str) -> Vec<u8> {
 #[test]
 fn shapes_from_vector_layer_keeps_images_as_footage_layers() {
     let bytes = image_pdf();
-    let doc = effectcraft_pdf::parse(&bytes).unwrap();
+    let doc = pulso_pdf::parse(&bytes).unwrap();
     let (w, h) = doc.pixel_size();
-    let direct = effectcraft_svg::rasterize(&doc, w, h, 1.0);
+    let direct = pulso_svg::rasterize(&doc, w, h, 1.0);
     let path = tmp("images.pdf");
     std::fs::write(&path, &bytes).unwrap();
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     let item = s.execute_checked("file.import", json!({"paths": [path]})).unwrap()["items"][0].as_u64().unwrap();
     s.execute("comp.new", json!({"name": "I", "width": w, "height": h, "frameRate": 30, "duration": 1})).unwrap();
     let lid = s.execute_checked("layer.addItem", json!({"item": item})).unwrap()["layer"].as_u64().unwrap();
     let cid = s.active_comp_id().unwrap();
-    let t = effectcraft_time::Tick::ZERO;
+    let t = pulso_time::Tick::ZERO;
     let foot = s.render(cid, t, RenderOpts::default());
     assert!(mean_diff(&foot, &direct) < 1.0 / 255.0);
     s.execute("layer.select", json!({"layers": [lid]})).unwrap();
@@ -516,7 +516,7 @@ fn shapes_from_vector_layer_keeps_images_as_footage_layers() {
     assert_eq!(r["layers"].as_array().unwrap().len(), 2);
     for l in c.layers.iter().skip(1).take(2) {
         assert_eq!(l.parent.map(|p| p.0), Some(sid), "{}", l.name);
-        assert!(matches!(l.source, effectcraft_project::LayerSource::Footage { .. }));
+        assert!(matches!(l.source, pulso_project::LayerSource::Footage { .. }));
     }
     assert!(!c.layers[4].switches.video);
     let shapes = s.render(cid, t, RenderOpts::default());
@@ -531,7 +531,7 @@ fn shapes_from_vector_layer_keeps_images_as_footage_layers() {
 }
 
 fn retain_pdf(width: u32) -> Vec<u8> {
-    effectcraft_pdf::write::pdf(
+    pulso_pdf::write::pdf(
         &[
             (1, "<< /Type /Catalog /Pages 2 0 R >>".into(), None),
             (2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(), None),
@@ -553,7 +553,7 @@ fn retain_pdf(width: u32) -> Vec<u8> {
 
 /// A 200 × 100 pt page: red left half, blue right half.
 fn halves_pdf() -> Vec<u8> {
-    effectcraft_pdf::write::pdf(
+    pulso_pdf::write::pdf(
         &[
             (1, "<< /Type /Catalog /Pages 2 0 R >>".into(), None),
             (2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(), None),
@@ -564,7 +564,7 @@ fn halves_pdf() -> Vec<u8> {
     )
 }
 
-/// #3099: footage from an After Effects project ([`effectcraft_project::Footage::placed_page`])
+/// #3099: footage from an After Effects project ([`pulso_project::Footage::placed_page`])
 /// keeps the size After Effects stored for a placed .ai, which can differ from the page as read
 /// here. The page fills that size at full and at reduced resolution alike: it was drawn at its own
 /// aspect at full resolution and stretched to the stored size below 3/4 (the art jumped when the
@@ -573,12 +573,12 @@ fn halves_pdf() -> Vec<u8> {
 /// pixels, and neither reuses the file's frame at its own size, decoded first.
 #[test]
 fn placed_vector_footage_fills_its_stored_size_at_every_resolution() {
-    use effectcraft_project::ItemKind;
-    use effectcraft_time::Tick;
+    use pulso_project::ItemKind;
+    use pulso_time::Tick;
 
     let path = tmp("stored-size.ai");
     std::fs::write(&path, halves_pdf()).unwrap();
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     let item = ItemId(s.execute_checked("file.import", json!({"paths": [path]})).unwrap()["items"][0].as_u64().unwrap());
     let red = |p: [f32; 4]| p[3] > 0.99 && p[0] > 0.9 && p[2] < 0.1;
     let blue = |p: [f32; 4]| p[3] > 0.99 && p[2] > 0.9 && p[0] < 0.1;
@@ -592,7 +592,7 @@ fn placed_vector_footage_fills_its_stored_size_at_every_resolution() {
     let proj = std::sync::Arc::make_mut(&mut s.project);
     let ItemKind::Footage(f) = &mut proj.item_mut(item).unwrap().kind else { panic!("footage") };
     (f.width, f.height, f.placed_page) = (100, 80, true);
-    let tall = effectcraft_project::Footage { width: 60, height: 120, ..f.clone() };
+    let tall = pulso_project::Footage { width: 60, height: 120, ..f.clone() };
     let tall = proj.add_item("tall", Default::default(), None, ItemKind::Footage(tall));
     for (item, (w, h)) in [(item, (100u32, 80u32)), (tall, (60, 120))] {
         s.execute("comp.new", json!({"name": format!("Stored {w}"), "width": w, "height": h, "frameRate": 25, "duration": 1})).unwrap();
@@ -632,12 +632,12 @@ fn placed_vector_footage_fills_its_stored_size_at_every_resolution() {
 /// they showed the whole page: the grey background around the art.
 #[test]
 fn shapes_from_a_placed_page_stay_inside_its_frame() {
-    use effectcraft_project::ItemKind;
-    use effectcraft_time::Tick;
+    use pulso_project::ItemKind;
+    use pulso_time::Tick;
 
     let path = tmp("placed-frame.ai");
     std::fs::write(&path, art_box_ai()).unwrap();
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     let item = ItemId(s.execute_checked("file.import", json!({"paths": [path]})).unwrap()["items"][0].as_u64().unwrap());
     // As an After Effects project stores it: the ArtBox's size, placed.
     let ItemKind::Footage(f) = &mut std::sync::Arc::make_mut(&mut s.project).item_mut(item).unwrap().kind else { panic!("footage") };
@@ -676,12 +676,12 @@ fn shapes_from_a_placed_page_stay_inside_its_frame() {
 /// conversion the layers inside the frame match the footage, and outside it nothing shows.
 #[test]
 fn images_from_a_placed_page_stay_inside_its_frame() {
-    use effectcraft_project::{ItemKind, MatteKind, TrackMatte};
-    use effectcraft_time::Tick;
+    use pulso_project::{ItemKind, MatteKind, TrackMatte};
+    use pulso_time::Tick;
 
     let path = tmp("placed-images.pdf");
     std::fs::write(&path, image_pdf_with("/ArtBox [20 15 100 70]")).unwrap();
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     let item = ItemId(s.execute_checked("file.import", json!({"paths": [path]})).unwrap()["items"][0].as_u64().unwrap());
     let ItemKind::Footage(f) = &mut std::sync::Arc::make_mut(&mut s.project).item_mut(item).unwrap().kind else { panic!("footage") };
     (f.width, f.height, f.placed_page) = (80, 55, true);
@@ -724,20 +724,20 @@ fn images_from_a_placed_page_stay_inside_its_frame() {
 /// size, exactly as before; the project file has no new field.
 #[test]
 fn a_pdf_with_an_art_box_imported_here_keeps_the_viewer_framing() {
-    use effectcraft_project::{ItemKind, Project};
-    use effectcraft_time::Tick;
+    use pulso_project::{ItemKind, Project};
+    use pulso_time::Tick;
 
     let bytes = art_box_ai();
     let path = tmp("viewer-art-box.pdf");
     std::fs::write(&path, &bytes).unwrap();
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     let item = ItemId(s.execute_checked("file.import", json!({"paths": [path]})).unwrap()["items"][0].as_u64().unwrap());
     let ItemKind::Footage(f) = &s.project.item(item).unwrap().kind else { panic!("footage") };
     assert_eq!((f.width, f.height, f.placed_page), (410, 210, false));
     s.execute("comp.new", json!({"name": "V", "width": 410, "height": 210, "frameRate": 25, "duration": 1})).unwrap();
     s.execute_checked("layer.addItem", json!({"item": item.0})).unwrap();
     let cid = s.active_comp_id().unwrap();
-    let direct = effectcraft_svg::rasterize(&effectcraft_pdf::parse(&bytes).unwrap(), 410, 210, 1.0);
+    let direct = pulso_svg::rasterize(&pulso_pdf::parse(&bytes).unwrap(), 410, 210, 1.0);
     assert!(mean_diff(&s.render(cid, Tick::ZERO, RenderOpts::default()), &direct) < 1.0 / 255.0);
     let saved = s.project.to_json();
     assert!(!saved.contains("placed_page"), "the saved project is in the earlier format");
@@ -745,14 +745,14 @@ fn a_pdf_with_an_art_box_imported_here_keeps_the_viewer_framing() {
     assert!(mean_diff(&s.render(cid, Tick::ZERO, RenderOpts::default()), &direct) < 1.0 / 255.0, "reopened");
 }
 
-/// `i3099-a-boxes.ai` of `effectcraft-aep`'s `ai-mask-3099.aep` (its boxes as in
+/// `i3099-a-boxes.ai` of `pulso-aep`'s `ai-mask-3099.aep` (its boxes as in
 /// `tests/fixtures/tools/ai-mask-3099.py`): MediaBox 420 × 220, CropBox, BleedBox and TrimBox
 /// inside it, ArtBox [60 50 300.6 170.4]. Here grey over the media box, the art box red on its
 /// left half and blue on its right half.
 fn art_box_ai() -> Vec<u8> {
     let page = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 420 220] /CropBox [5 5 415 215] /BleedBox [10 10 410 210] /TrimBox [20 20 400 200] /ArtBox [60 50 300.6 170.4] /Contents 4 0 R >>";
     let content = b"0.5 g 0 0 420 220 re f 1 0 0 rg 60 50 120.3 120.4 re f 0 0 1 rg 180.3 50 120.3 120.4 re f";
-    effectcraft_pdf::write::pdf(
+    pulso_pdf::write::pdf(
         &[
             (1, "<< /Type /Catalog /Pages 2 0 R >>".into(), None),
             (2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(), None),
@@ -768,7 +768,7 @@ fn art_box_ai() -> Vec<u8> {
 fn trim_ai() -> Vec<u8> {
     let page = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 418 218] /TrimBox [9 9 409 209] /BleedBox [0 0 418 218] /ArtBox [40 30 250 150] /Contents 4 0 R >>";
     let content = b"0.5 g 0 0 418 218 re f 1 0 0 rg 40 30 105 120 re f 0 0 1 rg 145 30 105 120 re f";
-    effectcraft_pdf::write::pdf(
+    pulso_pdf::write::pdf(
         &[
             (1, "<< /Type /Catalog /Pages 2 0 R >>".into(), None),
             (2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(), None),
@@ -782,7 +782,7 @@ fn trim_ai() -> Vec<u8> {
 /// `i3099-c-rot.ai` of `ai-mask-3099.aep`: MediaBox [100 50 400 150] with `/Rotate 90`, grey,
 /// with a blue 20 × 10 marker 4 pt in from the media box's lower-left corner.
 fn rotated_ai() -> Vec<u8> {
-    effectcraft_pdf::write::pdf(
+    pulso_pdf::write::pdf(
         &[
             (1, "<< /Type /Catalog /Pages 2 0 R >>".into(), None),
             (2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(), None),
@@ -803,17 +803,17 @@ fn rotated_ai() -> Vec<u8> {
 /// unturned as After Effects draws it, `artD` (Continuously Rasterize) as `art`.
 #[test]
 fn aep_ai_layer_with_masks_under_two_nulls_renders_like_after_effects() {
-    use effectcraft_engine::render::EvalCtx;
-    use effectcraft_project::ItemKind;
-    use effectcraft_time::Tick;
+    use pulso_engine::render::EvalCtx;
+    use pulso_project::ItemKind;
+    use pulso_time::Tick;
 
     let dir = std::path::PathBuf::from(tmp("ai-mask-3099"));
     std::fs::create_dir_all(&dir).unwrap();
     let aep = dir.join("ai-mask-3099.aep");
-    // The fixture belongs to `effectcraft-aep` (its sidecar and generator are there); this test
+    // The fixture belongs to `pulso-aep` (its sidecar and generator are there); this test
     // renders it through the wired session, which that crate cannot.
     std::fs::write(&aep, include_bytes!("../../../aep/tests/fixtures/ai-mask-3099.aep")).unwrap();
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     s.execute_checked("file.importAep", json!({"path": aep.to_string_lossy(), "allowLosses": true})).unwrap();
     // The project's footage paths are neutral (`C:\fixture\x\...`): the files are linked here.
     for (name, bytes, size) in
@@ -902,14 +902,14 @@ fn aep_ai_layer_with_masks_under_two_nulls_renders_like_after_effects() {
 
 #[test]
 fn ai_composition_retains_layer_sizes_and_positions() {
-    use effectcraft_project::{ItemKind, LayerSource, Project};
-    use effectcraft_time::Tick;
+    use pulso_project::{ItemKind, LayerSource, Project};
+    use pulso_time::Tick;
 
     for name in ["retain.ai", "retain.pdf"] {
         let path = tmp(name);
         let bytes = retain_pdf(30);
         std::fs::write(&path, &bytes).unwrap();
-        let mut s = effectcraft_host::session();
+        let mut s = pulso_host::session();
         let r = s.execute_checked("file.import", json!({"paths": [path], "importAs": "compositionLayerSizes"})).unwrap();
         assert_eq!(r["errors"], json!([]), "{r}");
         let cid = ItemId(r["comps"][0].as_u64().unwrap());
@@ -932,7 +932,7 @@ fn ai_composition_retains_layer_sizes_and_positions() {
             assert!(sharp.get(1, 1)[3] > 0.99);
             ids.push(item);
         }
-        let direct = effectcraft_svg::rasterize(&effectcraft_pdf::parse(&bytes).unwrap(), 120, 80, 1.0);
+        let direct = pulso_svg::rasterize(&pulso_pdf::parse(&bytes).unwrap(), 120, 80, 1.0);
         assert!(mean_diff(&s.render(cid, Tick::ZERO, RenderOpts::default()), &direct) < 0.001);
         let saved = s.project.to_json();
         s.project = std::sync::Arc::new(Project::from_json(&saved).unwrap());

@@ -1,14 +1,14 @@
 //! Effects (Tint, Gradient Ramp, Exposure): every effect fixture is imported and exported, and the
-//! exported effects are parsed back with `effectcraft-aep` and compared with the ones After
+//! exported effects are parsed back with `pulso-aep` and compared with the ones After
 //! Effects wrote, parameter by parameter (stored values, keys, definitions); projects edited in
 //! code check the parameters no fixture changes, several instances, and what is reported.
 
 use crate::export::helpers::*;
-use effectcraft_aep::export::LossCategory;
-use effectcraft_aep::import::{ImportOptions, import};
-use effectcraft_aep::{AepFile, ParamValue, parse};
-use effectcraft_keyframe::{Interp, Value};
-use effectcraft_project::{ItemKind, Node, Project, PropGroup};
+use pulso_aep::export::LossCategory;
+use pulso_aep::import::{ImportOptions, import};
+use pulso_aep::{AepFile, ParamValue, parse};
+use pulso_keyframe::{Interp, Value};
+use pulso_project::{ItemKind, Node, Project, PropGroup};
 
 fn fixtures_with_effects() -> Option<Vec<String>> {
     Some({
@@ -46,7 +46,7 @@ struct Seen {
 
 /// The effects of every layer, by (composition name, layer index).
 fn effects_of(file: &AepFile<'_>) -> Vec<((String, usize), Vec<Seen>)> {
-    let view = effectcraft_aep::Project::new(file).expect("project");
+    let view = pulso_aep::Project::new(file).expect("project");
     let mut out = Vec::new();
     for item in view.all_items() {
         let Some(comp) = item.comp() else { continue };
@@ -54,7 +54,7 @@ fn effects_of(file: &AepFile<'_>) -> Vec<((String, usize), Vec<Seen>)> {
         for (i, layer) in comp.layers().enumerate() {
             let mut fx = Vec::new();
             // Effects outside the table are reported by the importer, not written.
-            for e in layer.effects().into_iter().filter(|e| effectcraft_aep::effect_map::by_match_name(e.match_name()).is_some()) {
+            for e in layer.effects().into_iter().filter(|e| pulso_aep::effect_map::by_match_name(e.match_name()).is_some()) {
                 let mut params = Vec::new();
                 for p in view.effect_params(&e) {
                     let keys = p
@@ -64,16 +64,16 @@ fn effects_of(file: &AepFile<'_>) -> Vec<((String, usize), Vec<Seen>)> {
                                 .map(|r| {
                                     let interp = (
                                         r.interpolation_in().map_or(0, |x| match x {
-                                            effectcraft_aep::Interpolation::Linear => 1,
-                                            effectcraft_aep::Interpolation::Bezier => 2,
-                                            effectcraft_aep::Interpolation::Hold => 3,
-                                            effectcraft_aep::Interpolation::Other(c) => c,
+                                            pulso_aep::Interpolation::Linear => 1,
+                                            pulso_aep::Interpolation::Bezier => 2,
+                                            pulso_aep::Interpolation::Hold => 3,
+                                            pulso_aep::Interpolation::Other(c) => c,
                                         }),
                                         r.interpolation_out().map_or(0, |x| match x {
-                                            effectcraft_aep::Interpolation::Linear => 1,
-                                            effectcraft_aep::Interpolation::Bezier => 2,
-                                            effectcraft_aep::Interpolation::Hold => 3,
-                                            effectcraft_aep::Interpolation::Other(c) => c,
+                                            pulso_aep::Interpolation::Linear => 1,
+                                            pulso_aep::Interpolation::Bezier => 2,
+                                            pulso_aep::Interpolation::Hold => 3,
+                                            pulso_aep::Interpolation::Other(c) => c,
                                         }),
                                     );
                                     (r.time_units().unwrap_or(-1), r.value().unwrap_or_default(), interp)
@@ -138,7 +138,7 @@ fn every_effect_fixture_is_written_as_after_effects_wrote_it() {
             for (x, y) in fa.iter().zip(fb) {
                 assert_eq!((&x.match_name, &x.name), (&y.match_name, &y.name), "{name}");
                 // Written as the importer took it over (712: CC Radial Blur's Type Scratch has no
-                // EffectCraft item, reported on import).
+                // Pulso item, reported on import).
                 if lossy.iter().any(|d| d.contains(&format!("({})", x.match_name))) {
                     continue;
                 }
@@ -160,7 +160,7 @@ fn every_effect_fixture_is_written_as_after_effects_wrote_it() {
             }
         }
         // The input layer of every exported instance names the layer that owns it (320).
-        let view = effectcraft_aep::Project::new(&exported).expect("project");
+        let view = pulso_aep::Project::new(&exported).expect("project");
         for item in view.all_items() {
             let Some(comp) = item.comp() else { continue };
             for layer in comp.layers() {
@@ -172,7 +172,7 @@ fn every_effect_fixture_is_written_as_after_effects_wrote_it() {
             }
         }
         // The container is consistent and the result imports to the same effect values.
-        assert_eq!(effectcraft_aep::write(&exported).expect("write"), r.bytes, "{name}");
+        assert_eq!(pulso_aep::write(&exported).expect("write"), r.bytes, "{name}");
         let q = import_bytes(&r.bytes);
         assert_eq!(effect_values(&p), effect_values(&q), "{name}: values after a second import");
     }
@@ -245,7 +245,7 @@ fn edited_parameters_and_keys_no_fixture_has() {
     let fx = &seen.first().expect("layer").1[0];
     assert_eq!(fx.name.as_deref(), Some("My Tint"));
     // As After Effects stores a renamed instance (610): fnam keeps the effect's name.
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let e = view.all_items().into_iter().find_map(|i| i.comp()).and_then(|c| c.layers().next()).map(|l| l.effects()).expect("effects");
     assert_eq!((e[0].name().as_deref(), e[0].user_name().as_deref()), (Some("Tint"), Some("My Tint")));
     let param = |i: usize| fx.params.iter().find(|p| p.0 == i).expect("param");
@@ -299,7 +299,7 @@ fn several_instances_share_one_definition_copy() {
     let r = export_all(&p);
     assert_eq!(r.report.exported.effects, 4, "{:?}", r.report.losses);
     let file = parse(&r.bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let mut full = Vec::new();
     for item in view.all_items() {
         let Some(comp) = item.comp() else { continue };
@@ -336,7 +336,7 @@ fn several_instances_share_one_definition_copy() {
 fn what_cannot_be_written_is_reported() {
     let p = skip!(tint(|g| {
         g.enabled = false;
-        g.get_mut("amount").expect("amount").expr = Some(effectcraft_project::Expression { text: "50".into(), enabled: true });
+        g.get_mut("amount").expect("amount").expr = Some(pulso_project::Expression { text: "50".into(), enabled: true });
     }));
     let r = export_all(&p);
     // The switch (fx-switch cases) and the expression (534) are written; a second import gets the
@@ -355,7 +355,7 @@ fn what_cannot_be_written_is_reported() {
     let c = q.items.values().find(|i| i.name == "C").map(|i| i.id).expect("C");
     with_layer(&mut q, c, 0, |l| {
         if let Some(Node::Group(g)) = l.props.sub_mut("effects").and_then(|e| e.children.first_mut()) {
-            g.kind = effectcraft_project::GroupKind::Effect { effect: "ec.distort.notmapped".into() };
+            g.kind = pulso_project::GroupKind::Effect { effect: "ec.distort.notmapped".into() };
         }
     });
     let r = export_all(&q);
@@ -372,7 +372,7 @@ fn lumetri_color_is_reported_not_written() {
     let c = p.items.values().find(|i| i.name == "C").map(|i| i.id).expect("C");
     with_layer(&mut p, c, 0, |l| {
         if let Some(Node::Group(g)) = l.props.sub_mut("effects").and_then(|e| e.children.first_mut()) {
-            g.kind = effectcraft_project::GroupKind::Effect { effect: "ec.color.lumetri".into() };
+            g.kind = pulso_project::GroupKind::Effect { effect: "ec.color.lumetri".into() };
         }
     });
     let r = export_all(&p);
@@ -390,7 +390,7 @@ fn imported_plug_in_effects_are_reported_not_written() {
         let c = p.items.values().find(|i| i.name == "C").map(|i| i.id).expect("C");
         with_layer(&mut p, c, 0, |l| {
             if let Some(Node::Group(g)) = l.props.sub_mut("effects").and_then(|e| e.children.first_mut()) {
-                g.kind = effectcraft_project::GroupKind::Effect { effect: effect.into() };
+                g.kind = pulso_project::GroupKind::Effect { effect: effect.into() };
             }
         });
         let r = export_all(&p);
@@ -410,22 +410,22 @@ fn hostile_effect_values_never_panic() {
         }));
         let r = export_all(&p);
         let file = parse(&r.bytes).expect("parse");
-        assert_eq!(effectcraft_aep::write(&file).expect("write"), r.bytes);
+        assert_eq!(pulso_aep::write(&file).expect("write"), r.bytes);
         let _ = import_bytes(&r.bytes);
     }
 }
 
 /// The static value records (`tdbs` with a `cdat`) of the mapped parameters of every effect
 /// instance, by (composition, layer index, effect index, record name).
-fn static_records(file: &AepFile<'_>) -> std::collections::BTreeMap<(String, usize, usize, String), effectcraft_aep::Chunk<'static>> {
-    let view = effectcraft_aep::Project::new(file).expect("project");
+fn static_records(file: &AepFile<'_>) -> std::collections::BTreeMap<(String, usize, usize, String), pulso_aep::Chunk<'static>> {
+    let view = pulso_aep::Project::new(file).expect("project");
     let mut out = std::collections::BTreeMap::new();
     for item in view.all_items() {
         let Some(comp) = item.comp() else { continue };
         let cname = item.display_name().unwrap_or_default();
         for (li, layer) in comp.layers().enumerate() {
             for (ei, e) in layer.effects().into_iter().enumerate() {
-                let Some(spec) = effectcraft_aep::effect_map::by_match_name(e.match_name()) else { continue };
+                let Some(spec) = pulso_aep::effect_map::by_match_name(e.match_name()) else { continue };
                 let Some(values) = e.chunk().child_list(b"tdgp") else { continue };
                 let k = values.children();
                 for (i, c) in k.iter().enumerate() {
@@ -442,9 +442,9 @@ fn static_records(file: &AepFile<'_>) -> std::collections::BTreeMap<(String, usi
                         let mut rec = rec.clone().into_owned();
                         // A layer parameter's `tdpi` is a layer id, which differs between the
                         // files (`layer_parameters_name_the_same_layers` checks the layers).
-                        if let effectcraft_aep::Body::List { children, .. } = &mut rec.body {
+                        if let pulso_aep::Body::List { children, .. } = &mut rec.body {
                             for c in children.iter_mut().filter(|c| c.is(b"tdpi")) {
-                                *c = effectcraft_aep::Chunk::data(*b"tdpi", vec![0; 4]);
+                                *c = pulso_aep::Chunk::data(*b"tdpi", vec![0; 4]);
                             }
                         }
                         out.insert((cname.clone(), li, ei, name), rec);
@@ -469,7 +469,7 @@ fn every_static_value_record_is_rebuilt_in_its_decoded_bytes() {
         let none = |_: &str| false;
         let imported = import(&mut p, &bytes, &ImportOptions { allow_losses: true, ..ImportOptions::new(&none) }).expect("import");
         // An effect the importer could not take over completely (712: CC Radial Blur's Type
-        // Scratch has no EffectCraft item) is written as EffectCraft has it.
+        // Scratch has no Pulso item) is written as Pulso has it.
         let lossy: Vec<String> = imported.report.losses.iter().flat_map(|l| l.details.clone()).collect();
         let r = export_all(&p);
         let exported = parse(&r.bytes).expect("parse export");
@@ -503,7 +503,7 @@ fn hue_saturation_and_levels_data_is_written_as_after_effects_wrote_it() {
         let bytes = fixture!(name);
         let data = |b: &[u8]| -> Vec<u8> {
             let f = parse(b).expect("parse");
-            let view = effectcraft_aep::Project::new(&f).expect("project");
+            let view = pulso_aep::Project::new(&f).expect("project");
             let mut out = Vec::new();
             for item in view.all_items() {
                 let Some(comp) = item.comp() else { continue };
@@ -526,7 +526,7 @@ fn hue_saturation_and_levels_data_is_written_as_after_effects_wrote_it() {
 /// The layer each layer parameter names, by layer index (comp, layer, effect,
 /// parameter index, named layer or "None").
 fn layer_params(file: &AepFile<'_>) -> Vec<(String, String, String, usize, String)> {
-    let view = effectcraft_aep::Project::new(file).expect("project");
+    let view = pulso_aep::Project::new(file).expect("project");
     let mut out = Vec::new();
     for item in view.all_items() {
         let Some(comp) = item.comp() else { continue };
@@ -535,7 +535,7 @@ fn layer_params(file: &AepFile<'_>) -> Vec<(String, String, String, usize, Strin
         for (i, layer) in comp.layers().enumerate() {
             let lname = format!("#{i}");
             for e in layer.effects() {
-                for p in view.effect_params(&e).into_iter().filter(|p| p.index > 0 && p.kind == effectcraft_aep::ParamKind::Layer) {
+                for p in view.effect_params(&e).into_iter().filter(|p| p.index > 0 && p.kind == pulso_aep::ParamKind::Layer) {
                     let named = match p.stored_value() {
                         Some(ParamValue::Layer(0)) => "None".to_string(),
                         Some(ParamValue::Layer(id)) => names.get(&id).cloned().unwrap_or_else(|| format!("? {id}")),
@@ -600,7 +600,7 @@ fn set_all(p: &mut Project, id: &str, v: Value) -> usize {
     n
 }
 
-fn find_id<'a>(g: &'a PropGroup, id: &str) -> Option<&'a effectcraft_project::Property> {
+fn find_id<'a>(g: &'a PropGroup, id: &str) -> Option<&'a pulso_project::Property> {
     g.children.iter().find_map(|c| match c {
         Node::Prop(pr) if pr.match_id == id => Some(pr),
         Node::Group(sub) => find_id(sub, id),
@@ -611,9 +611,9 @@ fn find_id<'a>(g: &'a PropGroup, id: &str) -> Option<&'a effectcraft_project::Pr
 #[test]
 fn an_explicit_none_is_written_as_none() {
     // After Effects' None on Compound Blur / Displacement Map / Set Matte (`tdpi` 0) differs from
-    // the owning layer (fx27 `layer-none`); it is EffectCraft's `NO_LAYER` both ways.
+    // the owning layer (fx27 `layer-none`); it is Pulso's `NO_LAYER` both ways.
     let mut p = import_bytes(&fixture!("905-fx-24-effects-set-one-comp.aep"));
-    let none = Value::Layer(Some(effectcraft_project::NO_LAYER));
+    let none = Value::Layer(Some(pulso_project::NO_LAYER));
     let n: usize = ["blurLayer", "displacementMapLayer", "takeMatteFromLayer"].iter().map(|id| set_all(&mut p, id, none.clone())).sum();
     assert_eq!(n, 3);
     let r = export_all(&p);
@@ -656,14 +656,14 @@ fn unmapped_layer_parameters_keep_their_default() {
         let mut q = Project::default();
         let none = |_: &str| false;
         let back = import(&mut q, &r.bytes, &ImportOptions { allow_losses: true, ..ImportOptions::new(&none) }).expect("re-import");
-        assert_eq!(back.report.count(effectcraft_aep::import::LossCategory::Effects), 0, "{name}: {:?}", back.report.losses);
+        assert_eq!(back.report.count(pulso_aep::import::LossCategory::Effects), 0, "{name}: {:?}", back.report.losses);
     }
 }
 
 /// The arbitrary data of the first instance of `match_name` in a file.
 fn arb(bytes: &[u8], match_name: &str, record: &str) -> Vec<u8> {
     let file = parse(bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let comp = view.all_items().into_iter().find_map(|i| i.comp()).expect("comp");
     let fx = comp.layers().flat_map(|l| l.effects()).find(|e| e.match_name() == match_name).expect("effect");
     fx.arbitrary_data(record).expect("data").to_vec()
@@ -683,7 +683,7 @@ fn curves_and_mesh_warp_are_written_as_after_effects_stores_them() {
     let r = export_all(&import_bytes(&bytes));
     assert_eq!(r.report.count(LossCategory::Effects), 0, "{:?}", r.report.losses);
     let (a, b) = (arb(&r.bytes, "ADBE MESH WARP", "ADBE MESH WARP-0004"), arb(&bytes, "ADBE MESH WARP", "ADBE MESH WARP-0004"));
-    let (ma, mb) = (effectcraft_aep::MeshData::parse(&a).expect("written"), effectcraft_aep::MeshData::parse(&b).expect("stored"));
+    let (ma, mb) = (pulso_aep::MeshData::parse(&a).expect("written"), pulso_aep::MeshData::parse(&b).expect("stored"));
     assert_eq!((ma.columns, ma.rows, ma.tail), (mb.columns, mb.rows, mb.tail));
     for (x, y) in ma.vertices.iter().zip(&mb.vertices) {
         for (p, q) in x.iter().zip(y) {
@@ -695,7 +695,7 @@ fn curves_and_mesh_warp_are_written_as_after_effects_stores_them() {
 #[test]
 fn mesh_handles_moved_on_their_own_survive_the_round_trip() {
     // 985 imported, then the right handle of vertex (2, 2) moved by 30 px on its own: the importer
-    // keeps such moves as extra numbers of the vertex (EffectCraft draws a bilinear mesh).
+    // keeps such moves as extra numbers of the vertex (Pulso draws a bilinear mesh).
     let mut p = import_bytes(&fixture!("985-meshwarp-3x3-vertex-moved-on-S.aep"));
     let id: Vec<_> = p.comps().map(|(i, _)| *i).collect();
     let mut tokens = Vec::new();
@@ -727,8 +727,8 @@ fn mesh_handles_moved_on_their_own_survive_the_round_trip() {
     assert_eq!(tokens.len(), 16);
     let r = export_all(&p);
     let data = arb(&r.bytes, "ADBE MESH WARP", "ADBE MESH WARP-0004");
-    let m = effectcraft_aep::MeshData::parse(&data).expect("mesh");
-    let d = effectcraft_aep::MeshData::default_vertex(3, 3, 2, 2);
+    let m = pulso_aep::MeshData::parse(&data).expect("mesh");
+    let d = pulso_aep::MeshData::default_vertex(3, 3, 2, 2);
     let v = m.vertices[10];
     // The right handle: default + the vertex's move + 30 px.
     assert!((v[2][0] - (d[2][0] + (132.0 + 30.0) / 1920.0)).abs() < 1e-5, "{:?}", v[2]);

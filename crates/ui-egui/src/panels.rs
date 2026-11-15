@@ -67,12 +67,12 @@ pub mod viewers;
 pub mod waveform;
 
 use crate::i18n::tr;
-use effectcraft_engine::Session;
-use effectcraft_engine::project::Comp;
-use effectcraft_engine::time::Tick;
 use egui::Rect;
+use pulso_engine::Session;
+use pulso_engine::project::Comp;
+use pulso_engine::time::Tick;
 
-use crate::EffectcraftApp;
+use crate::PulsoApp;
 use crate::dock::PanelKind;
 
 /// Drag-and-drop payloads between panels.
@@ -130,8 +130,8 @@ impl PresetRef {
 /// Folders and data files are not composition layers, and the composition the
 /// drop lands in is left out of a selection: it cannot contain itself, and one
 /// such item would make the engine refuse the whole drop (#2589).
-pub(crate) fn project_drop_items(app: &EffectcraftApp, dragged: u64, target: Option<effectcraft_engine::project::ItemId>) -> Vec<u64> {
-    use effectcraft_engine::project::{FootageKind, ItemId, ItemKind};
+pub(crate) fn project_drop_items(app: &PulsoApp, dragged: u64, target: Option<pulso_engine::project::ItemId>) -> Vec<u64> {
+    use pulso_engine::project::{FootageKind, ItemId, ItemKind};
 
     let selected = &app.session.state.project_selection;
     let candidates: Vec<u64> = if selected.iter().any(|id| id.0 == dragged) {
@@ -160,21 +160,21 @@ pub(crate) fn project_drop_items(app: &EffectcraftApp, dragged: u64, target: Opt
 /// The current time formatted per project settings (timecode with `;` for drop-frame, frames
 /// or Feet + Frames).
 pub fn timecode(session: &Session, comp: &Comp, t: Tick) -> String {
-    effectcraft_engine::commands::time::display_time(session, comp, t)
+    pulso_engine::commands::time::display_time(session, comp, t)
 }
 
 /// A length (a Duration) formatted per project settings, with no start offset.
 pub fn duration(session: &Session, comp: &Comp, len: Tick) -> String {
-    effectcraft_engine::commands::time::display_duration(session, comp, len)
+    pulso_engine::commands::time::display_duration(session, comp, len)
 }
 
 /// Ctrl/Cmd-click on a current-time display toggles the project's Time Display Style between
 /// Timecode and Frames, as in After Effects (through Project Settings: one undo step).
-pub(crate) fn toggle_time_display(app: &mut EffectcraftApp, resp: &egui::Response) {
+pub(crate) fn toggle_time_display(app: &mut PulsoApp, resp: &egui::Response) {
     if !(resp.clicked() && resp.ctx.input(|i| i.modifiers.command)) {
         return;
     }
-    let timecode = app.session.project.settings.time_display == effectcraft_engine::project::TimeDisplayStyle::Timecode;
+    let timecode = app.session.project.settings.time_display == pulso_engine::project::TimeDisplayStyle::Timecode;
     if let Err(e) = app.session.execute("file.projectSettings", serde_json::json!({"timeDisplay": if timecode { "frames" } else { "timecode" }})) {
         app.ui.status = e.to_string();
     }
@@ -262,7 +262,7 @@ pub(crate) fn viewer_scroll(ctx: &egui::Context) -> ViewerScroll {
     ViewerScroll { pan, zoom, trackpad, wheel_lines, wheel_modified }
 }
 
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: PanelKind, rect: Rect) {
+pub fn show(app: &mut PulsoApp, ui: &mut egui::Ui, p: PanelKind, rect: Rect) {
     match p {
         PanelKind::Composition => viewers::show(app, ui, 0, rect),
         PanelKind::Viewer(n) => viewers::show(app, ui, n, rect),
@@ -307,14 +307,14 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: PanelKind, rect: Rec
 pub(crate) type OpenPanelMenu = (PanelKind, egui::Pos2, egui::ViewportId);
 
 /// The main window's pass of the ≡ panel menu (opened from a tab).
-pub fn panel_menu_popup(app: &mut EffectcraftApp, ui: &mut egui::Ui) {
+pub fn panel_menu_popup(app: &mut PulsoApp, ui: &mut egui::Ui) {
     panel_menu_area(app, ui);
 }
 
 /// The ≡ panel menu, drawn in the viewport that owns the click that opened it: a panel in its own
 /// OS window opens its menu in that window, at that window's coordinates, instead of in the main
 /// window.
-pub(crate) fn panel_menu_area(app: &mut EffectcraftApp, ui: &mut egui::Ui) {
+pub(crate) fn panel_menu_area(app: &mut PulsoApp, ui: &mut egui::Ui) {
     let id = egui::Id::unique("panel-menu");
     let viewport = ui.ctx().viewport_id();
     let Some((panel, pos, owner)) = ui.ctx().data(|d| d.get_temp::<OpenPanelMenu>(id)) else { return };
@@ -427,7 +427,7 @@ mod preset_drop_tests {
 #[cfg(test)]
 mod panel_menu_viewport_tests {
     use super::*;
-    use effectcraft_engine::Session;
+    use pulso_engine::Session;
 
     fn menu_id() -> egui::Id {
         egui::Id::unique("panel-menu")
@@ -444,7 +444,7 @@ mod panel_menu_viewport_tests {
     /// One pass of `viewport` (a window `width` wide) that draws the menu as the app does: the
     /// main window through `panel_menu_popup`, a panel's own window through `panel_menu_area`.
     /// Returns where the menu was drawn in that pass.
-    fn pass(app: &mut EffectcraftApp, ctx: &egui::Context, viewport: egui::ViewportId, width: f32, events: Vec<egui::Event>) -> Option<egui::Rect> {
+    fn pass(app: &mut PulsoApp, ctx: &egui::Context, viewport: egui::ViewportId, width: f32, events: Vec<egui::Event>) -> Option<egui::Rect> {
         let mut viewports = egui::ViewportIdMap::default();
         viewports.insert(viewport, egui::ViewportInfo::default());
         let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(width, 400.0));
@@ -475,7 +475,7 @@ mod panel_menu_viewport_tests {
 
     #[test]
     fn a_floating_panels_menu_is_drawn_in_its_own_window_not_the_main_one() {
-        let mut app = EffectcraftApp::new(Session::default());
+        let mut app = PulsoApp::new(Session::default());
         let ctx = egui::Context::default();
         open(&ctx, window());
         assert_eq!(pass(&mut app, &ctx, egui::ViewportId::ROOT, 1000.0, vec![]), None, "the main window does not draw it");
@@ -486,7 +486,7 @@ mod panel_menu_viewport_tests {
 
     #[test]
     fn a_main_window_panels_menu_stays_in_the_main_window() {
-        let mut app = EffectcraftApp::new(Session::default());
+        let mut app = PulsoApp::new(Session::default());
         let ctx = egui::Context::default();
         open(&ctx, egui::ViewportId::ROOT);
         assert!(pass(&mut app, &ctx, window(), 1000.0, vec![]).is_none());
@@ -495,7 +495,7 @@ mod panel_menu_viewport_tests {
 
     #[test]
     fn a_floating_panels_menu_fits_a_window_narrower_than_the_menu() {
-        let mut app = EffectcraftApp::new(Session::default());
+        let mut app = PulsoApp::new(Session::default());
         let ctx = egui::Context::default();
         open(&ctx, window());
         let rect = pass(&mut app, &ctx, window(), 160.0, vec![]).unwrap();
@@ -508,7 +508,7 @@ mod panel_menu_viewport_tests {
 
     #[test]
     fn the_menu_is_as_wide_as_its_contents_not_the_window() {
-        let mut app = EffectcraftApp::new(Session::default());
+        let mut app = PulsoApp::new(Session::default());
         let ctx = egui::Context::default();
         open(&ctx, egui::ViewportId::ROOT);
         let first = pass(&mut app, &ctx, egui::ViewportId::ROOT, 1200.0, vec![]).unwrap();
@@ -521,7 +521,7 @@ mod panel_menu_viewport_tests {
 
     #[test]
     fn a_window_narrowed_under_the_open_menu_narrows_the_menu() {
-        let mut app = EffectcraftApp::new(Session::default());
+        let mut app = PulsoApp::new(Session::default());
         let ctx = egui::Context::default();
         open(&ctx, window());
         for _ in 0..3 {
@@ -538,7 +538,7 @@ mod panel_menu_viewport_tests {
     #[test]
     fn a_window_widened_under_the_open_menu_gives_the_labels_their_room_back() {
         crate::i18n::set_current("fr");
-        let mut app = EffectcraftApp::new(Session::default());
+        let mut app = PulsoApp::new(Session::default());
         let ctx = egui::Context::default();
         ctx.set_embed_viewports(false);
         open(&ctx, window());
@@ -552,7 +552,7 @@ mod panel_menu_viewport_tests {
 
     #[test]
     fn each_opening_measures_the_menu_afresh() {
-        let mut app = EffectcraftApp::new(Session::default());
+        let mut app = PulsoApp::new(Session::default());
         let ctx = egui::Context::default();
         open(&ctx, window());
         let wide = (0..3).filter_map(|_| pass(&mut app, &ctx, window(), 1000.0, vec![])).last().unwrap();
@@ -572,7 +572,7 @@ mod panel_menu_viewport_tests {
 
     #[test]
     fn a_press_in_another_window_closes_a_floating_panels_menu() {
-        let mut app = EffectcraftApp::new(Session::default());
+        let mut app = PulsoApp::new(Session::default());
         let ctx = egui::Context::default();
         open(&ctx, window());
         pass(&mut app, &ctx, window(), 1000.0, vec![]);

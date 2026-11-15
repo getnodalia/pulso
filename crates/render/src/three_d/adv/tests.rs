@@ -1,6 +1,6 @@
-use effectcraft_keyframe::Value;
-use effectcraft_project::{Comp, ItemId, ItemKind, LayerSource, LightKind, PrimitiveKind, Project, Renderer as R3, build};
-use effectcraft_time::{FrameRate, Tick};
+use pulso_keyframe::Value;
+use pulso_project::{Comp, ItemId, ItemKind, LayerSource, LightKind, PrimitiveKind, Project, Renderer as R3, build};
+use pulso_time::{FrameRate, Tick};
 
 use super::scene::{Material, Scene, TexInfo, Vertex, dominant_direction, irradiance_map};
 use super::shade::{self, PI};
@@ -247,14 +247,14 @@ fn project(w: u32, h: u32) -> (Project, ItemId) {
     (p, id)
 }
 
-fn add(p: &mut Project, cid: ItemId, src: LayerSource, edit: impl FnOnce(&mut effectcraft_project::Layer)) {
+fn add(p: &mut Project, cid: ItemId, src: LayerSource, edit: impl FnOnce(&mut pulso_project::Layer)) {
     let comp = p.comp(cid).unwrap().clone();
     let mut l = build::layer(p, &comp, "L", src, (comp.width, comp.height), None);
     edit(&mut l);
     p.comp_mut(cid).unwrap().layers.insert(0, l);
 }
 
-fn set(l: &mut effectcraft_project::Layer, path: &str, v: Value) {
+fn set(l: &mut pulso_project::Layer, path: &str, v: Value) {
     l.props.prop_mut(path).unwrap_or_else(|| panic!("{path}")).value = v;
 }
 
@@ -326,23 +326,15 @@ fn accepts_shadows_only_draws_just_the_shadow() {
     // #1691: a shadow catcher (card or plane primitive, "Accepts Shadows: Only") in front of a
     // red backdrop card, an invisible sphere casting onto it, a point light behind the camera.
     let (mut p, cid) = project(200, 150);
-    let red = p.add_item(
-        "R",
-        Default::default(),
-        None,
-        ItemKind::Solid(effectcraft_project::Solid { color: [1.0, 0.0, 0.0], width: 400, height: 400, pixel_aspect: 1.0 }),
-    );
+    let red =
+        p.add_item("R", Default::default(), None, ItemKind::Solid(pulso_project::Solid { color: [1.0, 0.0, 0.0], width: 400, height: 400, pixel_aspect: 1.0 }));
     add(&mut p, cid, LayerSource::Solid { item: red }, |l| {
         l.switches.three_d = true;
         set(l, "transform/position", Value::Vec3([100.0, 75.0, 300.0]));
         set(l, "materialOptions/acceptsShadows", Value::Enum(0));
     });
-    let white = p.add_item(
-        "W",
-        Default::default(),
-        None,
-        ItemKind::Solid(effectcraft_project::Solid { color: [1.0, 1.0, 1.0], width: 400, height: 400, pixel_aspect: 1.0 }),
-    );
+    let white =
+        p.add_item("W", Default::default(), None, ItemKind::Solid(pulso_project::Solid { color: [1.0, 1.0, 1.0], width: 400, height: 400, pixel_aspect: 1.0 }));
     add(&mut p, cid, LayerSource::Solid { item: white }, |l| {
         l.switches.three_d = true;
         set(l, "transform/position", Value::Vec3([100.0, 75.0, 200.0]));
@@ -391,24 +383,16 @@ fn accepts_shadows_only_draws_just_the_shadow() {
 #[test]
 fn cards_and_environment_light() {
     let (mut p, cid) = project(120, 90);
-    let sid = p.add_item(
-        "S",
-        Default::default(),
-        None,
-        ItemKind::Solid(effectcraft_project::Solid { color: [0.5, 0.5, 0.5], width: 60, height: 40, pixel_aspect: 1.0 }),
-    );
+    let sid =
+        p.add_item("S", Default::default(), None, ItemKind::Solid(pulso_project::Solid { color: [0.5, 0.5, 0.5], width: 60, height: 40, pixel_aspect: 1.0 }));
     add(&mut p, cid, LayerSource::Solid { item: sid }, |l| l.switches.three_d = true);
     let unlit = render(&p, cid);
     let c = unlit.data[20 * 120 + 30];
     assert!((c[0] - 0.5).abs() < 0.01 && c[3] > 0.99, "unlit card keeps its colour: {c:?}");
     assert_eq!(unlit.data[80 * 120 + 110][3], 0.0);
     // An Environment light sourcing a white environment layer brightens the card.
-    let env = p.add_item(
-        "E",
-        Default::default(),
-        None,
-        ItemKind::Solid(effectcraft_project::Solid { color: [1.0, 1.0, 1.0], width: 64, height: 32, pixel_aspect: 1.0 }),
-    );
+    let env =
+        p.add_item("E", Default::default(), None, ItemKind::Solid(pulso_project::Solid { color: [1.0, 1.0, 1.0], width: 64, height: 32, pixel_aspect: 1.0 }));
     add(&mut p, cid, LayerSource::Solid { item: env }, |l| {
         l.environment = true;
         l.switches.three_d = true;
@@ -427,12 +411,8 @@ fn cards_and_environment_light() {
 #[test]
 fn environment_light_without_a_source_lights_the_scene() {
     let (mut p, cid) = project(120, 90);
-    let sid = p.add_item(
-        "S",
-        Default::default(),
-        None,
-        ItemKind::Solid(effectcraft_project::Solid { color: [0.5, 0.5, 0.5], width: 60, height: 40, pixel_aspect: 1.0 }),
-    );
+    let sid =
+        p.add_item("S", Default::default(), None, ItemKind::Solid(pulso_project::Solid { color: [0.5, 0.5, 0.5], width: 60, height: 40, pixel_aspect: 1.0 }));
     add(&mut p, cid, LayerSource::Solid { item: sid }, |l| l.switches.three_d = true);
     let unlit = render(&p, cid);
     let c = unlit.data[20 * 120 + 30];
@@ -467,12 +447,8 @@ fn environment_light_without_a_source_lights_the_scene() {
 #[test]
 fn a_failed_environment_source_lights_nothing() {
     let (mut p, cid) = project(120, 90);
-    let sid = p.add_item(
-        "S",
-        Default::default(),
-        None,
-        ItemKind::Solid(effectcraft_project::Solid { color: [1.0, 1.0, 1.0], width: 60, height: 40, pixel_aspect: 1.0 }),
-    );
+    let sid =
+        p.add_item("S", Default::default(), None, ItemKind::Solid(pulso_project::Solid { color: [1.0, 1.0, 1.0], width: 60, height: 40, pixel_aspect: 1.0 }));
     add(&mut p, cid, LayerSource::Solid { item: sid }, |l| l.switches.three_d = true);
     let unlit = render(&p, cid);
     // The Environment Layer's footage is unreadable (missing; NoFootage serves no frames).
@@ -480,9 +456,9 @@ fn a_failed_environment_source_lights_nothing() {
         "F",
         Default::default(),
         None,
-        ItemKind::Footage(effectcraft_project::Footage {
+        ItemKind::Footage(pulso_project::Footage {
             path: "missing.exr".into(),
-            kind: effectcraft_project::FootageKind::Still,
+            kind: pulso_project::FootageKind::Still,
             width: 64,
             height: 32,
             pixel_aspect: 1.0,
@@ -500,7 +476,7 @@ fn a_failed_environment_source_lights_nothing() {
     add(&mut p, cid, LayerSource::Light { kind: LightKind::Environment }, |l| {
         set(l, "lightOptions/castsShadows", Value::Bool(true));
     });
-    fn light(p: &mut Project, cid: ItemId) -> &mut effectcraft_project::Layer {
+    fn light(p: &mut Project, cid: ItemId) -> &mut pulso_project::Layer {
         p.comp_mut(cid).unwrap().layers.iter_mut().find(|l| l.is_light()).unwrap()
     }
     // Auto-picked Environment Layer, unreadable: the light is off — no studio default, no
@@ -555,7 +531,7 @@ fn environment_lights_cast_shadows() {
             true,
             [0.0, -30.0],
             [0.0, 5.0],
-            effectcraft_keyframe::Gradient { colors: vec![(0.0, [1.0, 1.0, 1.0, 1.0]), (1.0, [0.0, 0.0, 0.0, 1.0])], opacities: vec![(0.0, 1.0), (1.0, 1.0)] },
+            pulso_keyframe::Gradient { colors: vec![(0.0, [1.0, 1.0, 1.0, 1.0]), (1.0, [0.0, 0.0, 0.0, 1.0])], opacities: vec![(0.0, 1.0), (1.0, 1.0)] },
         );
         let g = build::shape_group(ids, "Key", vec![rect, key]);
         l.props.sub_mut("contents").unwrap().children.push(g.into());
@@ -597,19 +573,11 @@ fn environment_lights_cast_shadows() {
 #[test]
 fn a_uniform_environment_casts_no_shadow() {
     let (mut p, cid) = project(120, 90);
-    let card = p.add_item(
-        "S",
-        Default::default(),
-        None,
-        ItemKind::Solid(effectcraft_project::Solid { color: [1.0, 1.0, 1.0], width: 60, height: 40, pixel_aspect: 1.0 }),
-    );
+    let card =
+        p.add_item("S", Default::default(), None, ItemKind::Solid(pulso_project::Solid { color: [1.0, 1.0, 1.0], width: 60, height: 40, pixel_aspect: 1.0 }));
     add(&mut p, cid, LayerSource::Solid { item: card }, |l| l.switches.three_d = true);
-    let env = p.add_item(
-        "E",
-        Default::default(),
-        None,
-        ItemKind::Solid(effectcraft_project::Solid { color: [1.0, 1.0, 1.0], width: 64, height: 32, pixel_aspect: 1.0 }),
-    );
+    let env =
+        p.add_item("E", Default::default(), None, ItemKind::Solid(pulso_project::Solid { color: [1.0, 1.0, 1.0], width: 64, height: 32, pixel_aspect: 1.0 }));
     add(&mut p, cid, LayerSource::Solid { item: env }, |l| {
         l.environment = true;
         l.switches.three_d = true;
@@ -805,7 +773,7 @@ fn extruded_text_renders_as_a_mesh() {
     let (mut p, cid) = project(200, 100);
     add(&mut p, cid, LayerSource::Text, |l| {
         l.switches.three_d = true;
-        let doc = effectcraft_keyframe::TextDoc { text: "IO".into(), size: 60.0, fill: [1.0, 1.0, 1.0, 1.0], apply_fill: true, ..Default::default() };
+        let doc = pulso_keyframe::TextDoc { text: "IO".into(), size: 60.0, fill: [1.0, 1.0, 1.0, 1.0], apply_fill: true, ..Default::default() };
         set(l, "text/sourceText", Value::Text(Box::new(doc)));
         let mut next = 10_000u64;
         l.props.children.push(build::extrusion_geometry_options(&mut build::Ids(&mut next)).into());
@@ -843,7 +811,7 @@ fn shape_surface_items_colour_the_extruded_surfaces() {
         let surface = |ids: &mut build::Ids, m: &str, c: [f64; 4]| {
             let mut g = build::shape_surface(ids, m).unwrap();
             g.children.push(build::shape_surface_prop(ids, "color").unwrap().into());
-            if let Some(effectcraft_project::Node::Prop(pr)) = g.children.last_mut() {
+            if let Some(pulso_project::Node::Prop(pr)) = g.children.last_mut() {
                 pr.value = Value::Color(c);
             }
             g
@@ -894,7 +862,7 @@ fn text_animators_colour_the_extruded_surfaces() {
     let (mut p, cid) = project(200, 100);
     add(&mut p, cid, LayerSource::Text, |l| {
         l.switches.three_d = true;
-        let doc = effectcraft_keyframe::TextDoc { text: "IO".into(), size: 60.0, fill: [1.0, 1.0, 1.0, 1.0], apply_fill: true, ..Default::default() };
+        let doc = pulso_keyframe::TextDoc { text: "IO".into(), size: 60.0, fill: [1.0, 1.0, 1.0, 1.0], apply_fill: true, ..Default::default() };
         set(l, "text/sourceText", Value::Text(Box::new(doc)));
         let mut next = 10_000u64;
         let ids = &mut build::Ids(&mut next);
@@ -935,7 +903,7 @@ fn text_animators_colour_the_extruded_surfaces() {
 // ---------------------------------------------------------------- motion blur, blend modes, mattes
 
 fn solid(p: &mut Project, color: [f32; 3], w: u32, h: u32) -> ItemId {
-    p.add_item("S", Default::default(), None, ItemKind::Solid(effectcraft_project::Solid { color, width: w, height: h, pixel_aspect: 1.0 }))
+    p.add_item("S", Default::default(), None, ItemKind::Solid(pulso_project::Solid { color, width: w, height: h, pixel_aspect: 1.0 }))
 }
 
 /// Pixels of row `y` whose alpha is partial (motion-blur smear or anti-aliasing).
@@ -953,8 +921,8 @@ fn motion_blur_smears_moving_meshes() {
         // 60 px per frame to the right.
         let pr = l.props.prop_mut("transform/position").unwrap();
         pr.keys = vec![
-            effectcraft_keyframe::Keyframe::new(Tick::ZERO, Value::Vec3([50.0, 60.0, 0.0])),
-            effectcraft_keyframe::Keyframe::new(Tick::from_seconds_f64(1.0), Value::Vec3([50.0 + 30.0 * 60.0, 60.0, 0.0])),
+            pulso_keyframe::Keyframe::new(Tick::ZERO, Value::Vec3([50.0, 60.0, 0.0])),
+            pulso_keyframe::Keyframe::new(Tick::from_seconds_f64(1.0), Value::Vec3([50.0 + 30.0 * 60.0, 60.0, 0.0])),
         ];
     });
     let sharp = render(&p, cid);
@@ -991,7 +959,7 @@ fn blend_modes_and_occlusion_in_advanced_3d() {
     });
     add(&mut p, cid, LayerSource::Solid { item: gray }, |l| {
         l.switches.three_d = true;
-        l.blend_mode = effectcraft_color::BlendMode::Multiply;
+        l.blend_mode = pulso_color::BlendMode::Multiply;
         set(l, "transform/position", Value::Vec3([60.0, 45.0, -20.0]));
         set(l, "transform/anchor", Value::Vec3([30.0, 20.0, 0.0]));
     });
@@ -1012,7 +980,7 @@ fn blend_modes_and_occlusion_in_advanced_3d() {
     let b = at(40, 45);
     assert!(b[2] > 0.98 && b[0] < 0.02, "occluded {b:?}");
     // Normal mode for comparison: gray covers the red.
-    p.comp_mut(cid).unwrap().layers[1].blend_mode = effectcraft_color::BlendMode::Normal;
+    p.comp_mut(cid).unwrap().layers[1].blend_mode = pulso_color::BlendMode::Normal;
     let n = render(&p, cid).data[45 * 120 + 70];
     assert!((n[0] - 0.5).abs() < 0.02 && (n[1] - 0.5).abs() < 0.02, "{n:?}");
 }
@@ -1032,15 +1000,14 @@ fn track_mattes_in_advanced_3d() {
         set(l, "transform/anchor", Value::Vec3([20.0, 15.0, 0.0]));
     });
     let matte = p.comp(cid).unwrap().layers[0].id;
-    p.comp_mut(cid).unwrap().layers[1].track_matte = Some(effectcraft_project::TrackMatte { layer: matte, kind: effectcraft_project::MatteKind::Alpha });
+    p.comp_mut(cid).unwrap().layers[1].track_matte = Some(pulso_project::TrackMatte { layer: matte, kind: pulso_project::MatteKind::Alpha });
     let img = render(&p, cid);
     let inside = img.data[30 * 120 + 30];
     let outside = img.data[70 * 120 + 100];
     assert!(inside[3] > 0.99 && inside[0] > 0.99, "{inside:?}");
     assert!(outside[3] < 0.01, "{outside:?}");
     // An inverted alpha matte keeps the outside instead.
-    p.comp_mut(cid).unwrap().layers[1].track_matte =
-        Some(effectcraft_project::TrackMatte { layer: matte, kind: effectcraft_project::MatteKind::AlphaInverted });
+    p.comp_mut(cid).unwrap().layers[1].track_matte = Some(pulso_project::TrackMatte { layer: matte, kind: pulso_project::MatteKind::AlphaInverted });
     let img = render(&p, cid);
     assert!(img.data[30 * 120 + 30][3] < 0.01 && img.data[70 * 120 + 100][3] > 0.99);
 }
@@ -1080,7 +1047,7 @@ fn collapsed_precomps_join_the_advanced_3d_scene() {
     let r = Renderer::new(&p, &NoFootage, RenderOpts::default());
     let comp = p.comp(cid).unwrap();
     let ctx = crate::EvalCtx::new(&p, cid, comp, Tick::ZERO);
-    let run: Vec<&effectcraft_project::Layer> = comp.layers.iter().filter(|l| l.is_3d() && !l.is_light()).collect();
+    let run: Vec<&pulso_project::Layer> = comp.layers.iter().filter(|l| l.is_3d() && !l.is_light()).collect();
     let s = scene_of(&r, &ctx, &run, (160, 120));
     assert!(s.indices.len() / 3 >= 12, "{} triangles", s.indices.len() / 3);
     // A 2D collapsed precomp draws its 3D layers through the parent's Advanced 3D renderer too.
@@ -1099,7 +1066,7 @@ fn extruded_strokes_render_as_bevelled_meshes() {
     let (mut p, cid) = project(200, 120);
     add(&mut p, cid, LayerSource::Text, |l| {
         l.switches.three_d = true;
-        let doc = effectcraft_keyframe::TextDoc {
+        let doc = pulso_keyframe::TextDoc {
             text: "I".into(),
             size: 80.0,
             fill: [1.0, 1.0, 1.0, 1.0],
@@ -1131,7 +1098,7 @@ fn extruded_strokes_render_as_bevelled_meshes() {
     let params = scene::extrusion_params(&ctx, l).unwrap();
     let meshes = scene::extruded_meshes(&ctx, l, &params);
     assert_eq!(meshes.len(), 2, "fill and stroke");
-    let width = |m: &effectcraft_model::Primitive| {
+    let width = |m: &pulso_model::Primitive| {
         let (a, b) = m.positions.iter().fold((f32::INFINITY, f32::NEG_INFINITY), |(a, b), q| (a.min(q[0]), b.max(q[0])));
         b - a
     };
@@ -1142,7 +1109,7 @@ fn extruded_strokes_render_as_bevelled_meshes() {
     assert!((width(&stroke.0) - width(&fill.0) - 8.0).abs() < 1.0, "{} vs {}", width(&stroke.0), width(&fill.0));
     assert!(stroke.0.positions.iter().any(|q| q[2] > 19.0));
     // Fill Over Stroke: the fill's front cap sits in front of the stroke's.
-    let front = |m: &effectcraft_model::Primitive| m.positions.iter().fold(f32::INFINITY, |a, q| a.min(q[2]));
+    let front = |m: &pulso_model::Primitive| m.positions.iter().fold(f32::INFINITY, |a, q| a.min(q[2]));
     assert!(front(&fill.0) < front(&stroke.0));
     // Rendered (unlit: base colours): a red rim around the white face.
     let img = render(&p, cid);
@@ -1155,12 +1122,12 @@ fn extruded_strokes_render_as_bevelled_meshes() {
 fn stroke_regions_are_rings() {
     // A closed path's stroke covers a ring (the inside stays open), so an extruded stroke is a
     // hollow frame around its fill.
-    let sq = effectcraft_path::rect([100.0, 100.0], [0.0, 0.0], 0.0);
-    let st = effectcraft_path::StrokeStyle { width: 10.0, ..Default::default() };
+    let sq = pulso_path::rect([100.0, 100.0], [0.0, 0.0], 0.0);
+    let st = pulso_path::StrokeStyle { width: 10.0, ..Default::default() };
     let r = crate::shapes::stroke_region(std::slice::from_ref(&sq), &st).unwrap();
-    let a = effectcraft_path::boolean::filled_area(&r, effectcraft_path::FillRule::NonZero);
+    let a = pulso_path::boolean::filled_area(&r, pulso_path::FillRule::NonZero);
     assert!((a - (110.0 * 110.0 - 90.0 * 90.0)).abs() < 20.0, "{a}");
-    let outlines = effectcraft_model::extrude::group_contours(scene::contours(&r, 0.25));
+    let outlines = pulso_model::extrude::group_contours(scene::contours(&r, 0.25));
     assert_eq!(outlines.len(), 1);
     assert_eq!(outlines[0].holes.len(), 1);
 }

@@ -2,27 +2,27 @@
 //! paint as text is also in the accessibility tree, as read-outs a screen reader can speak, and
 //! the Analyze / Create Camera buttons are named and work from the keyboard.
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
 use egui::accesskit::Role;
 use egui::{Event, Key, Modifiers};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
+use pulso_engine::Session;
+use pulso_ui_egui::PulsoApp;
+use pulso_ui_egui::dock::PanelKind;
 use serde_json::json;
 
-fn harness(panel: PanelKind) -> Harness<'static, EffectcraftApp> {
+fn harness(panel: PanelKind) -> Harness<'static, PulsoApp> {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Main", "width": 320, "height": 180, "duration": 4})).unwrap();
     s.execute("layer.newSolid", json!({"name": "Red", "color": "#c04040"})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| PulsoApp::new(s));
     h.state_mut().show_panel(panel);
     h.state_mut().ui.maximized = Some(panel);
     h.run_steps(4);
     h
 }
 
-fn labels(h: &Harness<'_, EffectcraftApp>) -> Vec<String> {
+fn labels(h: &Harness<'_, PulsoApp>) -> Vec<String> {
     h.query_all_by_role(Role::Label).filter_map(|n| n.accesskit_node().label()).filter(|l| !l.trim().is_empty()).collect()
 }
 
@@ -47,7 +47,7 @@ fn info_describes_the_colour_the_selection_and_the_time() {
 #[test]
 fn the_camera_tracker_block_is_named_and_works_from_the_keyboard() {
     let mut h = harness(PanelKind::EffectControls);
-    h.state_mut().session.execute("effect.apply", json!({"effect": effectcraft_engine::effects::camera_tracker::ID})).unwrap();
+    h.state_mut().session.execute("effect.apply", json!({"effect": pulso_engine::effects::camera_tracker::ID})).unwrap();
     h.run_steps(4);
     // Applying the effect starts its analysis; while it runs, Analyze is unavailable and Cancel is
     // there. Wait for it to end.
@@ -72,7 +72,7 @@ fn the_camera_tracker_block_is_named_and_works_from_the_keyboard() {
     // Enter on the focused button starts a new analysis. On a fast machine the background job can
     // start, finish and be written back inside one frame, so the job is never seen between two
     // steps; what persists is its undo step, so count those.
-    let runs = |h: &Harness<'_, EffectcraftApp>| h.state().session.history_tree().iter().filter(|n| n.label.starts_with("3D Camera Tracker")).count();
+    let runs = |h: &Harness<'_, PulsoApp>| h.state().session.history_tree().iter().filter(|n| n.label.starts_with("3D Camera Tracker")).count();
     // Undo the first analysis so a new run writes a different state, which the history records.
     assert!(h.state_mut().session.undo(), "undo the first analysis");
     h.run_steps(4);

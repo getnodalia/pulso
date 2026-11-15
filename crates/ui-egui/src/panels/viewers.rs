@@ -9,11 +9,11 @@
 use crate::i18n::tr;
 use std::sync::Arc;
 
-use effectcraft_engine::project::ItemId;
 use egui::{Align2, Color32, Rect, Sense, pos2, vec2};
+use pulso_engine::project::ItemId;
 use serde_json::json;
 
-use crate::EffectcraftApp;
+use crate::PulsoApp;
 use crate::dock::{PanelKind, WorkspaceExt as _};
 use crate::frames::{FrameImage, FrameKey};
 use crate::theme::Tokens;
@@ -21,7 +21,7 @@ use crate::theme::Tokens;
 /// A passive viewer's texture: the frame it shows.
 pub enum PassiveTexture {
     Cpu(egui::TextureHandle),
-    Gpu(egui::TextureId, Arc<effectcraft_gpu::DisplayFrame>),
+    Gpu(egui::TextureId, Arc<pulso_gpu::DisplayFrame>),
     /// A half-float frame (32 bpc) through the display pass on egui-wgpu's device.
     Baked(Box<crate::display_gpu::Bake>),
 }
@@ -60,22 +60,22 @@ pub fn id_of(p: PanelKind) -> Option<u32> {
 }
 
 /// The active viewer's panel.
-pub fn active_panel(app: &EffectcraftApp) -> PanelKind {
+pub fn active_panel(app: &PulsoApp) -> PanelKind {
     panel(app.ui.active_viewer)
 }
 
-pub fn locked(app: &EffectcraftApp, id: u32) -> bool {
+pub fn locked(app: &PulsoApp, id: u32) -> bool {
     app.ui.locked_tabs.contains(&panel(id).id())
 }
 
 /// Viewer `id`'s panel is docked or floating.
-fn open(app: &EffectcraftApp, id: u32) -> bool {
+fn open(app: &PulsoApp, id: u32) -> bool {
     let p = panel(id);
     app.ui.dock.is_open(p)
 }
 
 /// The comp viewer `id` shows: the active comp in the active viewer, else its own.
-pub fn comp_of(app: &EffectcraftApp, id: u32) -> Option<ItemId> {
+pub fn comp_of(app: &PulsoApp, id: u32) -> Option<ItemId> {
     if id == app.ui.active_viewer {
         return app.session.active_comp_id();
     }
@@ -84,11 +84,11 @@ pub fn comp_of(app: &EffectcraftApp, id: u32) -> Option<ItemId> {
 
 /// Draw viewer `id`: the active one is the full viewer; another shows its comp's frame and
 /// becomes the active viewer when clicked.
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: u32, rect: Rect) {
+pub fn show(app: &mut PulsoApp, ui: &mut egui::Ui, id: u32, rect: Rect) {
     if id == app.ui.active_viewer {
         // A comp opened earlier this frame (the Project panel) is routed next frame by
         // `on_open_comp`, which needs the comp this viewer showed (to keep it when locked).
-        if app.session.events.iter().any(|e| matches!(e, effectcraft_engine::Event::OpenComp(_))) {
+        if app.session.events.iter().any(|e| matches!(e, pulso_engine::Event::OpenComp(_))) {
             ui.ctx().request_repaint();
         } else {
             let c = app.session.active_comp_id().map(|c| c.0);
@@ -114,7 +114,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: u32, rect: Rect) {
             app.request_frame(cid, frame, scale);
             let key = app.frame_key(cid, frame, scale);
             if let Some((key, img)) = app.frames.get_for_viewer(&key, app.passive_tex.get(&id).map(|(k, _)| k)) {
-                let dc = effectcraft_engine::viewer::DisplayColor::of(&app.session);
+                let dc = pulso_engine::viewer::DisplayColor::of(&app.session);
                 let dkey = display_hash(&super::viewer_tools::display_key(app, dc.is_some()));
                 set_texture(app, &ctx, id, key, img, dc, dkey);
             }
@@ -141,12 +141,12 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, id: u32, rect: Rect) {
 
 /// Keep the frame viewer `id` shows in its texture.
 pub(crate) fn set_texture(
-    app: &mut EffectcraftApp,
+    app: &mut PulsoApp,
     ctx: &egui::Context,
     id: u32,
     key: FrameKey,
     img: FrameImage,
-    dc: Option<effectcraft_engine::viewer::DisplayColor>,
+    dc: Option<pulso_engine::viewer::DisplayColor>,
     dkey: u64,
 ) {
     let dc_id = egui::Id::unique(("passive-viewer-display", id));
@@ -220,16 +220,13 @@ pub(crate) fn set_texture(
 /// A passive viewer's display pass: the monitor conversion the active viewer applies (Use
 /// Display Color Management), with no channel or exposure of its own; for half-float frames
 /// also the HDR step.
-fn passive_pass(
-    encoding: effectcraft_engine::viewer::FrameEncoding,
-    dc: Option<&effectcraft_engine::viewer::DisplayColor>,
-) -> effectcraft_engine::viewer::DisplayPass {
-    effectcraft_engine::viewer::DisplayPass::new(effectcraft_engine::viewer::Channel::Rgb, false, 0.0, encoding, dc)
+fn passive_pass(encoding: pulso_engine::viewer::FrameEncoding, dc: Option<&pulso_engine::viewer::DisplayColor>) -> pulso_engine::viewer::DisplayPass {
+    pulso_engine::viewer::DisplayPass::new(pulso_engine::viewer::Channel::Rgb, false, 0.0, encoding, dc)
 }
 
 /// A frame as a passive viewer shows it without the display pass on the GPU: CPU frames through
 /// [`passive_pass`] (GPU frames unchanged).
-pub(crate) fn cpu_passive_image(app: &EffectcraftApp, img: FrameImage, dc: Option<&effectcraft_engine::viewer::DisplayColor>) -> FrameImage {
+pub(crate) fn cpu_passive_image(app: &PulsoApp, img: FrameImage, dc: Option<&pulso_engine::viewer::DisplayColor>) -> FrameImage {
     match img {
         FrameImage::Cpu(img) => {
             let pass = passive_pass(super::viewer_tools::rgba8_encoding(app), dc);
@@ -255,7 +252,7 @@ fn display_hash(key: &str) -> u64 {
 }
 
 /// Give a passive viewer's texture back (GPU textures are registered with the renderer).
-fn free(app: &EffectcraftApp, tex: Option<PassiveTexture>) {
+fn free(app: &PulsoApp, tex: Option<PassiveTexture>) {
     match (tex, &app.wgpu) {
         (Some(PassiveTexture::Gpu(id, _)), Some(rs)) => rs.renderer.write().free_texture(&id),
         (Some(PassiveTexture::Baked(mut b)), _) => b.free(app.window_wgpu.as_ref()),
@@ -264,7 +261,7 @@ fn free(app: &EffectcraftApp, tex: Option<PassiveTexture>) {
 }
 
 /// Make viewer `id` the active one: its comp becomes the active comp.
-pub fn activate(app: &mut EffectcraftApp, ctx: &egui::Context, id: u32) {
+pub fn activate(app: &mut PulsoApp, ctx: &egui::Context, id: u32) {
     if id == app.ui.active_viewer || !open(app, id) {
         return;
     }
@@ -286,7 +283,7 @@ pub fn activate(app: &mut EffectcraftApp, ctx: &egui::Context, id: u32) {
 
 /// A comp was opened (comp.open, a Timeline tab, a precomp double-click): it shows in the active
 /// viewer, unless that one is locked to another comp: then in an unlocked viewer, or a new one.
-pub fn on_open_comp(app: &mut EffectcraftApp, comp: ItemId) {
+pub fn on_open_comp(app: &mut PulsoApp, comp: ItemId) {
     let av = app.ui.active_viewer;
     let shown = app.ui.viewers.get(&av).copied().flatten().filter(|s| app.session.project.comp(ItemId(*s)).is_some());
     if locked(app, av) && shown.is_some_and(|s| s != comp.0) {
@@ -309,7 +306,7 @@ pub fn on_open_comp(app: &mut EffectcraftApp, comp: ItemId) {
 
 /// View ▸ New Viewer: a new viewer of the active comp next to the one in use, which is locked
 /// (so it keeps its comp). Returns the new viewer's id.
-pub fn new_viewer(app: &mut EffectcraftApp) -> u32 {
+pub fn new_viewer(app: &mut PulsoApp) -> u32 {
     let prev = app.ui.active_viewer;
     let active = app.session.active_comp_id().map(|c| c.0);
     app.ui.viewers.insert(prev, active);
@@ -322,7 +319,7 @@ pub fn new_viewer(app: &mut EffectcraftApp) -> u32 {
 }
 
 /// Dock a new viewer panel as a tab next to viewer `near`.
-fn add_viewer(app: &mut EffectcraftApp, near: u32) -> u32 {
+fn add_viewer(app: &mut PulsoApp, near: u32) -> u32 {
     let id = app.ui.viewers.keys().copied().max().unwrap_or(0).saturating_add(1).max(1);
     app.ui.viewers.insert(id, None);
     let p = panel(id);
@@ -333,7 +330,7 @@ fn add_viewer(app: &mut EffectcraftApp, near: u32) -> u32 {
 
 /// A viewer panel was closed: forget it (the Composition panel keeps its slot), and if it was the
 /// active viewer another open one takes over.
-pub fn on_close(app: &mut EffectcraftApp, p: PanelKind) {
+pub fn on_close(app: &mut PulsoApp, p: PanelKind) {
     let Some(id) = id_of(p) else { return };
     let tex = app.passive_tex.remove(&id).map(|(_, t)| t);
     free(app, tex);
@@ -354,7 +351,7 @@ pub fn on_close(app: &mut EffectcraftApp, p: PanelKind) {
 }
 
 /// The tab label of viewer `id` ("Composition Intro").
-pub fn title(app: &EffectcraftApp, id: u32) -> Option<String> {
+pub fn title(app: &PulsoApp, id: u32) -> Option<String> {
     let c = comp_of(app, id)?;
     Some(format!("{} {}", crate::i18n::command_label("window.panel", "Composition"), app.session.project.item(c)?.name))
 }

@@ -11,9 +11,9 @@
 //! * the composed layout (`/1/1[0]/1/2`) is left empty: After Effects lays the text out again
 //!   when it opens the project (t1-t3).
 
-use effectcraft_keyframe::Value;
-use effectcraft_keyframe::text_doc::{BaselineOption, Composer, Direction, Justify, Kerning, TextDoc};
-use effectcraft_project::{Layer, Node, PropGroup};
+use pulso_keyframe::Value;
+use pulso_keyframe::text_doc::{BaselineOption, Composer, Direction, Justify, Kerning, TextDoc};
+use pulso_project::{Layer, Node, PropGroup};
 
 use crate::export::report::{Collector, LossCategory};
 use crate::export::textdoc::{TNode, boolean, int, number, string};
@@ -55,7 +55,7 @@ pub(crate) struct StyleOut {
     pub apply_stroke: bool,
     /// Slot `/63`: stroke width in pixels; `None` keeps the prototype's value.
     pub stroke_width: Option<f64>,
-    /// Slot `/58`: stroke over fill (one switch for the whole text in EffectCraft; 550).
+    /// Slot `/58`: stroke over fill (one switch for the whole text in Pulso; 550).
     pub stroke_over_fill: bool,
 }
 
@@ -149,7 +149,7 @@ pub(crate) fn plan_text(layer: &Layer, comp_name: &str, col: &mut Collector) -> 
 /// written (animators are, `textanim.rs`).
 fn report_extras(text: &PropGroup, what: &str, col: &mut Collector) {
     let mut next = 1u64;
-    let reference = effectcraft_project::build::text(&mut effectcraft_project::build::Ids(&mut next), TextDoc::default());
+    let reference = pulso_project::build::text(&mut pulso_project::build::Ids(&mut next), TextDoc::default());
     for node in &text.children {
         let Node::Group(g) = node else { continue };
         match g.match_id.as_str() {
@@ -193,7 +193,7 @@ fn differs(g: &PropGroup, def: Option<&PropGroup>, depth: usize) -> bool {
 fn plan_doc(doc: &TextDoc, what: &str, col: &mut Collector) -> TextPlan {
     let base = doc.base_style();
     let runs = doc.runs();
-    // Characters in EffectCraft's text, each with its run, CRLF and LF made After Effects' CR.
+    // Characters in Pulso's text, each with its run, CRLF and LF made After Effects' CR.
     let chars: Vec<char> = doc.text.chars().collect();
     let mut style_of: Vec<usize> = Vec::with_capacity(chars.len());
     for (ri, r) in runs.iter().enumerate() {
@@ -291,7 +291,7 @@ fn plan_doc(doc: &TextDoc, what: &str, col: &mut Collector) -> TextPlan {
     TextPlan { text, runs: out_runs, paras, frame, animators: Vec::new() }
 }
 
-fn style_out(s: &effectcraft_keyframe::text_doc::CharStyle, what: &str, col: &mut Collector) -> StyleOut {
+fn style_out(s: &pulso_keyframe::text_doc::CharStyle, what: &str, col: &mut Collector) -> StyleOut {
     let auto_kern = match s.kerning {
         Kerning::Metrics => 1,
         Kerning::Optical => 2,

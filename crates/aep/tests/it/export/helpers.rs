@@ -3,11 +3,11 @@
 
 use std::sync::Arc;
 
-use effectcraft_aep::export::{ExportOptions, ExportResult, export};
-use effectcraft_color::Label;
-use effectcraft_keyframe::{Keyframe, Value};
-use effectcraft_project::{Comp, ItemId, ItemKind, Layer, LayerSource, Project, Solid, build};
-use effectcraft_time::{FrameRate, TICKS_PER_SECOND, Tick};
+use pulso_aep::export::{ExportOptions, ExportResult, export};
+use pulso_color::Label;
+use pulso_keyframe::{Keyframe, Value};
+use pulso_project::{Comp, ItemId, ItemKind, Layer, LayerSource, Project, Solid, build};
+use pulso_time::{FrameRate, TICKS_PER_SECOND, Tick};
 
 pub fn secs(s: f64) -> Tick {
     Tick((s * TICKS_PER_SECOND as f64).round() as i64)
@@ -71,8 +71,8 @@ pub fn simple() -> (Project, ItemId, ItemId) {
 /// `c` as far as the exporter writes property records: in every `tdbs` the user name is left out
 /// and the header bytes that are not decoded are zero (aep-format.md 3.4; After Effects reads
 /// them as zero, read-back e1-ztdb4d).
-pub fn decoded(c: &effectcraft_aep::Chunk<'static>) -> effectcraft_aep::Chunk<'static> {
-    use effectcraft_aep::{Body, Chunk};
+pub fn decoded(c: &pulso_aep::Chunk<'static>) -> pulso_aep::Chunk<'static> {
+    use pulso_aep::{Body, Chunk};
     const KEEP: &[(usize, usize)] = &[(0, 4), (5, 6), (7, 16), (68, 69), (76, 78), (79, 80), (119, 121)];
     let record = c.is_list(b"tdbs");
     let kids = |children: &[Chunk<'static>]| -> Vec<Chunk<'static>> {

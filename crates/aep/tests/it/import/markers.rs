@@ -2,16 +2,16 @@
 //! values the cases were made with.
 
 use crate::import::helpers::comp;
-use effectcraft_color::Label;
-use effectcraft_keyframe::{Interp, Value};
-use effectcraft_project::{Marker, Project};
-use effectcraft_time::{TICKS_PER_SECOND, Tick};
+use pulso_color::Label;
+use pulso_keyframe::{Interp, Value};
+use pulso_project::{Marker, Project};
+use pulso_time::{TICKS_PER_SECOND, Tick};
 
 fn secs(s: f64) -> Tick {
     Tick((s * TICKS_PER_SECOND as f64).round() as i64)
 }
 
-fn lossless(name: &str) -> Option<(Project, effectcraft_aep::import::ImportResult)> {
+fn lossless(name: &str) -> Option<(Project, pulso_aep::import::ImportResult)> {
     Some({
         let mut p = Project::default();
         let r = crate::import::helpers::try_import_fixture(&mut p, name, false)?.unwrap_or_else(|e| panic!("{name}: {e}"));
@@ -87,7 +87,7 @@ fn time_remapping_becomes_the_time_remap_property() {
         );
         assert_eq!(l.props.children.first().map(|n| n.match_id()), Some("timeRemap"), "{name}: first property");
         assert_eq!(r.report.imported.time_remaps, 1, "{name}");
-        assert_eq!(r.report.count(effectcraft_aep::import::LossCategory::TimeRemapping), 0, "{name}");
+        assert_eq!(r.report.count(pulso_aep::import::LossCategory::TimeRemapping), 0, "{name}");
     }
     // A layer without remapping gets no property.
     let (p, r) = load!("000-base.aep");

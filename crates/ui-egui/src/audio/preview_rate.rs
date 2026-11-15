@@ -1,7 +1,7 @@
 //! Preview speed changes composition time, not the output device's sample rate.
 //! Keep the clock and the resampler on the same rational output-sample grid.
 
-use effectcraft_engine::time::{FrameRate, TICKS_PER_SECOND, Tick};
+use pulso_engine::time::{FrameRate, TICKS_PER_SECOND, Tick};
 
 use super::PlaySpan;
 

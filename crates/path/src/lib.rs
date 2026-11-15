@@ -16,11 +16,11 @@ pub mod ops;
 pub mod trace;
 pub mod varstroke;
 
-use effectcraft_geom::Mat3;
-use effectcraft_keyframe::ShapePath;
-use effectcraft_raster::Mask;
 pub use kurbo::{BezPath, PathEl, Point};
 use kurbo::{Shape, Vec2 as KVec2};
+use pulso_geom::Mat3;
+use pulso_keyframe::ShapePath;
+use pulso_raster::Mask;
 
 /// Convert the AE vertex/tangent model to a kurbo path.
 pub fn to_kurbo(p: &ShapePath) -> BezPath {

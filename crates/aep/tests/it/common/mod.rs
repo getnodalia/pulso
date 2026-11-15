@@ -6,7 +6,7 @@
 //! extension (`058-key-opacity-2key`), built like the single-case file's composition `C` (plus
 //! the compositions it uses). [`try_fixture`] hands a test the case as a project of its own: the
 //! combined file with every project item removed that the case composition does not use
-//! (directly or through precomposition layers), written back with [`effectcraft_aep::write`].
+//! (directly or through precomposition layers), written back with [`pulso_aep::write`].
 //! The case composition is renamed `C` as in the single-case files; everything else of the file
 //! (project settings, the effect definitions, the XMP packet) stays, and the layers and items keep
 //! the ids they have in the combined file.
@@ -15,8 +15,8 @@
 //! combined file's own name) is read as it is. When the file is not
 //! there the test prints `SKIPPED: fixture <name> missing` and returns without failing (the
 //! macros below), so the suite runs without the projects. The directory is the one in the
-//! `EFFECTCRAFT_AEP_FIXTURES` environment variable (which may also hold the old single-case
-//! files); without it every such test skips. With `EFFECTCRAFT_AEP_FIXTURES_REQUIRED` set (to
+//! `PULSO_AEP_FIXTURES` environment variable (which may also hold the old single-case
+//! files); without it every such test skips. With `PULSO_AEP_FIXTURES_REQUIRED` set (to
 //! anything but an empty string) a missing project fails the test instead, so a run against the
 //! corpus cannot pass by skipping. The engine tests include this file too.
 #![allow(dead_code, unused_macros)]
@@ -27,14 +27,14 @@ use std::collections::{BTreeSet, HashMap};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use effectcraft_aep::{AepFile, Body, Chunk, ItemKind, Project};
+use pulso_aep::{AepFile, Body, Chunk, ItemKind, Project};
 
 pub use cases::CASES;
 
-/// The directory the test projects are read from, or `None` when `EFFECTCRAFT_AEP_FIXTURES` is
+/// The directory the test projects are read from, or `None` when `PULSO_AEP_FIXTURES` is
 /// not set (the projects are opt-in).
 pub fn dir() -> Option<PathBuf> {
-    std::env::var_os("EFFECTCRAFT_AEP_FIXTURES").filter(|d| !d.is_empty()).map(PathBuf::from)
+    std::env::var_os("PULSO_AEP_FIXTURES").filter(|d| !d.is_empty()).map(PathBuf::from)
 }
 
 /// The combined files the cases live in (and the empty project, a file of its own), sorted.
@@ -182,9 +182,9 @@ pub fn names(ext: &str) -> Option<Vec<String>> {
 
 pub fn skipped(name: &str) {
     assert!(
-        std::env::var_os("EFFECTCRAFT_AEP_FIXTURES_REQUIRED").is_none_or(|v| v.is_empty()),
-        "fixture {name} missing (EFFECTCRAFT_AEP_FIXTURES_REQUIRED is set; EFFECTCRAFT_AEP_FIXTURES = {:?})",
-        std::env::var_os("EFFECTCRAFT_AEP_FIXTURES")
+        std::env::var_os("PULSO_AEP_FIXTURES_REQUIRED").is_none_or(|v| v.is_empty()),
+        "fixture {name} missing (PULSO_AEP_FIXTURES_REQUIRED is set; PULSO_AEP_FIXTURES = {:?})",
+        std::env::var_os("PULSO_AEP_FIXTURES")
     );
     println!("SKIPPED: fixture {name} missing");
 }
@@ -195,7 +195,7 @@ fn parsed(file: &PathBuf) -> &'static AepFile<'static> {
     let mut files = FILES.get_or_init(Default::default).lock().unwrap_or_else(|e| e.into_inner());
     files.entry(file.clone()).or_insert_with(|| {
         let bytes: &'static [u8] = Box::leak(std::fs::read(file).unwrap_or_else(|e| panic!("{}: {e}", file.display())).into_boxed_slice());
-        Box::leak(Box::new(effectcraft_aep::parse_any(bytes).unwrap_or_else(|e| panic!("{}: {e}", file.display()))))
+        Box::leak(Box::new(pulso_aep::parse_any(bytes).unwrap_or_else(|e| panic!("{}: {e}", file.display()))))
     })
 }
 
@@ -219,7 +219,7 @@ fn item_id(item: &Chunk<'_>) -> Option<u32> {
 
 /// The cases that import a footage file without using it in their composition, and how to find
 /// that item: it stays with the case.
-const UNUSED_FOOTAGE: &[(&str, &str, fn(&effectcraft_aep::Item<'_, '_>) -> bool)] = &[
+const UNUSED_FOOTAGE: &[(&str, &str, fn(&pulso_aep::Item<'_, '_>) -> bool)] = &[
     ("350-footage-wav-imported", "the WAV", |i| i.footage().and_then(|f| f.path).is_some_and(|p| p.ends_with("test-tone.wav"))),
     ("352-footage-pngseq-imported", "the png sequence", |i| i.sequence_info().is_some_and(|s| s.prefix == "seq_" && s.suffix == ".png")),
 ];
@@ -249,7 +249,7 @@ pub fn isolate(file: &AepFile<'_>, comp: &str) -> Result<Vec<u8>, String> {
     let fold = out.chunks.iter_mut().find(|c| c.is_list(b"Fold")).ok_or("no LIST Fold")?;
     prune(fold, &keep);
     rename(fold, case.id().ok_or("case without id")?, "C");
-    effectcraft_aep::write(&out).map_err(|e| e.to_string())
+    pulso_aep::write(&out).map_err(|e| e.to_string())
 }
 
 /// Removes the items of `list` (and of its folders) that are not kept; a folder stays while it

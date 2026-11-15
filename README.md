@@ -3,7 +3,7 @@
     <img src="https://raw.githubusercontent.com/danielmigueltejedor/nodalia-web/main/assets/brand/nodalia-wordmark-badge.svg" width="150" alt="Nodalia">
   </a>
   <br><br>
-  <img src="https://raw.githubusercontent.com/danielmigueltejedor/pulso/main/assets/app-icon/hicolor/512x512/apps/ai.storyteller.effectcraft.png" width="192" alt="Pulso">
+  <img src="https://raw.githubusercontent.com/danielmigueltejedor/pulso/main/assets/app-icon/hicolor/512x512/apps/dev.danielmiguelt.Pulso.png" width="192" alt="Pulso">
   <h1>Pulso</h1>
   <p><strong>The compositing and motion graphics tool of the Nodalia suite.</strong></p>
 
@@ -41,7 +41,7 @@ You need a recent stable Rust toolchain.
 ```bash
 git clone https://github.com/getnodalia/pulso.git
 cd pulso
-cargo run --release -p effectcraft
+cargo run --release -p pulso
 ```
 
 ## Project status

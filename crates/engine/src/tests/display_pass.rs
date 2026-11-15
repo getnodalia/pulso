@@ -1,11 +1,11 @@
 //! The viewer's display pass (`viewer::DisplayPass`): exposure on the float range of 32 bpc
 //! frames, the HDR step after exposure, the display colour after both, and the frame encodings.
 
-use effectcraft_color::{ColorSpace, linear_to_srgb};
-use effectcraft_project::HdrMode;
-use effectcraft_render::RenderOpts;
-use effectcraft_render::color::{compand, tone_map};
-use effectcraft_time::Tick;
+use pulso_color::{ColorSpace, linear_to_srgb};
+use pulso_project::HdrMode;
+use pulso_render::RenderOpts;
+use pulso_render::color::{compand, tone_map};
+use pulso_time::Tick;
 use serde_json::json;
 
 use crate::Session;
@@ -123,8 +123,8 @@ fn pass_colour_matches_display_color() {
 }
 
 /// A 17³ LUT that mixes channels and bends the curve (as an ICC profile's device does).
-pub(crate) fn test_lut() -> effectcraft_color::icc::Lut3d {
-    effectcraft_color::icc::Lut3d::bake(17, |c| [c[0].powf(1.3) * 0.9 + c[1] * 0.1, c[1] * 0.8 + c[2] * 0.2, (c[2] * 0.7 + c[0] * 0.3).sqrt()])
+pub(crate) fn test_lut() -> pulso_color::icc::Lut3d {
+    pulso_color::icc::Lut3d::bake(17, |c| [c[0].powf(1.3) * 0.9 + c[1] * 0.1, c[1] * 0.8 + c[2] * 0.2, (c[2] * 0.7 + c[0] * 0.3).sqrt()])
 }
 
 /// Frames keep their encoding: the output space's curve (the Working Gamma's when unmanaged) and

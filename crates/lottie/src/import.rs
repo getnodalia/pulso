@@ -1,16 +1,16 @@
-//! Lottie document → EffectCraft compositions (the inverse of [`crate::export`]).
+//! Lottie document → Pulso compositions (the inverse of [`crate::export`]).
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use effectcraft_color::Label;
-use effectcraft_keyframe::{ShapePath, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{
+use pulso_color::Label;
+use pulso_keyframe::{ShapePath, Value};
+use pulso_project::build::{self, Ids};
+use pulso_project::{
     AlphaMode, AutoOrient, Comp, Footage, FootageKind, GroupKind, ItemId, ItemKind, Layer, LayerId, LayerSource, Marker, MatteKind, Node, ParamUi, Project,
     PropGroup, Property, Solid, TrackMatte,
 };
-use effectcraft_time::{FrameRate, Tick};
+use pulso_time::{FrameRate, Tick};
 use serde_json::Value as Json;
 
 use crate::anim::{self, Im, import_prop};
@@ -336,8 +336,8 @@ fn effects(im: &mut Im, ids: &mut Ids, list: &[Json], g: &mut PropGroup, size: [
             im.warn(format!("effect `{nm}` (type {ty}) is not supported (skipped)"));
             continue;
         };
-        let Some(spec) = effectcraft_effects::find(map.id) else { continue };
-        let mut fg = effectcraft_effects::instantiate(spec, ids, nm, size);
+        let Some(spec) = pulso_effects::find(map.id) else { continue };
+        let mut fg = pulso_effects::instantiate(spec, ids, nm, size);
         if e.get("en").and_then(Json::as_u64) == Some(0) {
             fg.enabled = false;
         }
@@ -432,7 +432,7 @@ fn build_layers(cx: &mut Ctx, project: &mut Project, comp: &mut Comp, layers: &[
         let sr = f(j, "sr").unwrap_or(1.0);
         l.stretch = if sr.is_finite() && sr.abs() >= 0.01 {
             // Past ±9900 % too (#3247): the largest stretch a layer supports, sign kept.
-            let pct = effectcraft_project::limits::stretch(sr * 100.0);
+            let pct = pulso_project::limits::stretch(sr * 100.0);
             if pct.to_bits() != (sr * 100.0).to_bits() {
                 cx.im.warn(format!("{name}: a time stretch of {} % is not supported ({pct} % used)", sr * 100.0));
             }

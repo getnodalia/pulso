@@ -5,8 +5,8 @@
 //!
 //! The maths lives in plain functions so it can be tested without a UI.
 
-use effectcraft_engine::geom::{Mat3, vec2 as gv2};
 use egui::{Align2, Color32, Pos2, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
+use pulso_engine::geom::{Mat3, vec2 as gv2};
 
 use crate::theme::Tokens;
 use crate::widgets;
@@ -297,7 +297,7 @@ impl CurvePoints {
     /// The monotone spline (`Curve::parse`) through the points, evaluated at `x`: the curve
     /// Lumetri's RGB curves and Glow's arbitrary map render.
     pub fn eval(&self, x: f32) -> f32 {
-        effectcraft_engine::effects::Curve::parse(&self.format()).map(|c| c.eval(x)).unwrap_or(x)
+        pulso_engine::effects::Curve::parse(&self.format()).map(|c| c.eval(x)).unwrap_or(x)
     }
     /// Pencil mode: points from a free-drawn curve sampled at `samples.len()` even x steps.
     pub fn from_samples(samples: &[f32]) -> CurvePoints {
@@ -353,8 +353,7 @@ pub fn curves_graph(
     p.rect_filled(rect, 0.0, Color32::from_rgb(0x1c, 0x1c, 0x1c));
     draw_curve_grid(&p, rect, t);
     let col = curve_channel_color(channel);
-    let spline =
-        if mode.natural { effectcraft_engine::effects::Curve::parse_natural(&pts.format()) } else { effectcraft_engine::effects::Curve::parse(&pts.format()) };
+    let spline = if mode.natural { pulso_engine::effects::Curve::parse_natural(&pts.format()) } else { pulso_engine::effects::Curve::parse(&pts.format()) };
     let eval = |x: f32| spline.as_ref().map(|c| c.eval(x)).unwrap_or(x);
     let line: Vec<Pos2> = (0..=96)
         .map(|i| {
@@ -692,7 +691,7 @@ mod tests {
         let mut c = CurvePoints::identity();
         assert!((c.eval(0.3) - 0.3).abs() < 1e-6);
         c.insert(0.5, 0.75);
-        let fx = effectcraft_engine::effects::Curve::parse(&c.format()).unwrap();
+        let fx = pulso_engine::effects::Curve::parse(&c.format()).unwrap();
         for i in 0..=20 {
             let x = i as f32 / 20.0;
             assert!((c.eval(x) - fx.eval(x)).abs() < 1e-6);

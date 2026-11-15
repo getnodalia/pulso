@@ -2,16 +2,16 @@
 //!
 //! | Format | Container / files | Video | Alpha | Audio |
 //! |---|---|---|---|---|
-//! | H.264 | MP4 | FilmCraft H.264 High, 8-bit 4:2:0 BT.709 limited, VBR | no | AAC-LC (FilmCraft), mono/stereo |
-//! | ProRes | QuickTime MOV | FilmCraft ProRes 422 Proxy/LT/422/HQ, 10-bit; 4444/4444 XQ 4:4:4 | 4444 (16-bit alpha coding) | PCM 16/24-bit or 32-bit float, mono/stereo |
+//! | H.264 | MP4 | Toma H.264 High, 8-bit 4:2:0 BT.709 limited, VBR | no | AAC-LC (Toma), mono/stereo |
+//! | ProRes | QuickTime MOV | Toma ProRes 422 Proxy/LT/422/HQ, 10-bit; 4444/4444 XQ 4:4:4 | 4444 (16-bit alpha coding) | PCM 16/24-bit or 32-bit float, mono/stereo |
 //! | Uncompressed | QuickTime MOV (`raw `) | 8-bit RGB (depth 24, rows padded to even bytes) or ARGB (depth 32) | RGB + Alpha (straight or premultiplied) | PCM 16/24-bit or 32-bit float, mono/stereo |
 //! | PNG / JPEG / TIFF sequence | one file per frame | 8-bit | PNG, TIFF | — |
 //! | OpenEXR sequence | one file per frame, scan lines | 32-bit float (default) or half float, linear light, premultiplied; compression None, RLE, ZIPS, ZIP (default), PIZ, PXR24, B44, B44A, DWAA, DWAB | yes | — |
 //! | Targa sequence | one file per frame | uncompressed 8-bit: 24-bit RGB, 32-bit RGB + Alpha (8 alpha bits), 8-bit grey for Alpha; top-left origin | yes (straight or premultiplied) | — |
 //! | Animated GIF | GIF89a | 256-colour palette per frame (NeuQuant) | 1-bit | — |
-//! | WebM | WebM (Matroska) | VP9 profile 0 (`effectcraft-vp9enc`: key + inter frames, a key frame every 2 s, loop filter), 8-bit 4:2:0; or AV1 (`effectcraft-av1enc`) | VP9 alpha (BlockAdditional) | Opus (`effectcraft-opusenc`: SILK / hybrid / CELT by bitrate and application), 48 kHz |
-//! | HEVC | MP4 (`hvc1`) | `effectcraft-hevcenc` Main / Main 10 4:2:0, I + P slices, bitrate or constant quality, level, key-frame interval | no | AAC-LC (FilmCraft) |
-//! | AV1 | MP4 (`av01`) | `effectcraft-av1enc` Main 8/10-bit 4:2:0, key + inter frames | no | AAC-LC (FilmCraft) |
+//! | WebM | WebM (Matroska) | VP9 profile 0 (`pulso-vp9enc`: key + inter frames, a key frame every 2 s, loop filter), 8-bit 4:2:0; or AV1 (`pulso-av1enc`) | VP9 alpha (BlockAdditional) | Opus (`pulso-opusenc`: SILK / hybrid / CELT by bitrate and application), 48 kHz |
+//! | HEVC | MP4 (`hvc1`) | `pulso-hevcenc` Main / Main 10 4:2:0, I + P slices, bitrate or constant quality, level, key-frame interval | no | AAC-LC (Toma) |
+//! | AV1 | MP4 (`av01`) | `pulso-av1enc` Main 8/10-bit 4:2:0, key + inter frames | no | AAC-LC (Toma) |
 //! | WAV / AIFF | RIFF WAVE / AIFF (AIFF-C for float) | — | — | PCM 16/24-bit or 32-bit float, mono/stereo (audio only) |
 //!
 //! Every frame goes through the internal `pipeline` module: the Render Settings overrides (Effects, Solo Switches,
@@ -25,7 +25,7 @@
 //! Frames are rendered in parallel batches (rayon; one batch ≈ one frame per core) and handed to
 //! the encoder in order. They share the job's layer cache, as viewer frames share the viewer's:
 //! static and transform-only layers render once per job. Progress is reported after each batch through a callback that can cancel
-//! the job by returning `false`. Codecs and the MP4/MOV muxer are FilmCraft's pure-Rust crates
+//! the job by returning `false`. Codecs and the MP4/MOV muxer are Toma's pure-Rust crates
 //! (plan ADR 0001); nothing outside this crate touches them.
 //!
 //! H.264 requires even dimensions: odd output sizes are cropped by one pixel (padded when the
@@ -44,16 +44,16 @@ mod webm_av1;
 
 use web_time::Instant;
 
-use effectcraft_project::render_queue::{AudioOutput, Channels, OutputFormat, OutputModule, RenderLog, RenderQuality, RenderSettings, sequence_path};
-use effectcraft_project::{Comp, ItemId, Project};
-use effectcraft_raster::Image;
-use effectcraft_render::{ExprHost, FootageSource};
+use pulso_project::render_queue::{AudioOutput, Channels, OutputFormat, OutputModule, RenderLog, RenderQuality, RenderSettings, sequence_path};
+use pulso_project::{Comp, ItemId, Project};
+use pulso_raster::Image;
+use pulso_render::{ExprHost, FootageSource};
 
-pub use effectcraft_project::render_queue;
-pub use effectcraft_project::render_queue::StorageQuota;
 pub use out::Sink;
 pub(crate) use pipeline::Cx;
 pub use pipeline::{CACHE_BUDGET, GPU_INFLIGHT_MAX, RENDERER_ENV, auto_gpu_frames, pick_renderer};
+pub use pulso_project::render_queue;
+pub use pulso_project::render_queue::StorageQuota;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ExportError {
@@ -82,7 +82,7 @@ pub struct Job<'a> {
     pub expr: Option<&'a dyn ExprHost>,
     /// GPU compositor: used for every frame of the job when the project's renderer is Mercury
     /// GPU Acceleration (frames it declines render on the CPU).
-    pub accel: Option<&'a dyn effectcraft_render::Accelerator>,
+    pub accel: Option<&'a dyn pulso_render::Accelerator>,
     pub comp: ItemId,
     pub settings: &'a RenderSettings,
     pub output: &'a OutputModule,
@@ -111,16 +111,16 @@ pub struct JobOptions<'a> {
     /// Layer caches shared by the consecutive jobs of a Render Queue run (#3335): the job
     /// renders through them instead of fresh ones, and leaves the accelerator's pooled working
     /// textures for the next job (whoever holds the caches calls
-    /// [`effectcraft_render::Accelerator::render_end`] after the last one). `None`: the job
+    /// [`pulso_render::Accelerator::render_end`] after the last one). `None`: the job
     /// starts cold and trims the pool when it ends, as a one-off export does.
     pub caches: Option<JobCaches<'a>>,
     /// The compositor of the job's frames (`Backend::Gpu` or `Backend::Cpu`; `Auto` counts as unset), shared by the output modules of
     /// one queue item: when it holds a choice the job renders on it; otherwise the job stores
     /// the compositor it chose there, so the item's other output modules encode the same
     /// frames. `None`: the job decides alone.
-    pub renderer: Option<&'a std::sync::Mutex<Option<effectcraft_render::Backend>>>,
+    pub renderer: Option<&'a std::sync::Mutex<Option<pulso_render::Backend>>>,
     /// Settings ▸ Memory & CPU ▸ GPU Frames Rendered at Once: 1 to 3, or `None` for Auto (from
-    /// the device memory a frame measured, #3335). `EFFECTCRAFT_GPU_INFLIGHT` overrides it.
+    /// the device memory a frame measured, #3335). `PULSO_GPU_INFLIGHT` overrides it.
     pub gpu_frames: Option<usize>,
 }
 
@@ -129,15 +129,15 @@ pub struct JobOptions<'a> {
 /// the other.
 #[derive(Clone, Copy)]
 pub struct JobCaches<'a> {
-    pub gpu: &'a effectcraft_render::LayerCache,
-    pub cpu: &'a effectcraft_render::LayerCache,
+    pub gpu: &'a pulso_render::LayerCache,
+    pub cpu: &'a pulso_render::LayerCache,
 }
 
 /// The compositor a job's frames render on: the GPU's (GPU Acceleration, with an
 /// accelerator) or the CPU's frame-parallel one (Software Rendering). The whole job renders
 /// on one of them, never a mix: the two differ slightly. A GPU project with an accelerator
 /// measures both on its first frames and renders the job on the faster (#3335); the choice is
-/// in the render log. `EFFECTCRAFT_RQ_RENDERER=gpu|cpu|auto` overrides the measurement.
+/// in the render log. `PULSO_RQ_RENDERER=gpu|cpu|auto` overrides the measurement.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum JobRenderer {
     Gpu,
@@ -195,18 +195,18 @@ pub fn wants_audio(job: &Job) -> bool {
         && match job.output.audio {
             AudioOutput::On => true,
             AudioOutput::Off => false,
-            AudioOutput::Auto => effectcraft_render::audio::comp_has_audio(job.project, job.comp),
+            AudioOutput::Auto => pulso_render::audio::comp_has_audio(job.project, job.comp),
         }
 }
 
 /// Run the export (blocking). `progress` is called after every batch; returning `false` cancels.
 pub fn export(job: &Job, progress: &mut dyn FnMut(&Progress) -> bool) -> Result<Report> {
-    effectcraft_render::passes::block_on(export_async(job, progress))
+    pulso_render::passes::block_on(export_async(job, progress))
 }
 
 /// [`export`] as a future: with an accelerator whose readbacks are deferred (WebGPU in a
 /// browser worker) every frame renders in passes, awaiting the device in between
-/// ([`effectcraft_render::passes`]); otherwise it never waits and frames render in parallel
+/// ([`pulso_render::passes`]); otherwise it never waits and frames render in parallel
 /// batches as in [`export`].
 pub async fn export_async(job: &Job<'_>, progress: &mut dyn FnMut(&Progress) -> bool) -> Result<Report> {
     let t0 = Instant::now();
@@ -227,9 +227,9 @@ pub async fn export_async(job: &Job<'_>, progress: &mut dyn FnMut(&Progress) -> 
     r
 }
 
-/// Calls [`effectcraft_render::Accelerator::render_end`] when dropped: after the export, and
+/// Calls [`pulso_render::Accelerator::render_end`] when dropped: after the export, and
 /// also when it panics or its future is dropped (a browser worker aborting it).
-struct RenderEnd<'a>(Option<&'a dyn effectcraft_render::Accelerator>);
+struct RenderEnd<'a>(Option<&'a dyn pulso_render::Accelerator>);
 
 impl Drop for RenderEnd<'_> {
     fn drop(&mut self) {
@@ -355,7 +355,7 @@ fn write_still<W: std::io::Write + std::io::Seek>(cx: &Cx, file: &mut W, img: &I
             // Colour is floored at 0 but not capped at 1: a 32 bpc frame's over-range values survive (#339).
             // The frame was rendered without the HDR step (`RenderOpts::skip_hdr_step`) and is
             // decoded with the output space's curve, in the output space's primaries.
-            let pipe = effectcraft_render::color::Pipe::of(&cx.project.settings);
+            let pipe = pulso_render::color::Pipe::of(&cx.project.settings);
             let dec = pipe.output_linear();
             let lin3 = |c: [f32; 3]| dec.apply(c.map(|v| v.max(0.0)));
             let mut data = Vec::with_capacity((w * h * 4) as usize);

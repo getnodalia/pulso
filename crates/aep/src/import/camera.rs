@@ -6,8 +6,8 @@
 //! expression); a stored property that is not mapped is reported.
 
 use crate::{Layer as AepLayer, PropGroup as AepGroup, PropNode};
-use effectcraft_keyframe::Value;
-use effectcraft_project::PropGroup;
+use pulso_keyframe::Value;
+use pulso_project::PropGroup;
 
 use crate::import::props::{Kind, import_expression, import_keys, sane};
 use crate::import::report::{Collector, LossCategory};

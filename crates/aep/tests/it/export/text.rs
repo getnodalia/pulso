@@ -1,16 +1,16 @@
-//! Text layers: every text fixture is imported, exported and parsed back with `effectcraft-aep`;
+//! Text layers: every text fixture is imported, exported and parsed back with `pulso-aep`;
 //! the text document (text, paragraphs, style runs, fonts, box) must equal the one After Effects
 //! wrote for every decoded field, and a second import gives the same Source Text. Documents built
 //! in code check line breaks, runs, fonts, and what is reported.
 
 use crate::export::helpers::*;
-use effectcraft_aep::export::LossCategory;
-use effectcraft_aep::import::{ImportOptions, import};
-use effectcraft_aep::{Caps, Justification, TextDocument, parse};
-use effectcraft_keyframe::Value;
-use effectcraft_keyframe::text_doc::{BaselineOption, CharStyle, Justify, ParaStyle, StyleRun, TextDoc};
-use effectcraft_project::{ItemId, ItemKind, LayerSource, Project};
-use effectcraft_time::FrameRate;
+use pulso_aep::export::LossCategory;
+use pulso_aep::import::{ImportOptions, import};
+use pulso_aep::{Caps, Justification, TextDocument, parse};
+use pulso_keyframe::Value;
+use pulso_keyframe::text_doc::{BaselineOption, CharStyle, Justify, ParaStyle, StyleRun, TextDoc};
+use pulso_project::{ItemId, ItemKind, LayerSource, Project};
+use pulso_time::FrameRate;
 
 fn text_fixtures() -> Option<Vec<String>> {
     Some({
@@ -31,7 +31,7 @@ fn reimport(bytes: &[u8]) -> Project {
 /// The text documents of all text layers, by composition name and layer index.
 fn documents(bytes: &[u8]) -> Vec<((String, usize), TextDocument)> {
     let file = parse(bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let mut out = Vec::new();
     for item in view.all_items() {
         let Some(comp) = item.comp() else { continue };
@@ -116,7 +116,7 @@ fn every_text_fixture_is_written_with_its_document() {
         }
         // The container is consistent and a second import gives the same Source Text.
         let file = parse(&r.bytes).expect("parse");
-        assert_eq!(effectcraft_aep::write(&file).expect("write"), r.bytes, "{name}");
+        assert_eq!(pulso_aep::write(&file).expect("write"), r.bytes, "{name}");
         let p2 = reimport(&r.bytes);
         // Vertical text comes back horizontal (reported above).
         let horizontal = |v: Vec<TextDoc>| v.into_iter().map(|d| TextDoc { vertical: false, ..d }).collect::<Vec<_>>();
@@ -190,10 +190,10 @@ fn documents_built_in_code_are_written_as_their_fields() {
     with_layer(&mut p2, c, 0, |l| l.name = "Named".into());
     let r2 = export_all(&p2);
     let file = parse(&r2.bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let layer = view.all_items().into_iter().find_map(|i| i.comp()).and_then(|c| c.layers().next()).expect("layer");
     assert_eq!(layer.name(), None);
-    assert_eq!(layer.header().map(|h| h.layer_type), Some(effectcraft_aep::LayerType::Text));
+    assert_eq!(layer.header().map(|h| h.layer_type), Some(pulso_aep::LayerType::Text));
 }
 
 /// #3233: whether a text layer's name follows its text survives export and import. A followed
@@ -218,7 +218,7 @@ fn a_text_layer_name_follows_its_text_through_export_and_import() {
         });
         let r = export_all(&p);
         let file = parse(&r.bytes).expect("parse");
-        let view = effectcraft_aep::Project::new(&file).expect("project");
+        let view = pulso_aep::Project::new(&file).expect("project");
         let layer = view.all_items().into_iter().find_map(|i| i.comp()).and_then(|c| c.layers().next()).expect("layer");
         assert_eq!(layer.name().as_deref(), stored, "stored name ({case})");
         let back = reimport(&r.bytes);
@@ -245,7 +245,7 @@ fn a_long_first_line_names_a_text_layer_the_same_after_export_and_import() {
     let line = "A headline that runs past forty characters, to 64";
     assert!((41..=64).contains(&line.chars().count()));
     let text = format!("{line}\rSecond");
-    let cut = effectcraft_project::text_layer_name(&text);
+    let cut = pulso_project::text_layer_name(&text);
     assert_eq!(cut.chars().count(), 40);
     for (name, follows, back_name) in [(cut.as_str(), Some(true), cut.as_str()), (line, Some(false), line)] {
         let (mut p, c) = text_project(vec![TextDoc::plain(&text)]);
@@ -305,11 +305,11 @@ fn hostile_text_never_panics() {
     over.runs = vec![StyleRun { len: 1000, style: style("ArialMT", 20.0) }, StyleRun { len: usize::MAX, style: style("ArialMT", 20.0) }];
     let mut max = TextDoc::plain("max");
     max.runs = vec![StyleRun { len: usize::MAX, style: style("ArialMT", 20.0) }];
-    max.paragraphs = vec![effectcraft_keyframe::text_doc::ParaStyle::default(); 3];
+    max.paragraphs = vec![pulso_keyframe::text_doc::ParaStyle::default(); 3];
     let (p, _) = text_project(vec![TextDoc::plain(&long), nan, odd, short, over, max]);
     let r = export_all(&p);
     let file = parse(&r.bytes).expect("parse");
-    assert_eq!(effectcraft_aep::write(&file).expect("write"), r.bytes);
+    assert_eq!(pulso_aep::write(&file).expect("write"), r.bytes);
     let _ = reimport(&r.bytes);
 }
 
@@ -364,17 +364,17 @@ fn superscript_stays_superscript_and_normal_stays_normal() {
         assert_eq!(baselines(&p2), b1, "{name}");
         let docs = documents(&r.bytes);
         let stored = match want {
-            BaselineOption::Normal => effectcraft_aep::FontBaseline::Normal,
-            BaselineOption::Superscript => effectcraft_aep::FontBaseline::Superscript,
-            BaselineOption::Subscript => effectcraft_aep::FontBaseline::Subscript,
+            BaselineOption::Normal => pulso_aep::FontBaseline::Normal,
+            BaselineOption::Superscript => pulso_aep::FontBaseline::Superscript,
+            BaselineOption::Subscript => pulso_aep::FontBaseline::Subscript,
         };
         assert!(docs.iter().flat_map(|(_, d)| &d.style_runs).all(|s| s.baseline == stored), "{name}");
     }
 }
 
 #[test]
-fn a_text_made_in_effectcraft_is_written_with_the_every_line_composer() {
-    // A plain box text without paragraph entries uses the document's settings: EffectCraft's
+fn a_text_made_in_pulso_is_written_with_the_every_line_composer() {
+    // A plain box text without paragraph entries uses the document's settings: Pulso's
     // default composer is every-line, which After Effects reads back as such (t6).
     let mut d = TextDoc::plain("One two three four five six seven eight\rTwo");
     d.set_runs(vec![StyleRun { len: d.text.chars().count(), style: style("ArialMT", 30.0) }]);
@@ -387,14 +387,14 @@ fn a_text_made_in_effectcraft_is_written_with_the_every_line_composer() {
     let paras = &docs[0].1.paragraphs;
     assert_eq!(paras.len(), 2);
     assert!(paras.iter().all(|p| p.every_line_composer && p.direction == 0 && p.justification == Justification::Left), "{paras:?}");
-    assert_eq!(source_text(&reimport(&r.bytes))[0].para(0).composer, effectcraft_keyframe::text_doc::Composer::EveryLine);
+    assert_eq!(source_text(&reimport(&r.bytes))[0].para(0).composer, pulso_keyframe::text_doc::Composer::EveryLine);
 }
 
 #[test]
 fn right_to_left_justification_is_stored_relative_to_the_direction() {
     // t7: in a right-to-left paragraph After Effects lays code 0 and 3 out flush right and 1 and
     // 4 flush left; 2, 5, 6 are the same in both directions.
-    use effectcraft_keyframe::text_doc::Direction;
+    use pulso_keyframe::text_doc::Direction;
     let cases = [
         (Justify::Left, Justification::Right),
         (Justify::Right, Justification::Left),
@@ -422,14 +422,14 @@ fn right_to_left_justification_is_stored_relative_to_the_direction() {
         let back = source_text(&reimport(&r.bytes));
         for (i, (j, swapped)) in cases.iter().enumerate() {
             let stored = written.iter().find(|(_, d)| d.raw_text == format!("T{i}\r")).map(|(_, d)| d.paragraphs[0].justification).unwrap();
-            let want = if ltr_stored { effectcraft_aep_justification(*j) } else { *swapped };
+            let want = if ltr_stored { pulso_aep_justification(*j) } else { *swapped };
             assert_eq!(stored, want, "rtl {rtl}: {j:?}");
             assert_eq!(back[i].para(0).justify, *j, "rtl {rtl}: round trip");
         }
     }
 }
 
-fn effectcraft_aep_justification(j: Justify) -> Justification {
+fn pulso_aep_justification(j: Justify) -> Justification {
     match j {
         Justify::Left => Justification::Left,
         Justify::Right => Justification::Right,
@@ -445,7 +445,7 @@ fn effectcraft_aep_justification(j: Justify) -> Justification {
 /// unused ease before the first / after the last key and spatial arc lengths zeroed, and the
 /// sequence of match names (the structure).
 fn animator_records(bytes: &[u8]) -> (Vec<String>, Vec<(String, Vec<u8>)>) {
-    fn walk(cs: &[effectcraft_aep::Chunk<'_>], path: &str, inside: bool, names: &mut Vec<String>, out: &mut Vec<(String, Vec<u8>)>) {
+    fn walk(cs: &[pulso_aep::Chunk<'_>], path: &str, inside: bool, names: &mut Vec<String>, out: &mut Vec<(String, Vec<u8>)>) {
         for (i, c) in cs.iter().enumerate() {
             let Some(name) = c.bytes().filter(|_| c.is(b"tdmn")).map(|b| String::from_utf8_lossy(b.split(|x| *x == 0).next().unwrap_or(b"")).to_string())
             else {
@@ -465,7 +465,7 @@ fn animator_records(bytes: &[u8]) -> (Vec<String>, Vec<(String, Vec<u8>)>) {
             let Some(node) = cs.get(i + 1) else { continue };
             if here && node.is_list(b"tdbs") {
                 // In the bytes the exporter writes (`decoded`).
-                let mut f = effectcraft_aep::AepFile { chunks: vec![crate::export::helpers::decoded(&node.clone().into_owned())], trailer: Default::default() };
+                let mut f = pulso_aep::AepFile { chunks: vec![crate::export::helpers::decoded(&node.clone().into_owned())], trailer: Default::default() };
                 if let Some(list) = f.chunks[0].children_mut().iter_mut().find(|k| k.is_list(b"list")) {
                     let size = list
                         .child(b"lhd3")
@@ -473,7 +473,7 @@ fn animator_records(bytes: &[u8]) -> (Vec<String>, Vec<(String, Vec<u8>)>) {
                         .and_then(|b| b.get(16..20))
                         .map_or(0, |b| u32::from_be_bytes(b.try_into().unwrap()) as usize);
                     if let Some(ldat) = list.children_mut().iter_mut().find(|k| k.is(b"ldat"))
-                        && let effectcraft_aep::Body::Data(d) = &mut ldat.body
+                        && let pulso_aep::Body::Data(d) = &mut ldat.body
                     {
                         let mut v = d.to_vec();
                         let n = v.len();
@@ -489,7 +489,7 @@ fn animator_records(bytes: &[u8]) -> (Vec<String>, Vec<(String, Vec<u8>)>) {
                         *d = v.into();
                     }
                 }
-                out.push((key.clone(), effectcraft_aep::write(&f).unwrap()));
+                out.push((key.clone(), pulso_aep::write(&f).unwrap()));
             }
             if node.is_list(b"tdgp") {
                 walk(node.children(), &key, here, names, out);
@@ -552,7 +552,7 @@ fn text_animators_are_written_as_after_effects_wrote_them() {
 
 #[test]
 fn hostile_text_animators_never_panic() {
-    use effectcraft_project::build;
+    use pulso_project::build;
     let mut d = TextDoc::plain("Hostile");
     d.set_runs(vec![StyleRun { len: 7, style: style("ArialMT", 40.0) }]);
     let (mut p, c) = text_project(vec![d]);
@@ -572,14 +572,14 @@ fn hostile_text_animators_never_panic() {
             if let Some(sels) = a.sub_mut("selectors") {
                 sels.children.push(build::wiggly_selector(&mut ids, "W").into());
             }
-            anims.push(effectcraft_project::Node::Group(a));
+            anims.push(pulso_project::Node::Group(a));
         }
         with_layer(&mut p, c, 0, |l| l.props.sub_mut("text").unwrap().sub_mut("animators").unwrap().children = anims);
     }
     p.next_id = next;
     let r = export_all(&p);
     let file = parse(&r.bytes).expect("parse");
-    assert_eq!(effectcraft_aep::write(&file).expect("write"), r.bytes);
+    assert_eq!(pulso_aep::write(&file).expect("write"), r.bytes);
     assert!(r.report.count(LossCategory::TextLayers) >= 300, "{:?}", r.report.losses);
     let _ = reimport(&r.bytes);
 }
@@ -589,7 +589,7 @@ fn hostile_text_animators_never_panic() {
 /// lossless.
 #[test]
 fn a_text_animator_colour_outside_the_range_is_reported() {
-    use effectcraft_project::build;
+    use pulso_project::build;
     let with_fill = |colour: [f64; 4]| {
         let mut d = TextDoc::plain("Glow");
         d.set_runs(vec![StyleRun { len: 4, style: style("ArialMT", 40.0) }]);
@@ -602,7 +602,7 @@ fn a_text_animator_colour_outside_the_range_is_reported() {
             if let Some(pg) = a.sub_mut("properties") {
                 pg.get_mut("fillColor").unwrap().value = Value::Color(colour);
             }
-            with_layer(&mut p, c, 0, |l| l.props.sub_mut("text").unwrap().sub_mut("animators").unwrap().children = vec![effectcraft_project::Node::Group(a)]);
+            with_layer(&mut p, c, 0, |l| l.props.sub_mut("text").unwrap().sub_mut("animators").unwrap().children = vec![pulso_project::Node::Group(a)]);
         }
         p.next_id = next;
         p
@@ -627,7 +627,7 @@ fn a_text_animator_colour_outside_the_range_is_reported() {
 /// is not reported, an opaque control is lossless.
 #[test]
 fn a_text_animator_colour_alpha_is_reported_for_the_values_that_are_written() {
-    use effectcraft_project::build;
+    use pulso_project::build;
     for id in ["fillColor", "strokeColor"] {
         let make = |value: [f64; 4], keys: Option<([f64; 4], [f64; 4])>| {
             let mut d = TextDoc::plain("Glow");
@@ -645,9 +645,7 @@ fn a_text_animator_colour_alpha_is_reported_for_the_values_that_are_written() {
                         prop.keys = vec![key(0.0, Value::Color(k0)), key(1.0, Value::Color(k1))];
                     }
                 }
-                with_layer(&mut p, c, 0, |l| {
-                    l.props.sub_mut("text").unwrap().sub_mut("animators").unwrap().children = vec![effectcraft_project::Node::Group(a)]
-                });
+                with_layer(&mut p, c, 0, |l| l.props.sub_mut("text").unwrap().sub_mut("animators").unwrap().children = vec![pulso_project::Node::Group(a)]);
             }
             p.next_id = next;
             p
@@ -656,7 +654,7 @@ fn a_text_animator_colour_alpha_is_reported_for_the_values_that_are_written() {
             let r = export_all(p);
             r.report.losses.iter().filter(|l| l.category == LossCategory::TextLayers).flat_map(|l| l.details.clone()).filter(|d| d.contains("alpha")).count()
         };
-        let strict = |p: &Project| effectcraft_aep::export::export(p, &effectcraft_aep::export::ExportOptions { allow_losses: false }).is_ok();
+        let strict = |p: &Project| pulso_aep::export::export(p, &pulso_aep::export::ExportOptions { allow_losses: false }).is_ok();
         let opaque = [0.2, 0.4, 0.6, 1.0];
         let clear = [0.2, 0.4, 0.6, 0.25];
         let control = make(opaque, None);

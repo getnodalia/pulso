@@ -1,4 +1,4 @@
-//! After Effects' Puppet effect (`ADBE FreePin3`) arrives as EffectCraft's Puppet
+//! After Effects' Puppet effect (`ADBE FreePin3`) arrives as Pulso's Puppet
 //! (`ec.distort.puppet`) in its place in the stack, with its name and fx switch, but **without
 //! its meshes and pins**: how After Effects stores a pin's rest place (a vertex index and offset
 //! into the hidden mesh data) and its Position (pixels or a fraction of the layer) is not decoded
@@ -13,8 +13,8 @@
 //! byte sample exists. It is read with the same verified group reader as masks, shapes and layer
 //! styles; a file whose tree differs is reported, never guessed at.
 
-use effectcraft_project::build::Ids;
-use effectcraft_project::{Node, PropGroup};
+use pulso_project::build::Ids;
+use pulso_project::{Node, PropGroup};
 
 use crate::import::effects::{LayerCtx, carries_nothing};
 use crate::import::report::{Collector, LossCategory};
@@ -51,12 +51,12 @@ pub(crate) fn import_puppet<'f, 'a>(
 ) {
     let shown = fx.display_name().unwrap_or_else(|| fx.match_name().to_string());
     let here = format!("{}: '{}' effect '{shown}' ({MATCH_NAME})", cx.comp, cx.layer);
-    let Some(spec) = effectcraft_effects::find(effectcraft_effects::puppet::ID) else {
+    let Some(spec) = pulso_effects::find(pulso_effects::puppet::ID) else {
         col.lose(LossCategory::Effects, format!("{}: '{}' has the effect '{shown}' ({MATCH_NAME})", cx.comp, cx.layer));
         return;
     };
     let size = [f64::from(cx.size.0), f64::from(cx.size.1)];
-    let mut group = effectcraft_effects::instantiate(spec, ids, &shown, size);
+    let mut group = pulso_effects::instantiate(spec, ids, &shown, size);
     match fx.enabled() {
         Some(on) => group.enabled = on,
         None => col.lose(LossCategory::DamagedData, format!("{}: '{}': the fx switch of '{shown}' is unreadable, imported switched on", cx.comp, cx.layer)),
@@ -73,7 +73,7 @@ pub(crate) fn import_puppet<'f, 'a>(
         }
     }
     report_meshes(fx, &params.iter().map(|p| p.match_name.as_str()).collect::<Vec<_>>(), &here, col);
-    // The effect itself arrives (an EffectCraft Puppet the user can pin again), so it counts as
+    // The effect itself arrives (an Pulso Puppet the user can pin again), so it counts as
     // imported; what it held is in the losses above.
     col.imported.effects = col.imported.effects.saturating_add(1);
     target.children.push(Node::Group(group));
@@ -119,7 +119,7 @@ fn report_meshes(fx: &AepEffect<'_, '_>, param_names: &[&str], here: &str, col: 
                         }
                     }
                 }
-                // Auto-traced Shapes are made from the layer again (EffectCraft traces the alpha).
+                // Auto-traced Shapes are made from the layer again (Pulso traces the alpha).
                 (OUTLINES, _) => {}
                 _ => push_unique(&mut unknown, e.match_name.clone()),
             }
@@ -157,7 +157,7 @@ fn mesh_summary(mesh: &AepGroup<'_, '_>, n: usize, unknown: &mut Vec<String>) ->
         };
         match (label, e.node) {
             (Some(label), PropNode::Property(p)) => settings.push(format!("{label} {}", describe(&p))),
-            // The triangulation After Effects keeps; EffectCraft builds its own.
+            // The triangulation After Effects keeps; Pulso builds its own.
             _ if e.match_name == MESH_DATA => {}
             _ => match (PIN_GROUPS.iter().find(|(m, _)| *m == e.match_name), e.node) {
                 (Some((_, shown)), PropNode::Group(g)) => containers.push(format!("{shown} {}", pins_summary(&g, unknown))),

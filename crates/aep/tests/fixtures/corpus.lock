@@ -1,6 +1,6 @@
 # Pinned After Effects test corpus for `crates/aep` (read by `cargo xtask aep-corpus`).
 #
-#   repo      where the corpus lives (override: EFFECTCRAFT_AEP_CORPUS_REPO, e.g. a local clone)
+#   repo      where the corpus lives (override: PULSO_AEP_CORPUS_REPO, e.g. a local clone)
 #   commit    the exact commit to fetch (40 hex digits; a branch or tag name is not accepted)
 #   <sha256>  <path>   the SHA-256 of every file the tests use, relative to the corpus root
 #

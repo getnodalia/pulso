@@ -1,6 +1,6 @@
 //! The viewer's display pass on egui-wgpu's device (#2797): a rendered frame (half floats for 32
 //! bpc projects, RGBA8 otherwise) goes through Show Channel, exposure, the pending HDR step and
-//! the display colour (`effectcraft_engine::viewer::DisplayPass`) into one premultiplied RGBA8
+//! the display colour (`pulso_engine::viewer::DisplayPass`) into one premultiplied RGBA8
 //! texture with mips per viewer, which egui draws like the GPU compositor's frames (native
 //! texture, the Viewer Zoom Quality sampler).
 //!
@@ -11,9 +11,9 @@
 
 use std::sync::Arc;
 
-use effectcraft_engine::viewer::{Channel, DisplayPass, PassColor, PassConv, PassCurve};
 use eframe::egui_wgpu;
 use eframe::wgpu;
+use pulso_engine::viewer::{Channel, DisplayPass, PassColor, PassConv, PassCurve};
 
 use crate::frames::F16Frame;
 
@@ -61,9 +61,9 @@ pub fn uniform(pass: &DisplayPass) -> [u8; UNIFORM_BYTES] {
         Channel::RgbStraight => 5,
     };
     let hdr = match pass.encoding.hdr {
-        effectcraft_engine::project::HdrMode::Clip => 0u32,
-        effectcraft_engine::project::HdrMode::Compand => 1,
-        effectcraft_engine::project::HdrMode::ToneMap => 2,
+        pulso_engine::project::HdrMode::Clip => 0u32,
+        pulso_engine::project::HdrMode::Compand => 1,
+        pulso_engine::project::HdrMode::ToneMap => 2,
     };
     let curve = pass.encoding.curve;
     let none = PassConv { from: PassCurve::Linear, matrix: None, to: PassCurve::Linear };
@@ -77,7 +77,7 @@ pub fn uniform(pass: &DisplayPass) -> [u8; UNIFORM_BYTES] {
         let m = m.unwrap_or([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]);
         m.map(|r| [r[0], r[1], r[2], 0.0])
     };
-    let [x24, xm2, xm1] = effectcraft_engine::viewer::SHADER_EXPONENTS;
+    let [x24, xm2, xm1] = pulso_engine::viewer::SHADER_EXPONENTS;
     let u = |v: u32| v.to_le_bytes();
     let f = |v: f32| v.to_le_bytes();
     let mut b = Vec::with_capacity(UNIFORM_BYTES);
@@ -276,7 +276,7 @@ impl DisplayGpu {
         }
     }
 
-    fn lut(&self, device: &wgpu::Device, queue: &wgpu::Queue, lut: &effectcraft_engine::color::icc::Lut3d) -> wgpu::Texture {
+    fn lut(&self, device: &wgpu::Device, queue: &wgpu::Queue, lut: &pulso_engine::color::icc::Lut3d) -> wgpu::Texture {
         let n = lut.size.max(2) as u32;
         let tex = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("viewer display LUT"),
@@ -386,7 +386,7 @@ pub struct Bake {
     output: Option<wgpu::Texture>,
     id: Option<egui::TextureId>,
     params: Option<[u8; UNIFORM_BYTES]>,
-    lut: Option<(Arc<effectcraft_engine::color::icc::Lut3d>, wgpu::Texture)>,
+    lut: Option<(Arc<pulso_engine::color::icc::Lut3d>, wgpu::Texture)>,
     smooth: Option<bool>,
     /// How often the pass ran (tests).
     runs: u64,

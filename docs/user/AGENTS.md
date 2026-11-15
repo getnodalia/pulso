@@ -1,8 +1,8 @@
 # User docs: rules for agents and contributors
 
 Everything in this folder (except this file, CLAUDE.md and README.md) is published at
-https://getartcraft.com/docs/effectcraft. The file path is the URL:
-`troubleshooting/gpu-not-used.md` → `/docs/effectcraft/troubleshooting/gpu-not-used`.
+https://getnodalia.com/pulso/docs. The file path is the URL:
+`troubleshooting/gpu-not-used.md` → `/docs/pulso/troubleshooting/gpu-not-used`.
 Renaming a file breaks links, so add the old path to `redirect_from` when you rename.
 
 ## Who reads this
@@ -18,7 +18,7 @@ either. Write for an artist, not a developer.
 - Link to other pages instead of repeating them. Use relative links to the `.md` file:
   `[Install Pulso](../getting-started/install.md)`.
 - No marketing copy, no "simply", no claims you have not checked in the code, a release or an issue.
-- Call the product "Pulso", as the app, its downloads and getartcraft.com do.
+- Call the product "Pulso", as the app, its downloads and getnodalia.com do.
 - Name UI labels exactly as the app shows them, in **bold**. Menu paths use the menu text from
   `crates/engine/src/menus.rs`.
 - Shortcuts: the code writes `Cmd`, which is Ctrl on Windows and Linux. Write Ctrl for Windows.
@@ -33,7 +33,7 @@ either. Write for an artist, not a developer.
     description: One sentence for search results, link previews and AI summaries.
     order: 10                 # optional, sorts within the folder (lower first)
     verified: 0.8.0           # optional, app version you last checked this page against
-    redirect_from: [old/path] # optional, old URLs (relative to /docs/effectcraft)
+    redirect_from: [old/path] # optional, old URLs (relative to /docs/pulso)
     ---
 
 Only `key: value` and `key: [a, b]` lines work. Quote values that start with a quote or contain ` #`.
@@ -61,4 +61,4 @@ The checker lives in storytold/artcraft-services. A CI check will be added once 
 
 Pages written to answer a user question come in as PRs titled `docs(support): <page title>`.
 Review them like code: check every claim against the source. Problems and bug reports go in the
-[issue tracker](https://github.com/storytold/effectcraft/issues).
+[issue tracker](https://github.com/getnodalia/pulso/issues).

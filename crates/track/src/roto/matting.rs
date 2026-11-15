@@ -514,7 +514,7 @@ mod tests {
         assert!(distance(&[], 0, 5).is_empty());
     }
 
-    /// `cargo test --release -p effectcraft-track distance_bench -- --ignored --nocapture`
+    /// `cargo test --release -p pulso-track distance_bench -- --ignored --nocapture`
     /// (set `RAYON_NUM_THREADS` to compare thread counts).
     #[test]
     #[ignore]

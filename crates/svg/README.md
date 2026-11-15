@@ -1,4 +1,4 @@
-# effectcraft-svg
+# pulso-svg
 
 SVG import for Pulso: `.svg` files import as footage (rasterised at any scale, so
 Continuously Rasterize stays sharp) and Layer ▸ Create ▸ Create Shapes from Vector Layer turns

@@ -8,10 +8,10 @@
 //! those of importing each donor fixture on its own.
 
 use crate::import::helpers::comp;
-use effectcraft_aep::import::{ImportOptions, ImportResult, import};
-use effectcraft_aep::{AepFile, Chunk, parse, parse_any, write};
-use effectcraft_keyframe::Value;
-use effectcraft_project::{GroupKind, Layer, Project, PropGroup};
+use pulso_aep::import::{ImportOptions, ImportResult, import};
+use pulso_aep::{AepFile, Chunk, parse, parse_any, write};
+use pulso_keyframe::Value;
+use pulso_project::{GroupKind, Layer, Project, PropGroup};
 
 const MASK_PARADE: &[u8] = b"ADBE Mask Parade";
 const EFFECT_PARADE: &[u8] = b"ADBE Effect Parade";
@@ -52,7 +52,7 @@ fn graft<'a>(file: &mut AepFile<'a>, pair: &[Chunk<'a>]) {
     layer_roots(&mut file.chunks, &mut roots);
     assert!(!roots.is_empty());
     for root in roots {
-        let effectcraft_aep::Body::List { children, .. } = &mut root.body else { panic!("tdgp is a list") };
+        let pulso_aep::Body::List { children, .. } = &mut root.body else { panic!("tdgp is a list") };
         if let Some(at) = children.iter().position(|k| names(k, &name)) {
             children.splice(at..at + 2, pair.iter().cloned());
         } else {
@@ -66,10 +66,10 @@ fn graft<'a>(file: &mut AepFile<'a>, pair: &[Chunk<'a>]) {
 /// instance of its type in a combined file has an empty `parT`) that copy as its own `parT`: the
 /// target's project copy does not hold the donor's types.
 fn own_definitions<'a>(pair: &mut [Chunk<'a>], donor: &AepFile<'_>) {
-    let defs: Vec<(String, Chunk<'static>)> = effectcraft_aep::Project::new(donor)
+    let defs: Vec<(String, Chunk<'static>)> = pulso_aep::Project::new(donor)
         .map(|p| p.effect_definitions().into_iter().map(|(m, part)| (m, part.clone().into_owned())).collect())
         .unwrap_or_default();
-    let Some(effectcraft_aep::Body::List { children, .. }) = pair.get_mut(1).map(|g| &mut g.body) else { return };
+    let Some(pulso_aep::Body::List { children, .. }) = pair.get_mut(1).map(|g| &mut g.body) else { return };
     let mut name: Option<String> = None;
     for c in children.iter_mut() {
         if c.is(b"tdmn") {
@@ -77,7 +77,7 @@ fn own_definitions<'a>(pair: &mut [Chunk<'a>], donor: &AepFile<'_>) {
         } else if c.is_list(b"sspc")
             && let Some(n) = name.take()
             && let Some((_, def)) = defs.iter().find(|(m, _)| *m == n)
-            && let effectcraft_aep::Body::List { children: kids, .. } = &mut c.body
+            && let pulso_aep::Body::List { children: kids, .. } = &mut c.body
             && let Some(part) = kids.iter_mut().find(|k| k.is_list(b"parT"))
             && !part.children().iter().any(|x| x.is(b"pard"))
         {
@@ -120,7 +120,7 @@ fn only_layer(project: &Project, r: &ImportResult) -> Layer {
 
 fn text_layer(project: &Project, r: &ImportResult) -> Layer {
     let (_, c) = comp(project, r, "C");
-    c.layers.iter().find(|l| matches!(l.source, effectcraft_project::LayerSource::Text)).expect("a text layer").clone()
+    c.layers.iter().find(|l| matches!(l.source, pulso_project::LayerSource::Text)).expect("a text layer").clone()
 }
 
 fn groups<'l>(l: &'l Layer, id: &str) -> Vec<&'l PropGroup> {

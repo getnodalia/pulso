@@ -6,11 +6,11 @@
 //! Values stay gamma-encoded: like After Effects, footage pixels enter the working space as they
 //! are encoded in the file. Alpha follows the footage's [`AlphaMode`] interpretation.
 
-use effectcraft_project::{AlphaMode, Footage};
-use effectcraft_raster::{Image, Px};
-use effectcraft_render::FloatCurve;
 use filmcraft_color::{Matrix, Range};
 use filmcraft_frame::{Chroma, PixelData, VideoFrame};
+use pulso_project::{AlphaMode, Footage};
+use pulso_raster::{Image, Px};
+use pulso_render::FloatCurve;
 use rayon::prelude::*;
 
 /// How to turn a (colour, alpha) sample into a premultiplied pixel.
@@ -62,13 +62,13 @@ impl AlphaOp {
     }
 }
 
-/// Convert a FilmCraft frame to an [`Image`].
+/// Convert a Toma frame to an [`Image`].
 #[cfg(test)]
 pub(crate) fn frame_to_image(f: &VideoFrame, op: AlphaOp) -> Image {
     frame_to_image_in(f, op, Vec::new())
 }
 
-/// Convert a FilmCraft frame to an [`Image`], reusing `buf`'s allocation when it is large enough
+/// Convert a Toma frame to an [`Image`], reusing `buf`'s allocation when it is large enough
 /// (every pixel is overwritten, so a recycled frame's contents do not matter).
 pub(crate) fn frame_to_image_in(f: &VideoFrame, op: AlphaOp, mut buf: Vec<Px>) -> Image {
     let (w, h) = (f.width as usize, f.height as usize);
@@ -162,7 +162,7 @@ pub(crate) fn turned(img: Image, turn: image::metadata::Orientation) -> Image {
     Image { width: tw as u32, height: th as u32, data }
 }
 
-/// A FilmCraft frame for a render that shows it at `w` × `h`, at most half its size each way:
+/// A Toma frame for a render that shows it at `w` × `h`, at most half its size each way:
 /// what `resample(&frame_to_image(f, op), w, h)` makes, converting a quarter of the pixels.
 /// Opaque 4:2:0 Y'CbCr is box-filtered to half size before conversion (each 2×2 block of luma,
 /// and the [1 6 1]/8 neighbourhood of its chroma sample: the mean of the upsampled chroma its
@@ -183,7 +183,7 @@ pub(crate) fn frame_to_image_scaled(f: &VideoFrame, w: u32, h: u32) -> Option<Im
         }
         _ => return None,
     };
-    Some(if (half.width, half.height) == (w, h) { half } else { effectcraft_raster::resample(&half, w, h) })
+    Some(if (half.width, half.height) == (w, h) { half } else { pulso_raster::resample(&half, w, h) })
 }
 
 /// An opaque 4:2:0 frame of even size `w` × `h` converted at half that size (see
@@ -507,7 +507,7 @@ mod tests {
         let full = frame_to_image(&f, AlphaOp::new(AlphaMode::Straight, [0.0; 3]));
         for (w, h) in [(48, 32), (32, 21), (24, 16), (13, 9)] {
             let scaled = frame_to_image_scaled(&f, w, h).expect("4:2:0, at most half size");
-            let want = effectcraft_raster::resample(&full, w, h);
+            let want = pulso_raster::resample(&full, w, h);
             assert_eq!((scaled.width, scaled.height), (w, h));
             let worst = scaled.data.iter().zip(&want.data).flat_map(|(a, b)| (0..4).map(move |c| (a[c] - b[c]).abs())).fold(0.0f32, f32::max);
             assert!(worst < 1e-5, "{w}×{h}: {worst}");
@@ -552,7 +552,7 @@ mod tests {
         assert!((p[0] - 0.5).abs() < 1e-3 && (p[1] - 1.0).abs() < 1e-5 && p[2] > 1.5, "{p:?}");
     }
 
-    /// `cargo test -p effectcraft-media --lib bench -- --ignored --nocapture`
+    /// `cargo test -p pulso-media --lib bench -- --ignored --nocapture`
     #[test]
     #[ignore]
     fn bench_convert_1080p() {

@@ -2,9 +2,9 @@
 //! re-saves of read-back tests e1 and e2): point defaults in percent of the layer instead of
 //! fractions, and a popup default slot of 0. Simulated by patching our own fixtures.
 
-use effectcraft_aep::import::{ImportOptions, import};
-use effectcraft_keyframe::Value;
-use effectcraft_project::{ItemKind, Project, PropGroup};
+use pulso_aep::import::{ImportOptions, import};
+use pulso_keyframe::Value;
+use pulso_project::{ItemKind, Project, PropGroup};
 
 /// Rewrites `pard@56..` of every parameter definition named `name` (the 32-byte name at @16).
 fn patch_default(bytes: &mut [u8], name: &str, value: &[u8]) -> usize {

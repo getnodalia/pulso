@@ -1,12 +1,12 @@
-//! The Cryptomatte plug-in (match name `Cryptomatte`) arrives as EffectCraft's Cryptomatte
+//! The Cryptomatte plug-in (match name `Cryptomatte`) arrives as Pulso's Cryptomatte
 //! (`ec.3d.cryptomatte`): the layer and selection from its Settings data, Output as Display and
 //! Matte Only. The effect is built into the committed `synthetic.aep` in place of its Glow, in
 //! the layout docs/aep-format.md 3.7 describes (made-up layer names and ID hashes).
 
-use effectcraft_aep::import::{ImportOptions, ImportResult, LossCategory, import};
-use effectcraft_aep::{Body, Chunk, ParamKind, Project as AepProject, parse, write};
-use effectcraft_keyframe::Value;
-use effectcraft_project::{Project, PropGroup};
+use pulso_aep::import::{ImportOptions, ImportResult, LossCategory, import};
+use pulso_aep::{Body, Chunk, ParamKind, Project as AepProject, parse, write};
+use pulso_keyframe::Value;
+use pulso_project::{Project, PropGroup};
 
 const SYNTHETIC: &[u8] = include_bytes!("../../fixtures/synthetic.aep");
 
@@ -207,11 +207,11 @@ fn cryptomatte_arrives_with_its_layer_selection_and_output() {
     let (g, r) = run(&Crypto { settings: Some(settings("Layer_A", sel)), output: Some(3), selection_mode: None, borrowed: false, items: Some(OUTPUT) });
     assert_eq!(losses(&r, LossCategory::Effects), Vec::<String>::new());
     assert_eq!(losses(&r, LossCategory::DamagedData), Vec::<String>::new());
-    let g = g.expect("an EffectCraft Cryptomatte");
+    let g = g.expect("an Pulso Cryptomatte");
     // Matted RGBA: the layer keyed by the selection.
     assert_eq!((v(&g, "layerName"), v(&g, "selection"), v(&g, "display"), v(&g, "matteOnly")), (str("Layer_A"), str(sel), Value::Enum(1), Value::Bool(false)));
-    // The selection's `<hex>` tokens are EffectCraft's own grammar.
-    assert_eq!(effectcraft_effects::selection_hashes(sel, None), vec![0x2a, 0xdead_beef]);
+    // The selection's `<hex>` tokens are Pulso's own grammar.
+    assert_eq!(pulso_effects::selection_hashes(sel, None), vec![0x2a, 0xdead_beef]);
 }
 
 #[test]
@@ -289,7 +289,7 @@ fn cryptomatte_output_maps_by_item_name() {
         items: Some(&["colors", "MATTE ONLY", "Matted RGBA", "Matted Colors"]),
     });
     assert_eq!((v(&g.expect("effect"), "matteOnly")), Value::Bool(true));
-    // An item EffectCraft does not know: reported, Colors used.
+    // An item Pulso does not know: reported, Colors used.
     let (g, r) = run(&Crypto {
         settings: None,
         output: Some(2),
@@ -402,7 +402,7 @@ fn cryptomatte_records_without_their_data_are_reported() {
 /// UI. The EXR's manifest names those hashes, and After Effects draws exactly those objects as
 /// selected.
 #[test]
-#[ignore = "needs aep/cryptomatte.aep in the corpus (EFFECTCRAFT_AEP_FIXTURES); not pinned yet"]
+#[ignore = "needs aep/cryptomatte.aep in the corpus (PULSO_AEP_FIXTURES); not pinned yet"]
 fn the_after_effects_sample_arrives_as_after_effects_shows_it() {
     let bytes = fixture!("cryptomatte.aep");
     let mut project = Project::default();
@@ -440,10 +440,10 @@ fn the_after_effects_sample_arrives_as_after_effects_shows_it() {
         }
     }
     assert_eq!(found.len(), 3, "{found:?}");
-    // The picked tokens are the manifest's hashes, which are the hashes of the names: EffectCraft
+    // The picked tokens are the manifest's hashes, which are the hashes of the names: Pulso
     // reads `<11a97486>` and `box_red` as the same object.
     for (name, token) in [("box_red", "<11a97486>"), ("mat_paint", "<a5deeb9e>")] {
-        assert_eq!(effectcraft_effects::selection_hashes(token, None), effectcraft_effects::selection_hashes(name, None), "{name}");
+        assert_eq!(pulso_effects::selection_hashes(token, None), pulso_effects::selection_hashes(name, None), "{name}");
     }
-    assert_eq!(effectcraft_effects::selection_hashes("<11a97486>", None), vec![0x11a9_7486]);
+    assert_eq!(pulso_effects::selection_hashes("<11a97486>", None), vec![0x11a9_7486]);
 }

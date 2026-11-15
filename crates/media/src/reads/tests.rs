@@ -3,12 +3,12 @@
 
 use std::path::{Path, PathBuf};
 
-use effectcraft_color::Label;
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{Comp, Footage, FootageKind, ItemId, ItemKind, Layer, LayerSource, Project, Solid, Value};
-use effectcraft_render::reads::{FileStamp, ReadFiles, ReadLog};
-use effectcraft_render::{LayerCache, RenderOpts, Renderer};
-use effectcraft_time::FrameRate;
+use pulso_color::Label;
+use pulso_project::build::{self, Ids};
+use pulso_project::{Comp, Footage, FootageKind, ItemId, ItemKind, Layer, LayerSource, Project, Solid, Value};
+use pulso_render::reads::{FileStamp, ReadFiles, ReadLog};
+use pulso_render::{LayerCache, RenderOpts, Renderer};
+use pulso_time::FrameRate;
 
 use crate::MediaPool;
 
@@ -113,7 +113,7 @@ fn a_sequence_frame_reports_only_its_own_file() {
     assert_eq!(crate::opens_under(&dir) - opened, 1, "one file opened: the frame's");
     assert_eq!(crate::opens_under(&unused_dir), 0, "the unused sequence was not looked at");
     // Another frame reads its own file, also through the viewer's wrapper of the pool.
-    let viewer = effectcraft_render::CancellableFootage { inner: &pool, cancel: Default::default() };
+    let viewer = pulso_render::CancellableFootage { inner: &pool, cancel: Default::default() };
     let log = ReadLog::new();
     let mut r = Renderer::new(&p, &viewer, RenderOpts::default());
     r.cache = Some(&cache);
@@ -143,9 +143,9 @@ fn precomps_and_layers_read_by_effects_report_their_files() {
     matte.switches.video = false;
     let sid = p.add_item("S", Label::Red, None, ItemKind::Solid(Solid { color: [1.0, 0.0, 0.0], width: SIZE.0, height: SIZE.1, pixel_aspect: 1.0 }));
     let mut solid = build::layer(&mut p, &c, "S", LayerSource::Solid { item: sid }, SIZE, Some(c.duration));
-    let spec = effectcraft_effects::find("ec.channel.setmatte").unwrap();
+    let spec = pulso_effects::find("ec.channel.setmatte").unwrap();
     let mut next = p.next_id;
-    let mut fx = effectcraft_effects::instantiate(spec, &mut Ids(&mut next), spec.name, [SIZE.0 as f64, SIZE.1 as f64]);
+    let mut fx = pulso_effects::instantiate(spec, &mut Ids(&mut next), spec.name, [SIZE.0 as f64, SIZE.1 as f64]);
     p.next_id = next;
     fx.prop_mut("takeMatteFromLayer").unwrap().value = Value::Layer(Some(matte.id.0));
     solid.props.sub_mut("effects").unwrap().children.push(fx.into());
@@ -194,7 +194,7 @@ fn a_frame_served_from_memory_reports_its_files_without_touching_them() {
 
 use std::sync::Arc;
 
-use effectcraft_render::disk_cache::{DiskCache, Kind};
+use pulso_render::disk_cache::{DiskCache, Kind};
 
 /// A "session": a new media pool and layer cache over the disk cache in `cache` (opened anew,
 /// as after a restart), writing every layer buffer however quick to render.

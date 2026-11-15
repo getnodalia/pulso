@@ -1,4 +1,4 @@
-// Modified work: adapts the ported SAM 2 video tracker to EffectCraft's `ObjectTracker`
+// Modified work: adapts the ported SAM 2 video tracker to Pulso's `ObjectTracker`
 // interface (Apache-2.0, see NOTICE).
 //! SAM 2 as the Roto Brush's object tracker: prompts on some frames, the whole clip tracked
 //! forwards and backwards, each frame reported as it is finished.
@@ -9,7 +9,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use candle_core::Tensor;
-use effectcraft_segment::{ClipFrame, ObjectTracker, TrackRequest, TrackedFrame};
+use pulso_segment::{ClipFrame, ObjectTracker, TrackRequest, TrackedFrame};
 
 use crate::mask::{Sam2Mask, preprocess, validate_frame_size};
 use crate::prompt::{INPUT_SIZE, Prompt};
@@ -96,7 +96,7 @@ const MAX_OBJECTS: usize = 32;
 /// two-frame feature cache useful: all objects prompted on a frame are encoded together, so each
 /// prompt frame is encoded once however many objects there are. Objects do not influence each
 /// other, so the order of prompts across objects does not change any result.
-fn gather_prompts<'r>(req: &'r TrackRequest, source: &Source<'_>) -> Result<Vec<(usize, usize, &'r effectcraft_segment::Prompt)>> {
+fn gather_prompts<'r>(req: &'r TrackRequest, source: &Source<'_>) -> Result<Vec<(usize, usize, &'r pulso_segment::Prompt)>> {
     // Prompt coordinates are in the frame's pixels and the model works at 1024 x 1024, so the
     // prompted frames' sizes are needed first.
     let mut prompt_frames = vec![];
@@ -205,7 +205,7 @@ impl ObjectTracker for Sam2Mask {
         frames: &mut dyn FnMut(i64) -> Option<Arc<ClipFrame>>,
         cancel: &dyn Fn() -> bool,
         out: &mut dyn FnMut(usize, i64, TrackedFrame),
-    ) -> effectcraft_segment::Result<()> {
+    ) -> pulso_segment::Result<()> {
         self.touch();
         let r = self.run_track(req, frames, cancel, out).map_err(|e| e.to_string());
         self.touch();
@@ -229,8 +229,8 @@ mod tests {
         Arc::new(ClipFrame { rgb: vec![[0.5, 0.25, 0.75]; w * h], w, h })
     }
 
-    fn point_prompt() -> effectcraft_segment::Prompt {
-        effectcraft_segment::Prompt { points: vec![([1.0, 1.0], true)], bbox: None, mask: None }
+    fn point_prompt() -> pulso_segment::Prompt {
+        pulso_segment::Prompt { points: vec![([1.0, 1.0], true)], bbox: None, mask: None }
     }
 
     /// Several objects prompted on the same frames: prompts come out frame by frame (so the

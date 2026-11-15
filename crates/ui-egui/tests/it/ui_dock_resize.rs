@@ -2,29 +2,29 @@
 
 use crate::gpu_test::RenderSerial;
 use craft_ui::docking::{Divider, DockArea, Hit};
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::{self, Node, PanelKind, SplitSize};
-use effectcraft_ui_egui::theme::ThemeKind;
 use egui::{Event, Key, Modifiers, PointerButton, Rect, pos2, vec2};
 use egui_kittest::Harness;
+use pulso_engine::Session;
+use pulso_ui_egui::PulsoApp;
+use pulso_ui_egui::dock::{self, Node, PanelKind, SplitSize};
+use pulso_ui_egui::theme::ThemeKind;
 use serde_json::json;
 
-fn snapshots(h: &mut Harness<'_, EffectcraftApp>, directory: Option<&std::path::Path>, phase: &str) {
+fn snapshots(h: &mut Harness<'_, PulsoApp>, directory: Option<&std::path::Path>, phase: &str) {
     let Some(directory) = directory else { return };
     std::fs::create_dir_all(directory).unwrap();
     for (name, theme) in [("dark", ThemeKind::Dark), ("darker", ThemeKind::Darker), ("light", ThemeKind::Light)] {
         let ctx = h.ctx.clone();
         h.state_mut().set_theme(&ctx, theme);
         h.run_steps(3);
-        h.render_serialized().unwrap().save(directory.join(format!("effectcraft-{phase}-{name}.png"))).unwrap();
+        h.render_serialized().unwrap().save(directory.join(format!("pulso-{phase}-{name}.png"))).unwrap();
     }
     let ctx = h.ctx.clone();
     h.state_mut().set_theme(&ctx, ThemeKind::Dark);
     h.run_steps(3);
 }
 
-fn first_size(h: &Harness<'_, EffectcraftApp>) -> f32 {
+fn first_size(h: &Harness<'_, PulsoApp>) -> f32 {
     match &h.state().ui.dock.layout.root {
         Some(Node::Split { size: SplitSize::FixedFirst(value), .. }) => *value,
         ref other => panic!("fixed-size mode changed: {other:?}"),
@@ -37,7 +37,7 @@ fn focused_dock_resize_owns_arrows_and_keeps_pointer_dragging() {
     let mut session = Session::default();
     session.execute("comp.new", json!({"name": "Split test", "width": 160, "height": 90, "duration": 1})).unwrap();
     session.execute("layer.newSolid", json!({"name": "Selected", "color": [1.0, 0.0, 0.0, 1.0]})).unwrap();
-    let mut app = EffectcraftApp::new(session);
+    let mut app = PulsoApp::new(session);
     app.ui.start_screen = false;
     let directory = std::env::var_os("CRAFT_UI_PANES_SNAPSHOT_DIR").map(std::path::PathBuf::from);
     let mut builder = Harness::builder().with_size(vec2(1400.0, 900.0)).with_max_steps(10_000);
@@ -53,7 +53,7 @@ fn focused_dock_resize_owns_arrows_and_keeps_pointer_dragging() {
     h.run_steps(3);
     let before_project = h.state().session.project.clone();
     let before_times = h.state().session.state.times.clone();
-    let id = DockArea::<PanelKind>::hit_id(effectcraft_ui_egui::dock_ui::area_id(), &Hit::Divider(Divider::Split(Vec::new())));
+    let id = DockArea::<PanelKind>::hit_id(pulso_ui_egui::dock_ui::area_id(), &Hit::Divider(Divider::Split(Vec::new())));
     h.ctx.memory_mut(|memory| memory.request_focus(id));
     h.run_steps(2);
     assert_eq!(h.ctx.memory(|memory| memory.focused()), Some(id));

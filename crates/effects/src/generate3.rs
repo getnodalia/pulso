@@ -8,10 +8,10 @@
 
 use std::f64::consts::PI;
 
-use effectcraft_color::{hsl_to_rgb, luminance, rgb_to_hsl};
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
-use effectcraft_raster::{Image, Px};
+use pulso_color::{hsl_to_rgb, luminance, rgb_to_hsl};
+use pulso_keyframe::Value;
+use pulso_project::ParamUi;
+use pulso_raster::{Image, Px};
 use rayon::prelude::*;
 
 use crate::util::{Plane, gauss_plane, hash1, layer_or_self, morph_frac, poly_length, premul, smoothstep, unpremul};

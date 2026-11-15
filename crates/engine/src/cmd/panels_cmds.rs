@@ -1,10 +1,10 @@
 //! Commands behind the Progress, Media Browser, Metadata and Video Scopes panels.
 
-use effectcraft_project::ItemId;
-use effectcraft_raster::Image;
-use effectcraft_raster::scopes::{self, ColorStandard, ScopeKind, ScopeOpts};
-use effectcraft_render::RenderOpts;
-use effectcraft_time::Tick;
+use pulso_project::ItemId;
+use pulso_raster::Image;
+use pulso_raster::scopes::{self, ColorStandard, ScopeKind, ScopeOpts};
+use pulso_render::RenderOpts;
+use pulso_time::Tick;
 use serde_json::{Value, json};
 
 use super::{CommandSpec, always, b_p, bad, f_p, str_p};

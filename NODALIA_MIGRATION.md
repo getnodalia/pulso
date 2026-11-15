@@ -20,7 +20,7 @@ interface follows Foundation's [NDL standard](https://github.com/getnodalia/foun
 |---|---|---|---|
 | `storytold/craft-common-actions` | `.github/workflows/freebsd.yml`, `.github/workflows/windows-arm64.yml` | Foundation reusable workflows (release, refresh-contributors, windows-arm64) | writing and testing them |
 | `storytold/craft-libs` | `Cargo.toml`, `nix/package.nix` | to decide | — |
-| `storytold/effectcraft` | `.github/workflows/upstream-sync.yml`, `Cargo.toml`, `packaging/linux/ai.storyteller.effectcraft.metainfo.xml.in`, `packaging/linux/flatpak-oci.sh`, `packaging/linux/package.sh`, `packaging/web/README.md`, `packaging/windows/installer-ui.wxs`, `packaging/windows/sign.ps1` | none: intended upstream sync | — |
+| `storytold/effectcraft` | `.github/workflows/upstream-sync.yml` | none: the intended upstream sync, renamed by `scripts/rebrand.py` | — | <!-- rebrand: keep -->
 | `storytold/egui.git` | `xtask/src/lock_patches.rs` | to decide | — |
 | `storytold/filmcraft` | `nix/package.nix` | to decide | — |
 | `storytold/pdfcraft` | `packaging/macos/package.sh` | to decide | — |
@@ -28,8 +28,11 @@ interface follows Foundation's [NDL standard](https://github.com/getnodalia/foun
 
 ## Technical debt
 
-- Internal names inherited from upstream (crate, binary and package names) remain where saved
-  settings, files and the upstream sync depend on them.
+- None from the rename: every name is Pulso's, internal ones included (crates `pulso-*`, binaries
+  `pulso`, `pulso-cli` and `pulso-web`, app id `dev.danielmiguelt.Pulso`). `scripts/rebrand.py`
+  applies `.github/rebrand.toml` to upstream's tree in the weekly sync (`docs/upstream.md`), and the
+  "No upstream names" check runs `python3 scripts/rebrand.py check`. File signatures keep their
+  upstream names so files saved before the rename keep opening.
 
 ## Reusable Nodalia components
 
@@ -62,6 +65,4 @@ menu exported over D-Bus on Linux.
 
 Pulso releases through `release-auto.yml` like every Nodalia app (Foundation's `release-tag` and
 `release-publish`, with `release-linux.yml`, `release-macos.yml` and `release-windows.yml`). The
-packages are still named `effectcraft-X.Y.Z-…`: rename them (packaging scripts, the release workflows,
-`app=` in `scripts/check-release-notes.sh`) before the first release. Until then the notes check
-refuses any notes, since they would have to name `effectcraft` files.
+packages are named `pulso-X.Y.Z-…`.

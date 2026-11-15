@@ -196,7 +196,7 @@ The most important missing piece: it turns every other estimate here into a meas
 - Regression evidence for the reports of 8 October, checked headlessly on Windows:
   `a_short_project_panel_draws` (#231), `viewer_press_prefers_a_selected_layer_under_the_pointer`
   (#230), `match_system_uses_the_system_language_where_there_is_a_catalog` (#229) and
-  `apps/effectcraft-web/tests/page.mjs` (#226, #225); the #225, #226 and #231 reproductions also
+  `apps/pulso-web/tests/page.mjs` (#226, #225); the #225, #226 and #231 reproductions also
   pass in the dev web build in headless Chrome 154 (device pixel ratio 2, a rejected file read,
   `GPUDevice.destroy()`).
 - Regression evidence for the Turbulent Displace, Wave Warp and Bulge pinning of #227:
@@ -244,9 +244,9 @@ Issues #41–#47 (all from the Linux AppImage 0.1.1, 5 October): panning the vie
 - Fuzz the inputs we don't control: project files, imported media and documents, expressions,
   scripts, control-channel and MCP requests. Every crash found becomes a regression test
   (AGENTS.md "Never crash"). Project files are fuzzed (#779): a seeded, dependency-free mutation
-  fuzzer runs in `cargo test -p effectcraft-engine` (`fuzz_file_open_never_crashes`, `.ecproj`
+  fuzzer runs in `cargo test -p pulso-engine` (`fuzz_file_open_never_crashes`, `.ecproj`
   JSON and `.ecprojx` XML through File ▸ Open, the first queries and a thumbnail render; longer
-  runs via `EFFECTCRAFT_FUZZ_ITERS` / `EFFECTCRAFT_FUZZ_SECS`). It found one crash, deeply nested
+  runs via `PULSO_FUZZ_ITERS` / `PULSO_FUZZ_SECS`). It found one crash, deeply nested
   XML overflowing the stack, now refused. Imported media and documents, expressions, scripts and
   control-channel / MCP requests are still to do.
 - Keep the CI gate (gap 4, #2204) the same as `cargo xtask ci`: it runs on every pull request and push to `main`.
@@ -297,7 +297,7 @@ Issues #41–#47 (all from the Linux AppImage 0.1.1, 5 October): panning the vie
 
 - Decided on 5 October 2026 for Roto Brush: licensed weights with pure-Rust inference, if the
   impact on the system is low, in a composable, swappable module. Done in M13.35: the
-  `effectcraft-segment` crate (a `MaskModel` interface, a registry that only accepts
+  `pulso-segment` crate (a `MaskModel` interface, a registry that only accepts
   open-source licences, MobileSAM under Apache-2.0), weights downloaded on demand and verified,
   Settings ▸ Roto Brush to choose. Next: measure it against After Effects (G1); faster encoders
   (GPU) for long shots.

@@ -1,15 +1,15 @@
 //! Layer styles: fixture -> import -> export -> import keeps every style value, the written
-//! `ADBE Layer Styles` group is After Effects' own (951-979), and styles made in EffectCraft are
+//! `ADBE Layer Styles` group is After Effects' own (951-979), and styles made in Pulso are
 //! written with After Effects' defaults in mind.
 
 use crate::export::helpers::{add_comp, add_layer, add_solid, export_all, key, with_comp, with_layer};
-use effectcraft_aep::import::{ImportOptions, import};
-use effectcraft_aep::{PropNode, parse};
-use effectcraft_keyframe::Value;
-use effectcraft_project::build::Ids;
-use effectcraft_project::styles::{self as st, GROUP};
-use effectcraft_project::{Expression, Layer, LayerSource, Project, PropGroup};
-use effectcraft_time::FrameRate;
+use pulso_aep::import::{ImportOptions, import};
+use pulso_aep::{PropNode, parse};
+use pulso_keyframe::Value;
+use pulso_project::build::Ids;
+use pulso_project::styles::{self as st, GROUP};
+use pulso_project::{Expression, Layer, LayerSource, Project, PropGroup};
+use pulso_time::FrameRate;
 
 fn import_bytes(bytes: &[u8]) -> (Project, Vec<String>) {
     let mut p = Project::default();
@@ -44,7 +44,7 @@ fn values(g: &PropGroup) -> Vec<(String, String, Value, usize, Option<Expression
 /// The stored `ADBE Layer Styles` group of the first layer with a style applied.
 fn stored_group(bytes: &[u8]) -> Vec<u8> {
     let f = parse(bytes).expect("parse");
-    let project = effectcraft_aep::Project::new(&f).expect("project");
+    let project = pulso_aep::Project::new(&f).expect("project");
     for item in project.all_items() {
         let Some(c) = item.comp() else { continue };
         for l in c.layers() {
@@ -52,12 +52,12 @@ fn stored_group(bytes: &[u8]) -> Vec<u8> {
                 && g.flags() == Some(1)
             {
                 // As far as the exporter writes records (`decoded`).
-                let mut f2 = effectcraft_aep::AepFile {
+                let mut f2 = pulso_aep::AepFile {
                     chunks: vec![crate::export::helpers::decoded(&g.chunk().clone().into_owned())],
                     trailer: std::borrow::Cow::Owned(vec![]),
                 };
                 f2.trailer = std::borrow::Cow::Owned(vec![]);
-                return effectcraft_aep::write(&f2).expect("write");
+                return pulso_aep::write(&f2).expect("write");
             }
         }
     }
@@ -117,14 +117,14 @@ fn a_style_made_here_is_written_with_after_effects_defaults_in_mind() {
         stroke.get_mut("blendMode").expect("mode").value = Value::Enum(23);
     });
     p.next_id = next;
-    with_comp(&mut p, comp, |c| st::set_global_light(c, Some(60.0), None, effectcraft_time::Tick::ZERO));
+    with_comp(&mut p, comp, |c| st::set_global_light(c, Some(60.0), None, pulso_time::Tick::ZERO));
     let r = export_all(&p);
     assert!(r.report.losses.is_empty(), "{:?}", r.report.losses);
     let (q, losses) = import_bytes(&r.bytes);
     assert!(losses.is_empty(), "{losses:?}");
     let (a, b) = (layer(&p, "S"), layer(&q, "S"));
     assert_eq!(values(a.props.sub(GROUP).expect("styles")), values(b.props.sub(GROUP).expect("styles")));
-    // EffectCraft's Use Global Light default (on) differs from After Effects' (off): written.
+    // Pulso's Use Global Light default (on) differs from After Effects' (off): written.
     assert_eq!(b.props.sub(GROUP).and_then(|g| g.sub("dropShadow")).and_then(|g| g.get("useGlobalLight")).map(|p| p.value.clone()), Some(Value::Bool(true)));
     assert_eq!(q.comps().next().expect("comp").1.global_light.angle.value, Value::Scalar(60.0));
 }
@@ -213,12 +213,12 @@ fn a_style_popup_expression_is_reported_only_when_the_items_are_stored_in_anothe
         p.next_id = next;
         p
     };
-    let strict = |p: &Project| effectcraft_aep::export::export(p, &effectcraft_aep::export::ExportOptions { allow_losses: false }).is_ok();
+    let strict = |p: &Project| pulso_aep::export::export(p, &pulso_aep::export::ExportOptions { allow_losses: false }).is_ok();
     let reversed = build("source");
     let r = export_all(&reversed);
-    assert_eq!(r.report.count(effectcraft_aep::export::LossCategory::LayerStyles), 1, "{:?}", r.report.losses);
+    assert_eq!(r.report.count(pulso_aep::export::LossCategory::LayerStyles), 1, "{:?}", r.report.losses);
     assert!(!strict(&reversed));
     let same = build("technique");
-    assert_eq!(export_all(&same).report.count(effectcraft_aep::export::LossCategory::LayerStyles), 0);
+    assert_eq!(export_all(&same).report.count(pulso_aep::export::LossCategory::LayerStyles), 0);
     assert!(strict(&same));
 }

@@ -3,12 +3,12 @@
 //! text documents.
 
 use crate::import::helpers::comp;
-use effectcraft_aep::import::{ImportOptions, ImportResult, LossCategory, import};
-use effectcraft_aep::{AepFile, Body, Chunk, parse, write};
-use effectcraft_keyframe::Value;
-use effectcraft_keyframe::text_doc::{Justify, TextDoc};
-use effectcraft_project::{Comp, ItemKind, Layer, LayerSource, Project};
-use effectcraft_time::{TICKS_PER_SECOND, Tick};
+use pulso_aep::import::{ImportOptions, ImportResult, LossCategory, import};
+use pulso_aep::{AepFile, Body, Chunk, parse, write};
+use pulso_keyframe::Value;
+use pulso_keyframe::text_doc::{Justify, TextDoc};
+use pulso_project::{Comp, ItemKind, Layer, LayerSource, Project};
+use pulso_time::{TICKS_PER_SECOND, Tick};
 
 const WHITE: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 const RED: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
@@ -93,7 +93,7 @@ fn two_paragraphs() {
 #[test]
 fn automatic_leading_imports_as_automatic_leading() {
     // 400: 387's "A" CR "B" with Auto Leading switched on (After Effects then sets the second
-    // baseline 120 px below the first, 1.2 x the size 100): EffectCraft's automatic leading is the
+    // baseline 120 px below the first, 1.2 x the size 100): Pulso's automatic leading is the
     // same 120 % rule, so no explicit leading is set (the stored 0.01 is not used).
     let d = skip!(lossless("400-text-autoleading-on.aep"));
     assert_eq!((d.text.as_str(), d.size, d.para_count()), ("A\rB", 100.0, 2));
@@ -261,7 +261,7 @@ fn missing_fonts_are_listed_not_lost() {
     let r = import(&mut p, &fixture!("340-text-range-two-styles.aep"), &ImportOptions { has_font: &times, ..ImportOptions::new(&none) }).unwrap();
     assert!(r.report.missing_fonts.is_empty());
     // The dry run reports the same.
-    let report = effectcraft_aep::import::analyze_with(&fixture!("110-text-A.aep"), &opts).unwrap();
+    let report = pulso_aep::import::analyze_with(&fixture!("110-text-A.aep"), &opts).unwrap();
     assert_eq!(report.missing_fonts, ["TimesNewRomanPSMT"]);
 }
 
@@ -489,7 +489,7 @@ fn unreadable_text_keeps_the_layer() {
 
 #[test]
 fn superscript_and_subscript_import_as_such() {
-    use effectcraft_keyframe::text_doc::BaselineOption;
+    use pulso_keyframe::text_doc::BaselineOption;
     // 526: the corpus' default character state is superscript; 527 normal; 528 subscript.
     for (name, want) in [
         ("526-text-point-HHHH-default.aep", BaselineOption::Superscript),

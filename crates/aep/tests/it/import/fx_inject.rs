@@ -7,10 +7,10 @@
 //! The ranges and defaults the tests use are the ones After Effects 2026 wrote in the importer
 //! block of 2026-11-05 (`1100-quickwins.aep`, `1300-thirdparty.aep`, own projects).
 
-use effectcraft_aep::import::{ImportOptions, ImportResult, LossCategory, import};
-use effectcraft_aep::{Body, Chunk, ParamKind, ParamValue, Project as AepProject, parse, write};
-use effectcraft_keyframe::Value;
-use effectcraft_project::{Project, PropGroup};
+use pulso_aep::import::{ImportOptions, ImportResult, LossCategory, import};
+use pulso_aep::{Body, Chunk, ParamKind, ParamValue, Project as AepProject, parse, write};
+use pulso_keyframe::Value;
+use pulso_project::{Project, PropGroup};
 
 const SYNTHETIC: &[u8] = include_bytes!("../../fixtures/synthetic.aep");
 
@@ -263,13 +263,13 @@ pub fn bytes_with(fx: &Fx) -> Vec<u8> {
     bytes_with_effect(fx.match_name, |t| sspc(fx, t))
 }
 
-/// Imports `synthetic.aep` with `fx` in place of its Glow: the EffectCraft effect `effect` (if
+/// Imports `synthetic.aep` with `fx` in place of its Glow: the Pulso effect `effect` (if
 /// imported) and the result.
 pub fn run(fx: &Fx, effect: &str) -> (Option<PropGroup>, ImportResult) {
     import_bytes(&bytes_with(fx), effect)
 }
 
-/// Imports `bytes`: the first EffectCraft effect `effect` (if imported) and the result.
+/// Imports `bytes`: the first Pulso effect `effect` (if imported) and the result.
 pub fn import_bytes(bytes: &[u8], effect: &str) -> (Option<PropGroup>, ImportResult) {
     let mut project = Project::default();
     let none = |_: &str| false;

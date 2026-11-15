@@ -2,24 +2,24 @@
 //! Tab stop worked with the arrow keys, Home and End; every control on a page has the name its
 //! label shows, with its value; Escape still cancels.
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
 use egui::accesskit::{Role, Toggled};
 use egui::{Event, Key, Modifiers};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
+use pulso_engine::Session;
+use pulso_ui_egui::PulsoApp;
 use serde_json::json;
 
-fn harness(page: &str) -> Harness<'static, EffectcraftApp> {
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(Session::default()));
+fn harness(page: &str) -> Harness<'static, PulsoApp> {
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).build_eframe(|_| PulsoApp::new(Session::default()));
     h.run_steps(3);
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "app.settings", json!({"page": page})).unwrap();
+    pulso_ui_egui::menus::invoke(h.state_mut(), &ctx, "app.settings", json!({"page": page})).unwrap();
     h.run_steps(4);
     h
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
+fn key(h: &mut Harness<'_, PulsoApp>, key: Key, modifiers: Modifiers) {
     for pressed in [true, false] {
         h.input_mut().events.push(Event::Key { key, physical_key: None, pressed, repeat: false, modifiers });
         h.step();
@@ -27,12 +27,12 @@ fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
     h.run_steps(3);
 }
 
-fn focused(h: &Harness<'_, EffectcraftApp>) -> Option<(Role, String)> {
+fn focused(h: &Harness<'_, PulsoApp>) -> Option<(Role, String)> {
     h.root().children_recursive().find(|n| n.is_focused()).map(|n| (n.accesskit_node().role(), n.accesskit_node().label().unwrap_or_default()))
 }
 
 fn titles() -> Vec<&'static str> {
-    effectcraft_engine::prefs::pages().iter().map(|p| p.title).collect()
+    pulso_engine::prefs::pages().iter().map(|p| p.title).collect()
 }
 
 #[test]

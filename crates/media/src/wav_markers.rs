@@ -15,9 +15,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use effectcraft_color::Label;
-use effectcraft_project::Marker;
-use effectcraft_time::Tick;
+use pulso_color::Label;
+use pulso_project::Marker;
+use pulso_time::Tick;
 
 /// Most markers read from one file.
 pub const MAX_MARKERS: usize = 10_000;

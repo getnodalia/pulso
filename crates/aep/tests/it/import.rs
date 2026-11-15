@@ -1,4 +1,4 @@
-//! import tests of effectcraft-aep.
+//! import tests of pulso-aep.
 
 #[macro_use]
 mod helpers;

@@ -6,7 +6,7 @@
 //! comment, chapter, URL, frame target and cue point name and the parameter pairs as `Utf8`).
 
 use crate::Chunk;
-use effectcraft_project::Marker;
+use pulso_project::Marker;
 
 use crate::export::report::{Collector, LossCategory};
 use crate::export::timebase::TimeBase;

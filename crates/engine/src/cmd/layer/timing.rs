@@ -1,4 +1,4 @@
-use effectcraft_project::TrackMatte;
+use pulso_project::TrackMatte;
 
 use super::{
     EngineError, ItemKind, Label, Layer, LayerId, LayerSource, Result, Session, Tick, Value, b_p, bad, build, f_p, json, layer_mut, layers_p, merge_p,
@@ -106,7 +106,7 @@ pub(super) fn slip(s: &mut Session, p: &Value) -> Result<Value> {
         }
         let dur = match &l.source {
             LayerSource::Footage { item } => match s.project.item(*item).map(|i| &i.kind) {
-                Some(ItemKind::Footage(f)) if f.kind != effectcraft_project::FootageKind::Still => Some(f.looped_duration()),
+                Some(ItemKind::Footage(f)) if f.kind != pulso_project::FootageKind::Still => Some(f.looped_duration()),
                 _ => None,
             },
             LayerSource::Comp { item } => s.project.comp(*item).map(|c| c.duration),
@@ -204,7 +204,7 @@ pub(super) fn arrange(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 /// "Pre-comp N" with the lowest N no item already uses.
-fn unused_precomp_name(proj: &effectcraft_project::Project) -> String {
+fn unused_precomp_name(proj: &pulso_project::Project) -> String {
     (1u32..).map(|n| format!("Pre-comp {n}")).find(|n| !proj.items.values().any(|i| &i.name == n)).unwrap_or_else(|| "Pre-comp".to_string())
 }
 
@@ -236,7 +236,7 @@ pub(super) fn precompose(s: &mut Session, p: &Value) -> Result<Value> {
         let Some(src_item) = layer.source.item() else {
             return Err(bad(c, "\"Leave all attributes\" is available for footage, solid and precomp layers only"));
         };
-        let (w, h) = effectcraft_render::source_size(&s.project, &layer);
+        let (w, h) = pulso_render::source_size(&s.project, &layer);
         let (w, h) = if w == 0 || h == 0 { (comp.width, comp.height) } else { (w, h) };
         let dur = match s.project.item(src_item).map(|i| &i.kind) {
             Some(ItemKind::Comp(nc)) => nc.duration,
@@ -261,7 +261,7 @@ pub(super) fn precompose(s: &mut Session, p: &Value) -> Result<Value> {
         return Ok(json!({"comp": new.0.0, "layer": new.1.0}));
     }
     let span = {
-        let sel: Vec<&effectcraft_project::Layer> = comp.layers.iter().filter(|l| ids.contains(&l.id)).collect();
+        let sel: Vec<&pulso_project::Layer> = comp.layers.iter().filter(|l| ids.contains(&l.id)).collect();
         let a = sel.iter().map(|l| l.in_point).min().unwrap_or(Tick(0)).max(Tick(0));
         let b = sel.iter().map(|l| l.out_point).max().unwrap_or(comp.duration).min(comp.duration);
         (a, b)
@@ -315,7 +315,7 @@ pub(super) fn precompose(s: &mut Session, p: &Value) -> Result<Value> {
 /// nested composition (Position/Anchor Point, timing); anything the layer itself adds to the look,
 /// and what only holds inside the nested comp, is listed. These are warnings: `force` unpacks
 /// anyway and drops it. A lock is not listed here: it always refuses.
-fn unprecompose_warnings(comp: &effectcraft_project::Comp, layer: &Layer, nested: &effectcraft_project::Comp) -> Vec<String> {
+fn unprecompose_warnings(comp: &pulso_project::Comp, layer: &Layer, nested: &pulso_project::Comp) -> Vec<String> {
     let mut why = vec![];
     if layer.parent.is_some() {
         why.push("the layer has a parent".to_string());
@@ -341,7 +341,7 @@ fn unprecompose_warnings(comp: &effectcraft_project::Comp, layer: &Layer, nested
         why.push("a property of another layer refers to it (that reference is cleared)".to_string());
     }
     why.extend(expression_warnings(comp, layer, nested.layers.len()));
-    if layer.blend_mode != effectcraft_color::BlendMode::default() {
+    if layer.blend_mode != pulso_color::BlendMode::default() {
         why.push("the layer has a blending mode".to_string());
     }
     if layer.stretch != 100.0 || layer.props.prop("timeRemap").is_some() {
@@ -375,9 +375,11 @@ fn unprecompose_warnings(comp: &effectcraft_project::Comp, layer: &Layer, nested
     }
     // Inside the nested comp these composite against the nested stack only; in the parent they
     // would act on everything below.
-    if nested.layers.iter().any(|l| {
-        l.switches.adjustment || l.switches.collapse || l.is_3d() || l.preserve_transparency || l.blend_mode != effectcraft_color::BlendMode::default()
-    }) {
+    if nested
+        .layers
+        .iter()
+        .any(|l| l.switches.adjustment || l.switches.collapse || l.is_3d() || l.preserve_transparency || l.blend_mode != pulso_color::BlendMode::default())
+    {
         why.push("the composition has adjustment, 3D or collapsing layers or layers with a blending mode or Preserve Transparency".to_string());
     }
     // A solo hides only the nested comp's other layers; a soloed copy would hide the parent's.
@@ -392,7 +394,7 @@ fn unprecompose_warnings(comp: &effectcraft_project::Comp, layer: &Layer, nested
 /// What the nested comp's own frame sampling does that the expanded layers lose: a preserved
 /// frame rate other than the parent's (its layers then change only on its own frames), and
 /// motion blur with a shutter other than the parent's.
-fn sampling_warnings(comp: &effectcraft_project::Comp, nested: &effectcraft_project::Comp) -> Vec<String> {
+fn sampling_warnings(comp: &pulso_project::Comp, nested: &pulso_project::Comp) -> Vec<String> {
     let mut why = vec![];
     if nested.preserve_frame_rate && nested.frame_rate != comp.frame_rate {
         why.push("the composition preserves a frame rate other than this one's (its layers would be sampled at this comp's frames)".to_string());
@@ -415,7 +417,7 @@ fn placement_offset(layer: &Layer) -> (f64, f64) {
 
 /// Unparented nested layers whose Position (or a separated axis) has an expression: the move from
 /// [`placement_offset`] is added to the stored value and keys, which an expression can ignore.
-fn position_expression_warnings(layer: &Layer, nested: &effectcraft_project::Comp) -> Vec<String> {
+fn position_expression_warnings(layer: &Layer, nested: &pulso_project::Comp) -> Vec<String> {
     let (dx, dy) = placement_offset(layer);
     if dx == 0.0 && dy == 0.0 {
         return vec![];
@@ -434,7 +436,7 @@ fn position_expression_warnings(layer: &Layer, nested: &effectcraft_project::Com
 /// `comp("…").layer(…)`), and one per expression naming a layer by a number below it while the
 /// `added` layers replacing it renumber those. Detection is by text; the expressions are left as
 /// they are.
-fn expression_warnings(comp: &effectcraft_project::Comp, layer: &Layer, added: usize) -> Vec<String> {
+fn expression_warnings(comp: &pulso_project::Comp, layer: &Layer, added: usize) -> Vec<String> {
     let index = comp.layers.iter().position(|l| l.id == layer.id).map(|i| i.saturating_add(1));
     let quoted = [format!("\"{}\"", layer.name), format!("'{}'", layer.name)];
     let names_it = |text: &str| quoted.iter().any(|q| text.contains(q.as_str())) || index.is_some_and(|i| indexed_layers(text).contains(&i));
@@ -472,38 +474,38 @@ fn indexed_layers(text: &str) -> Vec<usize> {
 }
 
 /// Whether any property (value or key) in `props` holds a reference to layer `id`.
-fn refers_to(props: &effectcraft_project::PropGroup, id: LayerId) -> bool {
-    let is = |v: &effectcraft_keyframe::Value| matches!(v, effectcraft_keyframe::Value::Layer(Some(l)) if *l == id.0);
+fn refers_to(props: &pulso_project::PropGroup, id: LayerId) -> bool {
+    let is = |v: &pulso_keyframe::Value| matches!(v, pulso_keyframe::Value::Layer(Some(l)) if *l == id.0);
     props.children.iter().any(|c| match c {
-        effectcraft_project::Node::Prop(p) => is(&p.value) || p.keys.iter().any(|k| is(&k.value)),
-        effectcraft_project::Node::Group(g) => refers_to(g, id),
+        pulso_project::Node::Prop(p) => is(&p.value) || p.keys.iter().any(|k| is(&k.value)),
+        pulso_project::Node::Group(g) => refers_to(g, id),
     })
 }
 
 /// Clear every reference to layer `id` (`Value::Layer`, value or key) in `props`; references to
 /// other layers stay.
-fn clear_layer_refs(props: &mut effectcraft_project::PropGroup, id: LayerId) {
-    let fix = |v: &mut effectcraft_keyframe::Value| {
-        if matches!(v, effectcraft_keyframe::Value::Layer(Some(l)) if *l == id.0) {
-            *v = effectcraft_keyframe::Value::Layer(None);
+fn clear_layer_refs(props: &mut pulso_project::PropGroup, id: LayerId) {
+    let fix = |v: &mut pulso_keyframe::Value| {
+        if matches!(v, pulso_keyframe::Value::Layer(Some(l)) if *l == id.0) {
+            *v = pulso_keyframe::Value::Layer(None);
         }
     };
     for c in &mut props.children {
         match c {
-            effectcraft_project::Node::Prop(p) => {
+            pulso_project::Node::Prop(p) => {
                 fix(&mut p.value);
                 for k in &mut p.keys {
                     fix(&mut k.value);
                 }
             }
-            effectcraft_project::Node::Group(g) => clear_layer_refs(g, id),
+            pulso_project::Node::Group(g) => clear_layer_refs(g, id),
         }
     }
 }
 
 /// The layers of `comp` other than `id` let go of it: parent, track matte and property references
 /// to it are removed, so nothing points at a layer that is gone.
-fn detach_from(comp: &mut effectcraft_project::Comp, id: LayerId) {
+fn detach_from(comp: &mut pulso_project::Comp, id: LayerId) {
     for l in comp.layers.iter_mut().filter(|l| l.id != id) {
         if l.parent == Some(id) {
             l.parent = None;
@@ -518,21 +520,21 @@ fn detach_from(comp: &mut effectcraft_project::Comp, id: LayerId) {
 /// Replace layer references (`Value::Layer`) found in `props` by `map` (old id → new id), the
 /// way copies of a set of layers keep pointing at each other. A reference to a layer outside the
 /// set is cleared: it named a layer of the nested comp that is no longer there.
-fn remap_layer_values(props: &mut effectcraft_project::PropGroup, map: &[(LayerId, LayerId)]) {
-    let fix = |v: &mut effectcraft_keyframe::Value| {
-        if let effectcraft_keyframe::Value::Layer(Some(id)) = v {
-            *v = effectcraft_keyframe::Value::Layer(map.iter().find(|(o, _)| o.0 == *id).map(|(_, n)| n.0));
+fn remap_layer_values(props: &mut pulso_project::PropGroup, map: &[(LayerId, LayerId)]) {
+    let fix = |v: &mut pulso_keyframe::Value| {
+        if let pulso_keyframe::Value::Layer(Some(id)) = v {
+            *v = pulso_keyframe::Value::Layer(map.iter().find(|(o, _)| o.0 == *id).map(|(_, n)| n.0));
         }
     };
     for c in &mut props.children {
         match c {
-            effectcraft_project::Node::Prop(p) => {
+            pulso_project::Node::Prop(p) => {
                 fix(&mut p.value);
                 for k in &mut p.keys {
                     fix(&mut k.value);
                 }
             }
-            effectcraft_project::Node::Group(g) => remap_layer_values(g, map),
+            pulso_project::Node::Group(g) => remap_layer_values(g, map),
         }
     }
 }

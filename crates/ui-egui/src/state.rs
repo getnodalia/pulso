@@ -231,8 +231,8 @@ impl Tool {
 
 use super::*;
 /// The viewer's Resolution: each composition keeps its own in the project
-/// ([`effectcraft_engine::project::Comp::resolution`], `EffectcraftApp::viewer_res`).
-pub use effectcraft_engine::project::Resolution;
+/// ([`pulso_engine::project::Comp::resolution`], `PulsoApp::viewer_res`).
+pub use pulso_engine::project::Resolution;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
@@ -615,7 +615,7 @@ impl ProjectStatus {
     }
     /// Filter the dependency inventory, including unused missing proxies. Generated items
     /// count as available even though they have no external source file.
-    pub fn matches(self, item: &effectcraft_engine::project::Item) -> bool {
+    pub fn matches(self, item: &pulso_engine::project::Item) -> bool {
         match self {
             Self::All => true,
             Self::Available => !item.has_missing_footage(),
@@ -850,13 +850,13 @@ pub(crate) struct FrameWindow {
 #[derive(Clone, Copy)]
 pub(crate) struct PlaybackPass<'a> {
     pub(crate) ctx: &'a egui::Context,
-    pub(crate) comp: &'a effectcraft_engine::project::Comp,
+    pub(crate) comp: &'a pulso_engine::project::Comp,
     pub(crate) cid: ItemId,
     pub(crate) scale: f64,
     pub(crate) now: f64,
-    pub(crate) frame_rate: effectcraft_engine::time::FrameRate,
+    pub(crate) frame_rate: pulso_engine::time::FrameRate,
     pub(crate) series: FrameKey,
-    pub(crate) plan: Option<effectcraft_engine::preview::PreviewPlan>,
+    pub(crate) plan: Option<pulso_engine::preview::PreviewPlan>,
     pub(crate) window: FrameWindow,
     pub(crate) cur: i64,
     pub(crate) video: bool,

@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError, Weak};
 
-use effectcraft_raster::Image;
+use pulso_raster::Image;
 
 use crate::context::GpuImage;
 

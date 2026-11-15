@@ -15,10 +15,10 @@
 //!
 //! - GPU frames: a worker with its own WebGPU device ([`FrameServer::accel`]) renders through
 //!   the GPU compositor and GPU effects. Its readbacks can't be waited for, so a frame renders
-//!   in passes ([`effectcraft_render::Accelerator::frame_begin`]): [`FrameServer::handle`]
+//!   in passes ([`pulso_render::Accelerator::frame_begin`]): [`FrameServer::handle`]
 //!   runs the first, and while [`FrameServer::waiting`] the transport awaits the device and
 //!   calls [`FrameServer::resume`] for the next. Backend Auto picks CPU or GPU per comp from
-//!   the frames' total times ([`effectcraft_render::AutoPick`]).
+//!   the frames' total times ([`pulso_render::AutoPick`]).
 //! - Disk cache: a render request may carry the frame's disk-cache key ([`FrameMsg::Render`]
 //!   `disk`); the transport stores the finished frame under it with the source files it read
 //!   ([`FrameServer::take_files`], `disk_cache::frame_entry`; the browser: in the Origin Private
@@ -39,10 +39,10 @@
 
 use std::sync::Arc;
 
-use effectcraft_project::{ItemId, Project};
-use effectcraft_render::reads::{ReadFiles, ReadLog};
-use effectcraft_render::{Accelerator, AutoKey, Backend, ExprHost, FootageSource, Image, LayerCache, LayerStore, PrefetchStore, RenderOpts, Renderer};
-use effectcraft_time::Tick;
+use pulso_project::{ItemId, Project};
+use pulso_render::reads::{ReadFiles, ReadLog};
+use pulso_render::{Accelerator, AutoKey, Backend, ExprHost, FootageSource, Image, LayerCache, LayerStore, PrefetchStore, RenderOpts, Renderer};
+use pulso_time::Tick;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 

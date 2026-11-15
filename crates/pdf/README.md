@@ -1,8 +1,8 @@
-# effectcraft-pdf
+# pulso-pdf
 
 Vector footage from PDF files, PDF-compatible Adobe Illustrator files (`.ai`, which are PDF
 documents) and Encapsulated PostScript (`.eps`). Files parse into the same render tree as SVG
-(`effectcraft_svg::Doc`), so they rasterise at any scale (Continuously Rasterize), convert to shape
+(`pulso_svg::Doc`), so they rasterise at any scale (Continuously Rasterize), convert to shape
 layers (Layer ▸ Create ▸ Create Shapes from Vector Layer) and import as compositions with one
 layer per file layer (File ▸ Import ▸ Composition). Composition - Retain Layer Sizes uses each
 layer's artwork bounds and keeps its placement on the page. Images keep their rectangular bounds;

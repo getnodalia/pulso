@@ -1,0 +1,152 @@
+# What `scripts/rebrand.py` renames: upstream's EffectCraft becomes Pulso, in file contents and in
+# paths. The weekly upstream sync applies the same rules to upstream's tree before merging it, so
+# a rule added here applies to everything upstream sends from then on.
+#
+# Replacements are literal and case-sensitive, applied in order: put the longer, more specific
+# ones first. Keep spans are found before any replacement, so a replacement never reaches inside
+# one.
+
+# Left as they are wherever they appear (in file contents and in paths).
+keep = [
+    # Links to upstream's issues, pull requests and commits, and to other people's repositories:
+    # history, not branding. Links to upstream's tree and repository page are renamed below.
+    "(https?://)?github\\.com/storytold/[\\w.-]+/(issues|pull|commit|discussions)/[^\\s)\\]\"'<>`]*",
+    "https?://(github\\.com|raw\\.githubusercontent\\.com)/(?!storytold/effectcraft(?![\\w.-]*-)|getnodalia|danielmigueltejedor)[^\\s)\\]\"'<>`]*",
+    # Upstream's issues named without a link (`storytold/effectcraft#123`, `artcraft#2093`).
+    "storytold/[\\w.-]+#\\d+",
+    "\\b[a-z]+craft#\\d+",
+    # Repositories named without a link: upstream's siblings, its plug-in catalogue and the shared
+    # test corpus.
+    "storytold/(photocraft|vectorcraft|filmcraft|pdfcraft)\\b",
+    "storytold/effectcraft-[\\w]+",
+    "effectcraft-corpus",
+    "photocraft-corpus",
+    # Upstream's repository in the sync workflow and in the record of what came from it.
+    "(?<=UPSTREAM_REPO: )storytold/effectcraft",
+    # Shared crates vendored from Toma's upstream, used under their own names.
+    "filmcraft[-_][a-z0-9]+",
+    # File signatures: presets and templates saved before the rename keep opening, and the files
+    # Pulso writes stay readable by older builds.
+    "effectcraftAnimationPreset\\b",
+    "effectcraft(?=\\.animationPresets/)",
+    "effectcraft-template\\b",
+    # Credit for work done upstream.
+    "EffectCraft contributors",
+    "ArtCraft Team",
+]
+
+# Files left alone entirely.
+skip = [
+    ".github/rebrand.toml",
+    "scripts/rebrand.py",
+    # Licence notices keep upstream's copyright line, which the licences require.
+    "NOTICE",
+    "LICENSE-*",
+    "licenses/*",
+    # The record of what came from upstream, and upstream's own README kept for reference.
+    "docs/upstream.md",
+    "docs/upstream-readme.md",
+    # Upstream's brand marks, kept only under their own licence and attribution.
+    "docs/brand/*",
+]
+
+# Run after renaming: shorter names change how rustfmt wraps lines and sorts imports.
+after = [["cargo", "fmt", "--all"]]
+
+# Lines that keep this app's value when upstream's tree is rebranded (the sync passes --pin-from).
+[[pin]]
+file = "Cargo.toml"
+pattern = '^version = "[^"]*"'
+
+# Identity: app id, publisher, installer identities (a product of its own, never EffectCraft's).
+[[replace]]
+from = "ai.storyteller.effectcraft"
+to = "dev.danielmiguelt.Pulso"
+
+[[replace]]
+from = "EffectCraft maintainers <effectcraft@storyteller.ai>"
+to = "Nodalia <https://github.com/getnodalia/pulso/issues>"
+
+[[replace]]
+from = "Learning Machines LLC"
+to = "Nodalia"
+
+[[replace]]
+from = "AACA8593-C6ED-40A8-BA6C-CB325D8529F9"
+to = "4B70B55B-F964-449F-A845-9A382F982600"
+
+[[replace]]
+from = "BA719860-95FE-4154-B265-47006B8E9083"
+to = "9E065AC5-05EF-4CD7-A0C6-F005B01C5BBF"
+
+# Where the app lives: its repository, releases, container images and web page.
+[[replace]]
+from = "ghcr.io/storytold/effectcraft"
+to = "ghcr.io/getnodalia/pulso"
+
+[[replace]]
+from = "storytold/effectcraft"
+to = "getnodalia/pulso"
+
+[[replace]]
+from = "https://discord.gg/artcraft"
+to = "https://github.com/getnodalia/pulso/issues"
+
+[[replace]]
+from = "getartcraft.com/apps/effectcraft"
+to = "getnodalia.com/pulso"
+
+[[replace]]
+from = "getartcraft.com/docs/effectcraft"
+to = "getnodalia.com/pulso/docs"
+
+[[replace]]
+from = "getartcraft.com"
+to = "getnodalia.com"
+
+# Pulso's siblings, named by their upstream names.
+[[replace]]
+from = "PhotoCraft"
+to = "Lienzo"
+
+[[replace]]
+from = "VectorCraft"
+to = "Pluma"
+
+[[replace]]
+from = "FilmCraft"
+to = "Toma"
+
+[[replace]]
+from = "PdfCraft"
+to = "Papel"
+
+[[replace]]
+from = "LightCraft"
+to = "Luz"
+
+[[replace]]
+from = "DesignCraft"
+to = "Pliego"
+
+# The family the app belongs to: install folders, the About box.
+[[replace]]
+from = "ArtCraft"
+to = "Nodalia"
+
+# The name, in every casing upstream uses.
+[[replace]]
+from = "EffectCraft"
+to = "Pulso"
+
+[[replace]]
+from = "Effectcraft"
+to = "Pulso"
+
+[[replace]]
+from = "effectcraft"
+to = "pulso"
+
+[[replace]]
+from = "EFFECTCRAFT"
+to = "PULSO"

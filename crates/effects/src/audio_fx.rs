@@ -3,7 +3,7 @@
 //!
 //! They are ordinary effect instances on a layer (so their parameters animate and show in
 //! Effect Controls), pass video through unchanged, and are applied to the layer's audio by the
-//! composition mixdown (`effectcraft_render::audio`), which preview playback and export share.
+//! composition mixdown (`pulso_render::audio`), which preview playback and export share.
 //!
 //! The mixdown renders in short blocks. To keep the result independent of block boundaries
 //! every effect is stateless across calls: the mixer feeds [`preroll`] seconds of the layer's
@@ -21,8 +21,8 @@
 
 use std::f64::consts::PI;
 
-use effectcraft_keyframe::Value;
-use effectcraft_project::ParamUi;
+use pulso_keyframe::Value;
+use pulso_project::ParamUi;
 
 use crate::{Buf, EffectCtx, EffectSpec, Params, num, p, popup, slider};
 
@@ -193,7 +193,7 @@ pub fn specs() -> Vec<EffectSpec> {
 
 /// Is `id` an audio effect (applied by the mixdown rather than the compositor)?
 pub fn is_audio_effect(id: &str) -> bool {
-    effectcraft_project::is_audio_effect(id)
+    pulso_project::is_audio_effect(id)
 }
 
 /// Does the effect produce sound on its own (so a layer without audio becomes audible)?

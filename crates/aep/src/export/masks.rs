@@ -14,8 +14,8 @@
 //!   Expansion (pixels), each only when it is not at its default.
 
 use crate::Chunk;
-use effectcraft_keyframe::{Ease, Interp, ShapePath, Value};
-use effectcraft_project::{FeatherFalloff, GroupKind, Layer, MaskMode, MaskMotionBlur, PropGroup};
+use pulso_keyframe::{Ease, Interp, ShapePath, Value};
+use pulso_project::{FeatherFalloff, GroupKind, Layer, MaskMode, MaskMotionBlur, PropGroup};
 
 use crate::export::plan::{CompPlan, EaseSlot, KeyPlan, LIMIT, cut_name};
 use crate::export::report::{Collector, LossCategory};
@@ -179,7 +179,7 @@ fn plan_mask(g: &PropGroup, size: (u32, u32), cp: &CompPlan, what: &str, col: &m
     }
     // The path and its keys.
     let mut path_keys: Vec<PathKeyPlan> = Vec::new();
-    let mut keys: Vec<(i64, &effectcraft_keyframe::Keyframe)> = Vec::new();
+    let mut keys: Vec<(i64, &pulso_keyframe::Keyframe)> = Vec::new();
     for k in &path_prop.keys {
         let (u, inexact) = cp.tb.units(k.time);
         if inexact {
@@ -200,11 +200,11 @@ fn plan_mask(g: &PropGroup, size: (u32, u32), cp: &CompPlan, what: &str, col: &m
             Interp::Bezier => 2,
         }
     };
-    let ease = |e: &[effectcraft_keyframe::Ease], on: bool| -> (f64, f64) {
+    let ease = |e: &[pulso_keyframe::Ease], on: bool| -> (f64, f64) {
         if !on {
             return (0.0, 0.0);
         }
-        let e = e.first().copied().unwrap_or(effectcraft_keyframe::Ease { speed: 0.0, influence: 1.0 / 3.0 });
+        let e = e.first().copied().unwrap_or(pulso_keyframe::Ease { speed: 0.0, influence: 1.0 / 3.0 });
         let speed = finite(e.speed).filter(|v| v.abs() <= 1e9).unwrap_or(0.0);
         let influence = if e.influence.is_finite() { e.influence.clamp(0.001, 1.0) } else { 1.0 / 3.0 };
         (speed, influence)
@@ -287,8 +287,8 @@ fn plan_mask(g: &PropGroup, size: (u32, u32), cp: &CompPlan, what: &str, col: &m
 }
 
 /// Feather keys (plain template, two components, speed in pixels per second).
-fn plan_feather_keys(src: &[effectcraft_keyframe::Keyframe], cp: &CompPlan, what: &str, col: &mut Collector) -> Vec<KeyPlan> {
-    let mut keys: Vec<(i64, &effectcraft_keyframe::Keyframe)> = Vec::with_capacity(src.len());
+fn plan_feather_keys(src: &[pulso_keyframe::Keyframe], cp: &CompPlan, what: &str, col: &mut Collector) -> Vec<KeyPlan> {
+    let mut keys: Vec<(i64, &pulso_keyframe::Keyframe)> = Vec::with_capacity(src.len());
     for k in src {
         let (u, inexact) = cp.tb.units(k.time);
         if inexact {

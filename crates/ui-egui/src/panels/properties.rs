@@ -8,17 +8,17 @@
 //! - **Paragraph** (text layers): the seven alignment buttons; "More" opens the Paragraph panel.
 //! - **Text Animation** (text layers): Add Animator menu.
 
-use effectcraft_engine::keyframe::{Justify, TextDoc, Value};
-use effectcraft_engine::project::{Layer, LayerSource, Property};
-use effectcraft_engine::render::EvalCtx;
 use egui::{Align2, Color32, Rect, Sense, Stroke, pos2, vec2};
+use pulso_engine::keyframe::{Justify, TextDoc, Value};
+use pulso_engine::project::{Layer, LayerSource, Property};
+use pulso_engine::render::EvalCtx;
 use serde_json::json;
 
 use crate::dock::PanelKind;
 use crate::i18n::tr;
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, widgets};
+use crate::{PulsoApp, widgets};
 
 type Actions = Vec<(String, serde_json::Value)>;
 
@@ -29,7 +29,7 @@ const PAD: f32 = 12.0;
 /// for separators). The engine's list (`build::TEXT_ANIMATOR_KINDS`) after Enable Per-character 3D.
 fn animator_entries(per_char: bool) -> Vec<(String, &'static str)> {
     let mut v = vec![((if per_char { "Disable Per-character 3D" } else { "Enable Per-character 3D" }).to_string(), "perChar3d"), ("-".to_string(), "")];
-    for (k, l) in effectcraft_engine::project::build::TEXT_ANIMATOR_KINDS {
+    for (k, l) in pulso_engine::project::build::TEXT_ANIMATOR_KINDS {
         v.push((l.to_string(), if *k == "-" { "" } else { k }));
     }
     v
@@ -57,7 +57,7 @@ fn decimals(v: f64) -> usize {
 /// against a snapshot of the project; every row edit is queued and run through
 /// [`crate::menus::invoke`] at the end (range-scoped for `layer.setText`), with failures reported
 /// in `app.ui.status`. Without a selected layer it shows a hint.
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+pub fn show(app: &mut PulsoApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().with_clip_rect(rect);
     let ctx = ui.ctx().clone();
@@ -129,7 +129,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     // selected characters.
     let text_target = crate::panels::text_panels::text_target(app).filter(|tt| tt.layer == layer.id.0);
     if matches!(layer.source, LayerSource::Text)
-        && let Some(doc) = text_target.as_ref().map(|tt| tt.doc.clone()).or_else(|| effectcraft_engine::render::text::source_text(&ectx, &layer))
+        && let Some(doc) = text_target.as_ref().map(|tt| tt.doc.clone()).or_else(|| pulso_engine::render::text::source_text(&ectx, &layer))
     {
         divider(&p, x0, w, y - 4.0, &t);
         y = text_section(app, ui, &p, &layer, &doc, x0, w, y + 4.0, &mut actions);
@@ -171,7 +171,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
         if presp.clicked() {
             widgets::open_popup(ui, ppop);
         }
-        let presets = effectcraft_engine::text_presets();
+        let presets = pulso_engine::text_presets();
         let names: Vec<String> = presets.iter().map(|(_, n)| n.clone()).collect();
         if let Some(i) = widgets::popup_menu(ui, ppop, pr.left_bottom(), &names, None) {
             actions.push(("layer.applyTextPreset".into(), json!({"layer": layer.id.0, "preset": presets[i].0})));
@@ -192,7 +192,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     }
 }
 
-fn section_header(app: &mut EffectcraftApp, p: &egui::Painter, x0: f32, w: f32, y: f32, title: &str, auto: &str) {
+fn section_header(app: &mut PulsoApp, p: &egui::Painter, x0: f32, w: f32, y: f32, title: &str, auto: &str) {
     let t = app.tokens;
     p.text(pos2(x0, y + ROW_H / 2.0), Align2::LEFT_CENTER, title, Tokens::semibold(12.0), t.text);
     let r = Rect::from_min_size(pos2(x0, y), vec2(w, ROW_H));
@@ -210,7 +210,7 @@ fn triangle(p: &egui::Painter, c: egui::Pos2, left: bool, col: Color32) {
 
 /// One transform row: keyframe navigator or stopwatch, name, value fields.
 #[allow(clippy::too_many_arguments)]
-fn transform_row(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, pr: &Property, ectx: &EvalCtx, r: Rect, actions: &mut Actions) {
+fn transform_row(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, layer: &Layer, pr: &Property, ectx: &EvalCtx, r: Rect, actions: &mut Actions) {
     let t = app.tokens;
     // The values themselves: red while an expression drives the property (#1306).
     let vt = t.for_value(pr.has_expression());
@@ -369,7 +369,7 @@ fn transform_row(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter,
 /// Text section; returns the y below it.
 #[allow(clippy::too_many_arguments)]
 fn text_section(
-    app: &mut EffectcraftApp,
+    app: &mut PulsoApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -402,14 +402,14 @@ fn text_section(
     }
     app.auto.add("properties.text.style", sr, "Font style");
     // The family's own styles.
-    let styles: Vec<String> = if widgets::popup_is_open(ui, spop) { effectcraft_engine::font_styles(&doc.font) } else { vec![] };
+    let styles: Vec<String> = if widgets::popup_is_open(ui, spop) { pulso_engine::font_styles(&doc.font) } else { vec![] };
     if let Some(st) = widgets::popup_menu(ui, spop, sr.left_bottom(), &styles, styles.iter().position(|s| *s == doc.style)).and_then(|i| styles.get(i)) {
         set(actions, json!({"style": st}));
     }
     y += 32.0;
     // Size / leading, tracking / stroke width.
     let col2 = x0 + w / 2.0;
-    let field = |app: &mut EffectcraftApp, ui: &mut egui::Ui, x: f32, y: f32, glyph: &str, key: &str, v: f64, range: (f64, f64), suffix: &str| {
+    let field = |app: &mut PulsoApp, ui: &mut egui::Ui, x: f32, y: f32, glyph: &str, key: &str, v: f64, range: (f64, f64), suffix: &str| {
         p.text(pos2(x, y + 9.0), Align2::LEFT_CENTER, glyph, Tokens::semibold(11.0), t.text_dim);
         let (r, nv, _) = widgets::hot_number_at(
             ui,
@@ -486,7 +486,7 @@ fn text_section(
 /// Paragraph section; returns the y below it.
 #[allow(clippy::too_many_arguments)]
 fn paragraph_section(
-    app: &mut EffectcraftApp,
+    app: &mut PulsoApp,
     ui: &mut egui::Ui,
     p: &egui::Painter,
     layer: &Layer,
@@ -554,7 +554,7 @@ fn paint_align_glyph(p: &egui::Painter, r: Rect, j: Justify, c: Color32) {
 
 /// "··· More" button that opens the full panel; returns the y below it.
 #[allow(clippy::too_many_arguments)]
-fn more_button(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, x0: f32, y: f32, id: &str, auto: &str, panel: PanelKind) -> f32 {
+fn more_button(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, x0: f32, y: f32, id: &str, auto: &str, panel: PanelKind) -> f32 {
     let t = app.tokens;
     let r = Rect::from_min_size(pos2(x0, y), vec2(64.0, 22.0));
     let resp = ui.interact(r, egui::Id::unique(id), Sense::click());

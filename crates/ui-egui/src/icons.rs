@@ -734,19 +734,12 @@ pub fn paint(painter: &Painter, rect: Rect, icon: Icon, color: Color32) {
 
 /// Keyframe glyph by interpolation (diamond = linear, hourglass = bezier/ease, circle = auto,
 /// square = hold), split into in/out halves.
-pub fn keyframe(
-    painter: &Painter,
-    center: Pos2,
-    size: f32,
-    left: effectcraft_engine::keyframe::KeyHalf,
-    right: effectcraft_engine::keyframe::KeyHalf,
-    fill: Color32,
-) {
+pub fn keyframe(painter: &Painter, center: Pos2, size: f32, left: pulso_engine::keyframe::KeyHalf, right: pulso_engine::keyframe::KeyHalf, fill: Color32) {
     painter.extend(keyframe_shapes(center, size, left, right, fill));
 }
 
 /// The screen rect a [`keyframe`] glyph covers, read off the shapes it draws.
-pub fn keyframe_bounds(center: Pos2, size: f32, left: effectcraft_engine::keyframe::KeyHalf, right: effectcraft_engine::keyframe::KeyHalf) -> Rect {
+pub fn keyframe_bounds(center: Pos2, size: f32, left: pulso_engine::keyframe::KeyHalf, right: pulso_engine::keyframe::KeyHalf) -> Rect {
     // Any opaque fill: a transparent shape would report no bounds.
     egui::Shape::Vec(keyframe_shapes(center, size, left, right, Color32::WHITE)).visual_bounding_rect()
 }
@@ -754,14 +747,8 @@ pub fn keyframe_bounds(center: Pos2, size: f32, left: effectcraft_engine::keyfra
 /// The halves of a [`keyframe`] glyph. Flat, without a dark outline (as in After Effects), so
 /// keys that overlap read as one shape instead of a tangle of borders (#284); the hairline in
 /// the fill colour closes the seam between the halves.
-fn keyframe_shapes(
-    center: Pos2,
-    size: f32,
-    left: effectcraft_engine::keyframe::KeyHalf,
-    right: effectcraft_engine::keyframe::KeyHalf,
-    fill: Color32,
-) -> Vec<egui::Shape> {
-    use effectcraft_engine::keyframe::KeyHalf as H;
+fn keyframe_shapes(center: Pos2, size: f32, left: pulso_engine::keyframe::KeyHalf, right: pulso_engine::keyframe::KeyHalf, fill: Color32) -> Vec<egui::Shape> {
+    use pulso_engine::keyframe::KeyHalf as H;
     let r = size / 2.0;
     let mut out = Vec::with_capacity(2);
     let mut half = |pts: Vec<Pos2>| out.push(PathShape::convex_polygon(pts, fill, Stroke::new(0.5, fill)).into());
@@ -800,7 +787,7 @@ fn keyframe_shapes(
 
 #[cfg(test)]
 mod tests {
-    use effectcraft_engine::keyframe::KeyHalf as H;
+    use pulso_engine::keyframe::KeyHalf as H;
 
     /// The Selection arrow (and the Speaker and Sparkle) are concave; filled as one polygon they
     /// rendered as a broken fan. Each is drawn as convex pieces instead.

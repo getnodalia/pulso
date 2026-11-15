@@ -11,7 +11,7 @@
 //!
 //! wasm32 has no threads: jobs wait in the same priority queue and [`Frames::pump`] hands them
 //! to a [`RemoteFrames`] (the browser's frame worker, a second engine instance fed with project
-//! diffs, `effectcraft_engine::remote`) or, without one, renders them on the UI thread between
+//! diffs, `pulso_engine::remote`) or, without one, renders them on the UI thread between
 //! egui frames, within a time budget.
 //!
 //! With the disk cache on (Settings ▸ Media & Disk Cache), every CPU-rendered frame is also
@@ -35,12 +35,12 @@ use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex, PoisonError};
 
-use effectcraft_engine::project::{Comp, Heard, ItemId, ItemKind, Node, Project, PropGroup};
-use effectcraft_engine::render::disk_cache::{self, DiskCache};
-use effectcraft_engine::render::reads::{ReadFiles, ReadLog};
-use effectcraft_engine::render::{CancellableFootage, ExprHost, FootageSource, LayerCache, RenderOpts, Renderer};
-use effectcraft_engine::time::Tick;
-use effectcraft_gpu::{DisplayFrame, FrameError, Gpu};
+use pulso_engine::project::{Comp, Heard, ItemId, ItemKind, Node, Project, PropGroup};
+use pulso_engine::render::disk_cache::{self, DiskCache};
+use pulso_engine::render::reads::{ReadFiles, ReadLog};
+use pulso_engine::render::{CancellableFootage, ExprHost, FootageSource, LayerCache, RenderOpts, Renderer};
+use pulso_engine::time::Tick;
+use pulso_gpu::{DisplayFrame, FrameError, Gpu};
 use rayon::prelude::*;
 
 /// Comp identities (and the project snapshots behind them) the RAM preview keeps frames of.
@@ -437,7 +437,7 @@ pub struct RenderSource {
     /// desktop: Show Channel / exposure / region-of-interest drawing read the CPU frame texture,
     /// so GPU frames are read back (the compositing still runs on the GPU). On in the browser
     /// while the viewer draws plainly, because there frames can't be read back synchronously
-    /// (`EffectcraftApp::gpu_display`).
+    /// (`PulsoApp::gpu_display`).
     pub gpu_display: bool,
     /// The persistent disk cache, when enabled.
     pub disk: Option<Arc<DiskCache>>,
@@ -634,7 +634,7 @@ pub fn comp_has_effects(project: &Project, comp: ItemId) -> bool {
         let Some(c) = p.comp(comp) else { return false };
         c.layers.iter().any(|l| {
             l.switches.effects && l.effects().is_some_and(|fx| fx.groups().any(|g| g.enabled))
-                || depth < 16 && matches!(l.source, effectcraft_engine::project::LayerSource::Comp { item } if walk(p, item, depth + 1))
+                || depth < 16 && matches!(l.source, pulso_engine::project::LayerSource::Comp { item } if walk(p, item, depth + 1))
         })
     }
     walk(project, comp, 0)
@@ -772,20 +772,20 @@ impl Default for Frames {
 /// Whether viewer frames of a project with `settings` are half floats ([`F16Frame`], rendered
 /// with `RenderOpts::skip_hdr_step`): 32 bpc on the desktop. The browser's frames (its frame
 /// worker's RGBA8, the GPU compositor's display textures) stay 8-bit for now.
-pub fn f16_frames(settings: &effectcraft_engine::project::ProjectSettings) -> bool {
+pub fn f16_frames(settings: &pulso_engine::project::ProjectSettings) -> bool {
     cfg!(not(target_arch = "wasm32")) && settings.bit_depth.levels().is_none()
 }
 
 /// Bytes per pixel of the viewer frames of a project with `settings` (see [`f16_frames`]).
-pub fn frame_pixel_bytes(settings: &effectcraft_engine::project::ProjectSettings) -> usize {
+pub fn frame_pixel_bytes(settings: &pulso_engine::project::ProjectSettings) -> usize {
     if f16_frames(settings) { F16_PIXEL_BYTES } else { 4 }
 }
 
 /// A rendered frame as a cached viewer frame: half floats for `skip_hdr_step` renders (see
 /// [`f16_frames`]), else 8-bit.
-pub fn cpu_frame(img: &effectcraft_engine::render::Image, project: &Project, opts: &RenderOpts) -> FrameImage {
+pub fn cpu_frame(img: &pulso_engine::render::Image, project: &Project, opts: &RenderOpts) -> FrameImage {
     if opts.skip_hdr_step {
-        let encoding = effectcraft_engine::viewer::FrameEncoding::of(&project.settings, true);
+        let encoding = pulso_engine::viewer::FrameEncoding::of(&project.settings, true);
         FrameImage::CpuF16(Arc::new(F16Frame::from_image(img, encoding)))
     } else {
         FrameImage::Cpu(Arc::new(to_color_image(img)))
@@ -794,7 +794,7 @@ pub fn cpu_frame(img: &effectcraft_engine::render::Image, project: &Project, opt
 
 /// Premultiplied f32 → egui premultiplied Color32 (alpha kept, so the viewer can show the
 /// transparency grid or the comp background colour underneath).
-pub fn to_color_image(img: &effectcraft_engine::render::Image) -> egui::ColorImage {
+pub fn to_color_image(img: &pulso_engine::render::Image) -> egui::ColorImage {
     let px: Vec<egui::Color32> = img.data.par_iter().map(|p| display_pixel(*p)).collect();
     egui::ColorImage::new([img.width as usize, img.height as usize], px)
 }
@@ -1830,7 +1830,7 @@ impl Worker {
         // Half-float frames (32 bpc) have entries of their own (their key has the options).
         if job.opts.skip_hdr_step {
             let (f, files) = dc.get_frame_f16(k, virtual_id)?;
-            let encoding = effectcraft_engine::viewer::FrameEncoding::of(&job.src.project.settings, true);
+            let encoding = pulso_engine::viewer::FrameEncoding::of(&job.src.project.settings, true);
             Some((FrameImage::CpuF16(Arc::new(F16Frame::from_bits(f.width, f.height, f.rgba, encoding))), files))
         } else {
             let (f, files) = dc.get_frame(k, virtual_id)?;
@@ -1890,7 +1890,7 @@ impl Worker {
         });
         // A preview frame is done: the GPU pool ages the sizes it did not ask for.
         if let Some(g) = &job.src.gpu {
-            effectcraft_engine::render::Accelerator::frame_end(g);
+            pulso_engine::render::Accelerator::frame_end(g);
         }
         img
     }
@@ -1938,13 +1938,13 @@ impl Worker {
         r.expr = job.src.expr.as_deref();
         r.cache = Some(&job.src.layer_cache);
         r.reads = Some(&files);
-        r.accel = Some(g as &dyn effectcraft_engine::render::Accelerator);
+        r.accel = Some(g as &dyn pulso_engine::render::Accelerator);
         r.active_accel()?;
         let f = {
             let _slot = GPU_RENDER_SLOTS.try_acquire(MAX_GPU_RENDERS)?;
             g.within_memory(|| g.render_display(&r, job.comp, job.t))
         };
-        effectcraft_engine::render::Accelerator::frame_end(g);
+        pulso_engine::render::Accelerator::frame_end(g);
         match f {
             Ok(f) => {
                 if f.is_some() {
@@ -1971,7 +1971,7 @@ impl Worker {
         // reported failure. The CPU retry must compute its own pixels from the snapshot.
         r.cache = gpu_allowed.then_some(job.src.layer_cache.as_ref());
         let gpu = job.src.gpu.as_ref().filter(|_| gpu_allowed);
-        r.accel = gpu.map(|g| g as &dyn effectcraft_engine::render::Accelerator);
+        r.accel = gpu.map(|g| g as &dyn pulso_engine::render::Accelerator);
         // The GPU leaves the frame in a texture for the viewer; otherwise (Software Only, no
         // adapter, or a frame the GPU cannot finish here) the CPU renders it.
         // Auto (Mercury GPU Acceleration) shows each comp on whichever compositor measured
@@ -2187,9 +2187,9 @@ impl Queue {
         let adapter = adapter || self.fake_gpu;
         adapter
             && match j.opts.backend {
-                effectcraft_engine::render::Backend::Cpu => false,
-                effectcraft_engine::render::Backend::Gpu => true,
-                effectcraft_engine::render::Backend::Auto => j.src.project.settings.gpu_acceleration,
+                pulso_engine::render::Backend::Cpu => false,
+                pulso_engine::render::Backend::Gpu => true,
+                pulso_engine::render::Backend::Auto => j.src.project.settings.gpu_acceleration,
             }
     }
 

@@ -1,7 +1,7 @@
 use super::*;
 
-impl EffectcraftApp {
-    /// Keep the saved workspaces for the next session (see [`EffectcraftApp::new`]): After
+impl PulsoApp {
+    /// Keep the saved workspaces for the next session (see [`PulsoApp::new`]): After
     /// Effects' saved workspaces last until they are deleted (#320). `Err` when they weren't
     /// written (#696): the change applies for this session and a later save retries it, but until
     /// then a restart brings back what is on disk.

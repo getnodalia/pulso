@@ -1,22 +1,22 @@
 //! Effects & Presets: copy the configured folder path through the contents menu.
 
 use crate::gpu_test::RenderSerial;
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::panels::effects_presets::PresetFile;
-use effectcraft_ui_egui::{ControlRequest, EffectcraftApp, control, dock::PanelKind};
 use egui::{Event, Modifiers, OutputCommand, PointerButton, pos2};
 use egui_kittest::Harness;
+use pulso_engine::Session;
+use pulso_ui_egui::panels::effects_presets::PresetFile;
+use pulso_ui_egui::{ControlRequest, PulsoApp, control, dock::PanelKind};
 use serde_json::json;
 
 fn expected_folder() -> String {
     let path = std::env::var("EC_PRESETS_DIR").unwrap_or_else(|_| {
         let home = std::env::var("HOME").or_else(|_| std::env::var("USERPROFILE")).unwrap();
-        std::path::Path::new(&home).join("Documents/EffectCraft/Presets").to_str().unwrap().to_string()
+        std::path::Path::new(&home).join("Documents/Pulso/Presets").to_str().unwrap().to_string()
     });
     if path.is_empty() { path } else { std::path::absolute(path).unwrap().to_str().unwrap().to_string() }
 }
 
-fn click(h: &mut Harness<'_, EffectcraftApp>, id: &str) -> Vec<String> {
+fn click(h: &mut Harness<'_, PulsoApp>, id: &str) -> Vec<String> {
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("missing {id}"));
     let pos = pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0);
     let mut copied = Vec::new();
@@ -40,7 +40,7 @@ fn presets_menu_copies_the_configured_folder_without_editing_the_project() {
     for language in ["en", "ja"] {
         // The `ja` run draws Japanese menu text, which needs an installed CJK face.
         let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).allow_missing_glyphs().build_eframe(|_| {
-            let mut app = EffectcraftApp::new(Session::default());
+            let mut app = PulsoApp::new(Session::default());
             app.session.prefs.general.language = language.into();
             app.ui.start_screen = false;
             app.show_panel(PanelKind::EffectsPresets);
@@ -65,7 +65,7 @@ fn presets_menu_copies_the_configured_folder_without_editing_the_project() {
 
 #[test]
 fn presets_folder_control_command_returns_the_path_or_a_configuration_error() {
-    let mut app = EffectcraftApp::new(Session::default());
+    let mut app = PulsoApp::new(Session::default());
     let ctx = egui::Context::default();
     let expected = expected_folder();
     let mut reply = None;
@@ -123,7 +123,7 @@ fn shared_preset_rows_search_apply_and_undo_the_selected_definition() {
     session.execute("comp.new", json!({"width": 64, "height": 36, "duration": 2})).unwrap();
     session.execute("layer.newText", json!({"text": "Cache"})).unwrap();
     let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).with_step_dt(1.0 / 60.0).build_eframe(|_| {
-        let mut app = EffectcraftApp::new(session);
+        let mut app = PulsoApp::new(session);
         app.ui.start_screen = false;
         app.show_panel(PanelKind::EffectsPresets);
         app
@@ -132,7 +132,7 @@ fn shared_preset_rows_search_apply_and_undo_the_selected_definition() {
     let shared = std::sync::Arc::new(entries);
     let now = h.ctx.input(|i| i.time);
     h.ctx.data_mut(|d| d.insert_temp(egui::Id::unique("fx-user-presets"), (now, shared.clone())));
-    let search = |h: &mut Harness<'_, EffectcraftApp>, text: &str| {
+    let search = |h: &mut Harness<'_, PulsoApp>, text: &str| {
         click(h, "effects.search");
         h.input_mut().events.push(Event::Key { key: egui::Key::A, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::COMMAND });
         h.input_mut().events.push(Event::Text(text.into()));

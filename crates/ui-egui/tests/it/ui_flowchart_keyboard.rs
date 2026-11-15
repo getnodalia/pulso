@@ -3,21 +3,21 @@
 //! the arrow keys, Home / End, Enter and Space work the nodes, and the toolbar switches say whether
 //! they are on.
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::dock::PanelKind;
 use egui::accesskit::{Role, Toggled};
 use egui::{Event, Key, Modifiers, Pos2, pos2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
+use pulso_engine::Session;
+use pulso_ui_egui::PulsoApp;
+use pulso_ui_egui::dock::PanelKind;
 use serde_json::json;
 
 /// Main uses Mid and Inner, Mid uses Inner: three comp nodes (Main, Mid, Inner) and a solid.
-fn harness() -> Harness<'static, EffectcraftApp> {
+fn harness() -> Harness<'static, PulsoApp> {
     sized(1600.0, 1000.0)
 }
 
-fn sized(w: f32, hh: f32) -> Harness<'static, EffectcraftApp> {
+fn sized(w: f32, hh: f32) -> Harness<'static, PulsoApp> {
     let mut s = Session::default();
     let id = |v: serde_json::Value| v["id"].as_u64().or_else(|| v["comp"].as_u64()).or_else(|| v["item"].as_u64()).unwrap();
     let inner = id(s.execute("comp.new", json!({"name": "Inner", "width": 100, "height": 100, "duration": 2})).unwrap());
@@ -28,14 +28,14 @@ fn sized(w: f32, hh: f32) -> Harness<'static, EffectcraftApp> {
     id(s.execute("comp.new", json!({"name": "Main", "width": 100, "height": 100, "duration": 2})).unwrap());
     s.execute("layer.addItem", json!({"item": mid})).unwrap();
     s.execute("layer.addItem", json!({"item": inner})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(w, hh)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(w, hh)).build_eframe(|_| PulsoApp::new(s));
     h.state_mut().show_panel(PanelKind::Flowchart);
     h.state_mut().ui.maximized = Some(PanelKind::Flowchart);
     h.run_steps(4);
     h
 }
 
-fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
+fn key(h: &mut Harness<'_, PulsoApp>, key: Key, modifiers: Modifiers) {
     for pressed in [true, false] {
         h.input_mut().events.push(Event::Key { key, physical_key: None, pressed, repeat: false, modifiers });
         h.step();
@@ -43,7 +43,7 @@ fn key(h: &mut Harness<'_, EffectcraftApp>, key: Key, modifiers: Modifiers) {
     h.run_steps(3);
 }
 
-fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
+fn click_at(h: &mut Harness<'_, PulsoApp>, p: Pos2) {
     h.input_mut().events.push(Event::PointerMoved(p));
     h.step();
     for pressed in [true, false] {
@@ -53,22 +53,22 @@ fn click_at(h: &mut Harness<'_, EffectcraftApp>, p: Pos2) {
     h.run_steps(3);
 }
 
-fn focused(h: &Harness<'_, EffectcraftApp>) -> Option<(Role, String)> {
+fn focused(h: &Harness<'_, PulsoApp>) -> Option<(Role, String)> {
     h.root().children_recursive().find(|n| n.is_focused()).map(|n| (n.accesskit_node().role(), n.accesskit_node().label().unwrap_or_default()))
 }
 
-fn names(h: &Harness<'_, EffectcraftApp>) -> Vec<String> {
+fn names(h: &Harness<'_, PulsoApp>) -> Vec<String> {
     h.query_all_by_role(Role::ListItem).map(|n| n.accesskit_node().label().unwrap_or_default()).collect()
 }
 
-fn selected(h: &Harness<'_, EffectcraftApp>) -> Vec<String> {
+fn selected(h: &Harness<'_, PulsoApp>) -> Vec<String> {
     h.query_all_by_role(Role::ListItem)
         .filter(|n| n.accesskit_node().is_selected() == Some(true))
         .map(|n| n.accesskit_node().label().unwrap_or_default())
         .collect()
 }
 
-fn focus_node(h: &mut Harness<'_, EffectcraftApp>, name: &str) {
+fn focus_node(h: &mut Harness<'_, PulsoApp>, name: &str) {
     h.get_by_role_and_label(Role::ListItem, name).focus();
     h.run_steps(3);
 }
@@ -90,7 +90,7 @@ fn nodes_are_named_list_items_with_what_they_are_and_what_they_use() {
 #[test]
 fn the_toolbar_switches_say_whether_they_are_on() {
     let mut h = harness();
-    let state = |h: &Harness<'_, EffectcraftApp>, name: &str| h.get_by_role_and_label(Role::Button, name).accesskit_node().toggled();
+    let state = |h: &Harness<'_, PulsoApp>, name: &str| h.get_by_role_and_label(Role::Button, name).accesskit_node().toggled();
     assert_eq!(state(&h, "Solids"), Some(Toggled::True));
     assert_eq!(state(&h, "Layers"), Some(Toggled::False));
     h.get_by_role_and_label(Role::Button, "Layers").focus();
@@ -108,7 +108,7 @@ fn the_toolbar_automation_labels_stay_english_in_another_language() {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Main", "width": 100, "height": 100, "duration": 2})).unwrap();
     s.prefs.general.language = "fr".into();
-    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).allow_missing_glyphs().build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1600.0, 1000.0)).allow_missing_glyphs().build_eframe(|_| PulsoApp::new(s));
     h.state_mut().show_panel(PanelKind::Flowchart);
     h.state_mut().ui.maximized = Some(PanelKind::Flowchart);
     h.run_steps(4);
@@ -194,7 +194,7 @@ fn a_node_scrolled_out_of_view_is_brought_back_by_the_keys() {
     let mut h = sized(300.0, 400.0);
     let all = names(&h);
     let ctx = h.ctx.clone();
-    let graph = effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "flowchart.graph", json!({})).unwrap();
+    let graph = pulso_ui_egui::menus::invoke(h.state_mut(), &ctx, "flowchart.graph", json!({})).unwrap();
     let total = graph["nodes"].as_array().map_or(0, Vec::len);
     assert!(all.len() < total, "the window is small enough to hide a node ({} of {total} drawn)", all.len());
     focus_node(&mut h, &all[0]);

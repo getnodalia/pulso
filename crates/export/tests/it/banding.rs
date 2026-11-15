@@ -4,14 +4,14 @@
 
 use std::sync::{Arc, Mutex};
 
-use effectcraft_color::Label;
-use effectcraft_export::render_queue::*;
-use effectcraft_export::{Job, JobOptions, Sink, export};
-use effectcraft_keyframe::Value;
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{BitDepth, Comp, ItemId, ItemKind, LayerSource, Project, Solid};
-use effectcraft_render::NoFootage;
-use effectcraft_time::{FrameRate, Tick};
+use pulso_color::Label;
+use pulso_export::render_queue::*;
+use pulso_export::{Job, JobOptions, Sink, export};
+use pulso_keyframe::Value;
+use pulso_project::build::{self, Ids};
+use pulso_project::{BitDepth, Comp, ItemId, ItemKind, LayerSource, Project, Solid};
+use pulso_render::NoFootage;
+use pulso_time::{FrameRate, Tick};
 
 const W: u32 = 1024;
 const H: u32 = 16;
@@ -30,9 +30,9 @@ fn ramp_project(depth: BitDepth) -> (Project, ItemId) {
     comp.background = [0.0, 0.0, 0.0];
     let sid = p.add_item("Ramp", Label::Red, None, ItemKind::Solid(Solid { color: [1.0, 1.0, 1.0], width: W, height: H, pixel_aspect: 1.0 }));
     let mut layer = build::layer(&mut p, &comp, "Ramp", LayerSource::Solid { item: sid }, (W, H), None);
-    let spec = effectcraft_effects::find("ec.generate.gradientramp").expect("gradient ramp effect");
+    let spec = pulso_effects::find("ec.generate.gradientramp").expect("gradient ramp effect");
     let mut next = p.next_id;
-    let mut group = effectcraft_effects::instantiate(spec, &mut Ids(&mut next), spec.name, [W as f64, H as f64]);
+    let mut group = pulso_effects::instantiate(spec, &mut Ids(&mut next), spec.name, [W as f64, H as f64]);
     p.next_id = next;
     for (k, v) in [
         ("start", Value::Vec2([0.0, 0.0])),

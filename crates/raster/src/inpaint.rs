@@ -1136,7 +1136,7 @@ fn trace(context: &TraceContext<'_>, start: TraceStart) -> Option<([f32; 4], usi
 }
 
 /// A hardware backend for the fill's stages (the GPU compositor implements it; see
-/// `effectcraft_render::Accelerator::inpaint`). Every method has the CPU implementation as its
+/// `pulso_render::Accelerator::inpaint`). Every method has the CPU implementation as its
 /// default, so a backend that cannot take a stage returns the CPU's work and the fill stays
 /// correct — only slower.
 ///
@@ -2016,8 +2016,8 @@ mod tests {
     /// under `/usr/bin/time -v` and read `VmHWM` (`Maximum resident set size`):
     ///
     /// ```text
-    /// cargo test -p effectcraft-raster --lib measure_peak_rss --no-run
-    /// target/debug/deps/effectcraft_raster-* inpaint::tests::measure_peak_rss_of_a_fill \
+    /// cargo test -p pulso-raster --lib measure_peak_rss --no-run
+    /// target/debug/deps/pulso_raster-* inpaint::tests::measure_peak_rss_of_a_fill \
     ///     --ignored --exact --nocapture --test-threads=1
     /// ```
     ///

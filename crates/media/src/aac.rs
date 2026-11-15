@@ -1,7 +1,7 @@
-//! The AudioSpecificConfig of the AAC track FilmCraft plays from a movie, from the containers that carry
+//! The AudioSpecificConfig of the AAC track Toma plays from a movie, from the containers that carry
 //! it outside the audio frames: MP4 / MOV (`esds`), Matroska (`CodecPrivate`) and LATM in MPEG
-//! TS / PS (its StreamMuxConfig). FilmCraft's other AAC is ADTS (in MPEG TS / PS or a raw `.aac`),
-//! whose channel configurations FilmCraft decodes (1 to 7) its channel count tells apart
+//! TS / PS (its StreamMuxConfig). Toma's other AAC is ADTS (in MPEG TS / PS or a raw `.aac`),
+//! whose channel configurations Toma decodes (1 to 7) its channel count tells apart
 //! ([`crate::downmix::Order::Aac`]).
 
 use std::io;
@@ -13,7 +13,7 @@ use filmcraft_media::ByteReader;
 /// far as this, not through the whole file.
 const MPEG_HEAD: u64 = 8 << 20;
 
-/// The configuration of the audio track FilmCraft plays, if it is AAC: from an MP4 / MOV `header`
+/// The configuration of the audio track Toma plays, if it is AAC: from an MP4 / MOV `header`
 /// (its ftyp and moov, or the whole file) and `file`, or else from `file`, read as Matroska or
 /// MPEG TS / PS.
 pub(crate) fn config(header: Option<&[u8]>, file: Option<&dyn ByteReader>) -> Option<AudioSpecificConfig> {
@@ -29,7 +29,7 @@ pub(crate) fn config(header: Option<&[u8]>, file: Option<&dyn ByteReader>) -> Op
     AudioSpecificConfig::parse(&asc).ok()
 }
 
-/// The track FilmCraft's MP4 source plays: the first audio track with samples, a sample
+/// The track Toma's MP4 source plays: the first audio track with samples, a sample
 /// description and a timescale, read from the whole file as it is (a fragmented movie's samples
 /// are in its fragments, not the `moov`).
 fn mp4(header: &[u8], file: Option<&dyn ByteReader>) -> Option<Vec<u8>> {
@@ -47,7 +47,7 @@ fn mp4(header: &[u8], file: Option<&dyn ByteReader>) -> Option<Vec<u8>> {
     }
 }
 
-/// The track FilmCraft's Matroska source plays: the first audio track with frames, found by
+/// The track Toma's Matroska source plays: the first audio track with frames, found by
 /// indexing the clusters as that source does.
 fn matroska(file: &dyn ByteReader) -> Option<Vec<u8>> {
     let mkv = filmcraft_matroska::open(Head(file, file.len())).ok()?;
@@ -57,7 +57,7 @@ fn matroska(file: &dyn ByteReader) -> Option<Vec<u8>> {
     }
 }
 
-/// The configuration of the stream FilmCraft's MPEG source plays: the first audio stream whose
+/// The configuration of the stream Toma's MPEG source plays: the first audio stream whose
 /// first unit it can read. Only AAC is asked about, so the streams before that one were refused
 /// whatever their codec, and an ADTS stream played has no configuration outside its frames.
 fn latm(file: &dyn ByteReader) -> Option<Vec<u8>> {
@@ -76,7 +76,7 @@ fn latm(file: &dyn ByteReader) -> Option<Vec<u8>> {
     played?
 }
 
-/// The first `.1` bytes of a file, as the byte source FilmCraft's demuxers read.
+/// The first `.1` bytes of a file, as the byte source Toma's demuxers read.
 struct Head<'a>(&'a dyn ByteReader, u64);
 
 impl Head<'_> {

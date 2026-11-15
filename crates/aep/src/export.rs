@@ -1,4 +1,4 @@
-//! After Effects project (`.aep`) export: an EffectCraft [`Project`] written as an `.aep` that
+//! After Effects project (`.aep`) export: an Pulso [`Project`] written as an `.aep` that
 //! After Effects 2026 opens.
 //!
 //! Every chunk is built in code: the project skeleton, the item, layer and property records are
@@ -15,7 +15,7 @@
 //! What cannot be written is **reported**, never dropped silently ([`ExportReport`]); by default an
 //! export that would lose anything is refused ([`ExportOptions::allow_losses`]).
 //!
-//! The crate sits at L3 (above `effectcraft-project`, next to the importer) and builds for wasm32:
+//! The crate sits at L3 (above `pulso-project`, next to the importer) and builds for wasm32:
 //! it does no file access, the caller gets the bytes.
 
 mod base;
@@ -46,7 +46,7 @@ mod tree;
 mod tree_defs;
 mod tree_spec;
 
-use effectcraft_project::Project;
+use pulso_project::Project;
 
 pub use report::{ExportReport, Exported, LIMITATIONS, Loss, LossCategory, MAX_DETAILS};
 

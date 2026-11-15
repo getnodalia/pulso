@@ -250,7 +250,7 @@ mod tests {
 
     #[test]
     fn the_check_looks_at_the_listed_files() {
-        let dir = std::env::temp_dir().join(format!("effectcraft-entry-files-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("pulso-entry-files-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let p = dir.join("f.bin");

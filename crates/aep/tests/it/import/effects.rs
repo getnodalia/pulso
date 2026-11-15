@@ -1,15 +1,15 @@
-//! Effects: Tint, Gradient Ramp and Exposure arrive with every parameter and key in EffectCraft's
+//! Effects: Tint, Gradient Ramp and Exposure arrive with every parameter and key in Pulso's
 //! units (cases 356-397, the values each case was made with), in stack order; other effects and
 //! parameters are reported.
 
 use crate::import::helpers::comp;
-use effectcraft_aep::import::{LossCategory, analyze, supported_effects};
-use effectcraft_keyframe::{Interp, Value};
-use effectcraft_project::{GroupKind, Layer, Project, PropGroup};
-use effectcraft_time::{TICKS_PER_SECOND, Tick};
+use pulso_aep::import::{LossCategory, analyze, supported_effects};
+use pulso_keyframe::{Interp, Value};
+use pulso_project::{GroupKind, Layer, Project, PropGroup};
+use pulso_time::{TICKS_PER_SECOND, Tick};
 
 /// The layer named `name` in composition `C`.
-fn layer<'p>(project: &'p Project, r: &effectcraft_aep::import::ImportResult, name: &str) -> &'p Layer {
+fn layer<'p>(project: &'p Project, r: &pulso_aep::import::ImportResult, name: &str) -> &'p Layer {
     let (_, c) = comp(project, r, "C");
     c.layers.iter().find(|l| l.name == name).unwrap_or_else(|| panic!("no layer {name}"))
 }
@@ -74,14 +74,14 @@ fn the_table_names_tint_gradient_ramp_and_exposure() {
     }
     assert_eq!(t.len(), 67);
     for (_, id) in t {
-        assert!(effectcraft_effects::find(id).is_some(), "{id}");
+        assert!(pulso_effects::find(id).is_some(), "{id}");
     }
 }
 
 // ---------------------------------------------------------------------------- Tint
 
 #[test]
-fn default_tint_equals_effectcrafts_default() {
+fn default_tint_equals_pulsos_default() {
     // 356: every parameter at its default (alpha 0 in the file's defaults; the colours arrive opaque).
     let g = skip!(only_effect("356-fx-tint-default.aep"));
     assert_eq!((g.match_id.as_str(), g.name.as_str()), ("ec.color.tint", "Tint"));
@@ -90,10 +90,10 @@ fn default_tint_equals_effectcrafts_default() {
     assert_eq!(value(&g, "black"), Value::Color([0.0, 0.0, 0.0, 1.0]));
     assert_eq!(value(&g, "white"), Value::Color([1.0, 1.0, 1.0, 1.0]));
     assert_eq!(value(&g, "amount"), Value::Scalar(100.0));
-    // The file's pard defaults, converted, are EffectCraft's defaults.
-    let spec = effectcraft_effects::find("ec.color.tint").unwrap();
+    // The file's pard defaults, converted, are Pulso's defaults.
+    let spec = pulso_effects::find("ec.color.tint").unwrap();
     for ps in &spec.params {
-        assert_eq!(value(&g, ps.id), effectcraft_effects::default_value(ps, [1920.0, 1080.0]), "{}", ps.id);
+        assert_eq!(value(&g, ps.id), pulso_effects::default_value(ps, [1920.0, 1080.0]), "{}", ps.id);
     }
 }
 
@@ -139,7 +139,7 @@ fn stack_order_is_kept_and_other_effects_are_reported() {
 // ---------------------------------------------------------------------------- Gradient Ramp
 
 #[test]
-fn default_ramp_equals_effectcrafts_default() {
+fn default_ramp_equals_pulsos_default() {
     // 368: Start [960, 0], End [960, 1080] on the 1920x1080 solid, black to white, linear.
     let g = skip!(only_effect("368-fx-ramp-default.aep"));
     assert_eq!((g.match_id.as_str(), g.name.as_str()), ("ec.generate.gradientramp", "Gradient Ramp"));
@@ -150,9 +150,9 @@ fn default_ramp_equals_effectcrafts_default() {
     assert_eq!(value(&g, "shape"), Value::Enum(0));
     assert_eq!(value(&g, "scatter"), Value::Scalar(0.0));
     assert_eq!(value(&g, "blend"), Value::Scalar(0.0));
-    let spec = effectcraft_effects::find("ec.generate.gradientramp").unwrap();
+    let spec = pulso_effects::find("ec.generate.gradientramp").unwrap();
     for ps in &spec.params {
-        assert_eq!(value(&g, ps.id), effectcraft_effects::default_value(ps, [1920.0, 1080.0]), "{}", ps.id);
+        assert_eq!(value(&g, ps.id), pulso_effects::default_value(ps, [1920.0, 1080.0]), "{}", ps.id);
     }
 }
 
@@ -218,7 +218,7 @@ const EXPOSURE_GROUPS: [[&str; 3]; 4] = [
 const F32: f64 = 1e-6;
 
 #[test]
-fn default_exposure_equals_effectcrafts_default() {
+fn default_exposure_equals_pulsos_default() {
     // 389: every parameter at its default; the group markers carry nothing (no losses).
     let g = skip!(only_effect("389-fx-exposure-default.aep"));
     assert_eq!((g.match_id.as_str(), g.name.as_str()), ("ec.color.exposure", "Exposure"));
@@ -227,9 +227,9 @@ fn default_exposure_equals_effectcrafts_default() {
         assert_eq!([value(&g, ids[0]), value(&g, ids[1]), value(&g, ids[2])], [Value::Scalar(0.0), Value::Scalar(0.0), Value::Scalar(1.0)]);
     }
     assert_eq!(value(&g, "bypassLinearLight"), Value::Bool(false));
-    let spec = effectcraft_effects::find("ec.color.exposure").unwrap();
+    let spec = pulso_effects::find("ec.color.exposure").unwrap();
     for ps in &spec.params {
-        assert_eq!(value(&g, ps.id), effectcraft_effects::default_value(ps, [1920.0, 1080.0]), "{}", ps.id);
+        assert_eq!(value(&g, ps.id), pulso_effects::default_value(ps, [1920.0, 1080.0]), "{}", ps.id);
     }
 }
 
@@ -304,9 +304,9 @@ fn a_switched_off_effect_arrives_switched_off() {
     let bytes = skip!(crate::common::try_file("fx-switch.aep"));
     let mut p = Project::default();
     let none = |_: &str| false;
-    let r = effectcraft_aep::import::import(&mut p, &bytes, &effectcraft_aep::import::ImportOptions::new(&none)).expect("lossless import");
+    let r = pulso_aep::import::import(&mut p, &bytes, &pulso_aep::import::ImportOptions::new(&none)).expect("lossless import");
     let (_, c) = comp(&p, &r, "C");
     let fx = c.layers[0].props.sub("effects").expect("effects");
-    let on: Vec<bool> = fx.children.iter().filter_map(|n| if let effectcraft_project::Node::Group(g) = n { Some(g.enabled) } else { None }).collect();
+    let on: Vec<bool> = fx.children.iter().filter_map(|n| if let pulso_project::Node::Group(g) = n { Some(g.enabled) } else { None }).collect();
     assert_eq!(on, [false, true]);
 }

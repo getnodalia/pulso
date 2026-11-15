@@ -4,8 +4,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
-use effectcraft_engine::project::render_queue::OutputFormat;
-use effectcraft_engine::{ExportJob, ExportResult, Exporter, Session};
+use pulso_engine::project::render_queue::OutputFormat;
+use pulso_engine::{ExportJob, ExportResult, Exporter, Session};
 use serde_json::{Value, json};
 
 /// A slow exporter without expensive frames. A bounded wait makes the old blocking path
@@ -25,7 +25,7 @@ impl Exporter for Gate {
         let end = Instant::now() + Duration::from_secs(2);
         while self.permits.load(Ordering::SeqCst) < call {
             if !progress(0, 1) {
-                return Err(effectcraft_engine::render_queue::CANCELLED.into());
+                return Err(pulso_engine::render_queue::CANCELLED.into());
             }
             if Instant::now() > end {
                 return Err("test exporter timed out waiting for the frontend".into());
@@ -170,9 +170,9 @@ fn retained_palette_callbacks_can_yield_after_the_original_control_invocation() 
 
 #[test]
 fn post_render_actions_complete_before_the_script_resumes() {
-    use effectcraft_engine::project::{Footage, FootageKind};
+    use pulso_engine::project::{Footage, FootageKind};
     struct Probe;
-    impl effectcraft_engine::Importer for Probe {
+    impl pulso_engine::Importer for Probe {
         fn probe(&self, path: &str) -> Result<Footage, String> {
             Ok(Footage { path: path.into(), kind: FootageKind::Still, width: 16, height: 16, has_video: true, ..Default::default() })
         }

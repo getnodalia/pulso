@@ -3,12 +3,12 @@
 //! Keyframe times are stored in **layer time** (they move with the layer), so evaluating a
 //! property at comp time `t` first maps `t` through the layer's start time and stretch.
 
-use effectcraft_geom::{Mat3, Mat4, Vec3, vec2, vec3};
-use effectcraft_keyframe::Value;
-use effectcraft_project::{Comp, ItemId, Layer, LayerId, LayerSource, Project, PropGroup, Property};
-use effectcraft_time::Tick;
+use pulso_geom::{Mat3, Mat4, Vec3, vec2, vec3};
+use pulso_keyframe::Value;
+use pulso_project::{Comp, ItemId, Layer, LayerId, LayerSource, Project, PropGroup, Property};
+use pulso_time::Tick;
 
-/// Expression evaluation hook (implemented by `effectcraft-expr`).
+/// Expression evaluation hook (implemented by `pulso-expr`).
 pub trait ExprHost: Send + Sync {
     /// Evaluate the expression of `prop` (on `layer`, comp time `t`), given the keyframed value.
     fn eval(&self, ctx: &EvalCtx, layer: &Layer, prop: &Property, value: &Value) -> Result<Value, String>;
@@ -171,9 +171,9 @@ impl<'a> EvalCtx<'a> {
             _ => None,
         };
         let par = match item.and_then(|item| self.project.item(item)).map(|i| &i.kind) {
-            Some(effectcraft_project::ItemKind::Footage(f)) => f.pixel_aspect,
-            Some(effectcraft_project::ItemKind::Solid(s)) => s.pixel_aspect,
-            Some(effectcraft_project::ItemKind::Comp(c)) => c.pixel_aspect,
+            Some(pulso_project::ItemKind::Footage(f)) => f.pixel_aspect,
+            Some(pulso_project::ItemKind::Solid(s)) => s.pixel_aspect,
+            Some(pulso_project::ItemKind::Comp(c)) => c.pixel_aspect,
             _ => 1.0,
         };
         let r = par / if self.comp.pixel_aspect > 0.0 { self.comp.pixel_aspect } else { 1.0 };
@@ -288,7 +288,7 @@ impl crate::PropertyOverride {
             // A Font control merges only the font into the target text, as
             // `essential::with_overrides` does.
             let mut value = prop.value_at(layer.layer_time(time));
-            effectcraft_project::essential::merge_font(&mut value, &self.value);
+            pulso_project::essential::merge_font(&mut value, &self.value);
             value
         } else {
             self.value.clone()
@@ -363,7 +363,7 @@ pub fn responsive_source_time(comp: &Comp, stretch: f64, elapsed: f64) -> Option
     Some(Tick::from_seconds_f64(d + (elapsed - pos) / k))
 }
 
-/// A layer's effect bounds ([`effectcraft_effects::EffectCtx::layer_size`]) and their top-left
+/// A layer's effect bounds ([`pulso_effects::EffectCtx::layer_size`]) and their top-left
 /// corner in layer coordinates: the source rectangle at (0, 0), or for layers without one
 /// (shape, text) a comp-sized rectangle centred on the layer's origin, which their content
 /// surrounds. Effects work in **effect space**, measured from that corner (After Effects' layer
@@ -383,7 +383,7 @@ fn effect_bounds_of(comp: &Comp, size: (u32, u32)) -> ([f64; 2], [f64; 2]) {
 }
 
 /// The layer's source time range in layer time seconds as (first, end) for
-/// [`effectcraft_effects::EffectEnv::layer_span`]: footage and nested comps last their item's
+/// [`pulso_effects::EffectEnv::layer_span`]: footage and nested comps last their item's
 /// duration from layer time 0. With Time Remap layer time is no longer source time, so the layer's
 /// visible span (in to out point, in layer time) is reported instead. `None` for sources without
 /// a duration (stills, solids, text, shapes...).

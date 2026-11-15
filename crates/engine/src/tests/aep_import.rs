@@ -1,16 +1,16 @@
 //! File ▸ Import ▸ Adobe After Effects Project… through the command registry, with the synthetic
-//! fixtures of `effectcraft-aep`.
+//! fixtures of `pulso-aep`.
 
 use serde_json::json;
 
 use crate::Session;
 
-/// The test projects of `effectcraft-aep` and their cases.
+/// The test projects of `pulso-aep` and their cases.
 #[path = "../../../aep/tests/it/common/mod.rs"]
 mod common;
 
-/// The path of a test project of `effectcraft-aep` (in the folder named by
-/// `EFFECTCRAFT_AEP_FIXTURES`), or `None` after printing the skip line when it is missing. A case
+/// The path of a test project of `pulso-aep` (in the folder named by
+/// `PULSO_AEP_FIXTURES`), or `None` after printing the skip line when it is missing. A case
 /// of a combined project is written as a project of its own (see `common`), named like the case,
 /// to a temporary folder.
 fn fixture_path(name: &str) -> Option<String> {
@@ -25,7 +25,7 @@ fn fixture_path(name: &str) -> Option<String> {
                 return Some(path.clone());
             }
             let bytes = common::try_fixture(name)?;
-            let dir = std::env::temp_dir().join(format!("effectcraft-aep-cases-{}", std::process::id()));
+            let dir = std::env::temp_dir().join(format!("pulso-aep-cases-{}", std::process::id()));
             std::fs::create_dir_all(&dir).unwrap();
             let path = dir.join(name);
             std::fs::write(&path, bytes).unwrap();
@@ -68,9 +68,9 @@ fn import_aep_reads_the_xml_form_like_the_binary_one() {
     let b = t.execute_checked("file.importAep", json!({"path": bin})).unwrap();
     assert_eq!(x["report"], b["report"]);
     assert_eq!(x["report"]["imported"]["keyframes"], 2);
-    let folder = effectcraft_project::ItemId(x["folder"].as_u64().unwrap());
+    let folder = pulso_project::ItemId(x["folder"].as_u64().unwrap());
     assert_eq!(s.project.item(folder).unwrap().name, "aepx-pair.aepx");
-    let comps = |r: &serde_json::Value| r["comps"].as_array().unwrap().iter().map(|c| effectcraft_project::ItemId(c.as_u64().unwrap())).collect::<Vec<_>>();
+    let comps = |r: &serde_json::Value| r["comps"].as_array().unwrap().iter().map(|c| pulso_project::ItemId(c.as_u64().unwrap())).collect::<Vec<_>>();
     let (cx, cb) = (comps(&x), comps(&b));
     assert_eq!(cx.len(), 6);
     assert_eq!(cx.len(), cb.len());
@@ -87,16 +87,16 @@ fn import_aep_creates_the_project_items_and_is_undoable() {
     assert_eq!(r["report"]["imported"]["compositions"], 1);
     assert_eq!(r["report"]["imported"]["keyframes"], 3);
     assert_eq!(r["report"]["losses"], json!([]));
-    let cid = effectcraft_project::ItemId(r["comps"][0].as_u64().unwrap());
+    let cid = pulso_project::ItemId(r["comps"][0].as_u64().unwrap());
     // The wrapper folder is named after the file; the comp opens.
-    let folder = effectcraft_project::ItemId(r["folder"].as_u64().unwrap());
+    let folder = pulso_project::ItemId(r["folder"].as_u64().unwrap());
     assert_eq!(s.project.item(folder).unwrap().name, "055-key-position-3key-inserted-t2.5.aep");
     assert_eq!(s.state.active_comp, Some(cid));
     let c = s.project.comp(cid).unwrap();
     assert_eq!((c.width, c.height, c.layers.len()), (1920, 1080, 1));
     let pos = c.layers[0].props.prop("transform/position").unwrap();
     assert_eq!(pos.keys.len(), 3);
-    assert_eq!(pos.value_at(effectcraft_time::Tick(effectcraft_time::TICKS_PER_SECOND)), effectcraft_keyframe::Value::Vec3([100.0, 0.0, 0.0]));
+    assert_eq!(pos.value_at(pulso_time::Tick(pulso_time::TICKS_PER_SECOND)), pulso_keyframe::Value::Vec3([100.0, 0.0, 0.0]));
 
     // One undo step removes everything the import added; redo brings it back.
     s.execute("edit.undo", json!({})).unwrap();
@@ -134,7 +134,7 @@ fn bad_input_is_an_error_not_a_crash() {
     assert!(s.execute_checked("file.importAep", json!({})).is_err());
     assert!(s.execute_checked("file.importAep", json!({"path": "does/not/exist.aep"})).is_err());
     assert!(s.execute_checked("file.importAep", json!({"path": fixture!("000-base.aep"), "bogus": 1})).is_err());
-    let dir = std::env::temp_dir().join(format!("effectcraft-aep-tests-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("pulso-aep-tests-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let junk = dir.join("junk.aep");
     std::fs::write(&junk, b"this is not an aep").unwrap();
@@ -149,7 +149,7 @@ fn bad_input_is_an_error_not_a_crash() {
 
 /// File ▸ Import: After Effects' own entries in its order, the project imports together where
 /// After Effects has Adobe Premiere Pro Project… (alphabetical, named in full), then a separator
-/// and the formats only EffectCraft imports, alphabetical (#3103).
+/// and the formats only Pulso imports, alphabetical (#3103).
 #[test]
 fn the_import_menu_groups_the_project_imports() {
     use crate::menus::MenuNode;
@@ -178,7 +178,7 @@ fn the_import_menu_groups_the_project_imports() {
             "Multiple Files...",
             "Adobe After Effects Project...",
             "Adobe Premiere Pro Project...",
-            "EffectCraft Project...",
+            "Pulso Project...",
             "Vanishing Point (.vpe)...",
             "Placeholder...",
             "Solid...",
@@ -241,7 +241,7 @@ fn aep_menu_entry_exists() {
 
 #[test]
 fn import_aep_takes_the_project_settings_into_an_empty_project_only() {
-    use effectcraft_project::{BitDepth, TimeDisplayStyle};
+    use pulso_project::{BitDepth, TimeDisplayStyle};
     // The settings cases share files (one value per project): 621's file has 8 bits per channel,
     // working space None and frames (with 623 and 629); 632's and 633's file has 32 bits and feet
     // + frames 35mm.
@@ -286,7 +286,7 @@ impl crate::Services for Recording {
 
 /// `bytes` with the footage path of every file item (`Als2/alas`, key `fullpath`) set to `path`.
 fn with_footage_path(bytes: &[u8], path: &str) -> Vec<u8> {
-    fn set(chunks: &mut [effectcraft_aep::Chunk<'_>], value: &str, n: &mut usize) {
+    fn set(chunks: &mut [pulso_aep::Chunk<'_>], value: &str, n: &mut usize) {
         for c in chunks {
             if c.id == *b"alas" {
                 let json = c.bytes().unwrap().to_vec();
@@ -297,19 +297,19 @@ fn with_footage_path(bytes: &[u8], path: &str) -> Vec<u8> {
                     end += if json[end] == b'\\' { 2 } else { 1 };
                 }
                 let edited = [&json[..at], value.as_bytes(), &json[end..]].concat();
-                *c = effectcraft_aep::Chunk::data(*b"alas", edited);
+                *c = pulso_aep::Chunk::data(*b"alas", edited);
                 *n += 1;
-            } else if let effectcraft_aep::Body::List { children, .. } | effectcraft_aep::Body::Chunks(children) = &mut c.body {
+            } else if let pulso_aep::Body::List { children, .. } | pulso_aep::Body::Chunks(children) = &mut c.body {
                 set(children, value, n);
             }
         }
     }
-    let mut file = effectcraft_aep::parse(bytes).unwrap();
+    let mut file = pulso_aep::parse(bytes).unwrap();
     let quoted = serde_json::to_string(path).unwrap();
     let mut n = 0;
     set(&mut file.chunks, &quoted[1..quoted.len() - 1], &mut n);
     assert!(n > 0, "no footage path");
-    effectcraft_aep::write(&file).unwrap()
+    pulso_aep::write(&file).unwrap()
 }
 
 #[test]
@@ -317,7 +317,7 @@ fn stored_footage_paths_follow_the_document_path_policy() {
     // An .aep whose footage points to another computer or to a file beside it, imported from a
     // folder that is not the working directory: a foreign path is never looked at (not even by the
     // dry run) and arrives missing, the relative one is taken from the .aep's folder.
-    use effectcraft_project::{Footage, ItemKind};
+    use pulso_project::{Footage, ItemKind};
     let Some(bytes) = common::try_fixture("126-footage-png-layer.aep") else { return };
     let root = std::env::temp_dir().join(format!("ec-aep-doc-path-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
@@ -362,14 +362,8 @@ fn stored_footage_paths_follow_the_document_path_policy() {
 struct WithSound;
 
 impl crate::Importer for WithSound {
-    fn probe(&self, path: &str) -> Result<effectcraft_project::Footage, String> {
-        Ok(effectcraft_project::Footage {
-            path: path.into(),
-            kind: effectcraft_project::FootageKind::Video,
-            has_video: true,
-            has_audio: true,
-            ..Default::default()
-        })
+    fn probe(&self, path: &str) -> Result<pulso_project::Footage, String> {
+        Ok(pulso_project::Footage { path: path.into(), kind: pulso_project::FootageKind::Video, has_video: true, has_audio: true, ..Default::default() })
     }
 }
 
@@ -378,7 +372,7 @@ fn a_video_with_sound_arrives_audible() {
     // The clip of the 645 project stores no sample rate (it has no sound there); the file next to
     // it is asked: with sound in it the imported footage has audio and its layer is part of the
     // mix; a missing file is left as the project file says.
-    use effectcraft_project::{Footage, ItemKind};
+    use pulso_project::{Footage, ItemKind};
     let Some(bytes) = common::try_fixture("645-footage-mp4-conform-30.aep") else { return };
     let root = std::env::temp_dir().join(format!("ec-aep-video-sound-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
@@ -394,12 +388,12 @@ fn a_video_with_sound_arrives_audible() {
             .items
             .values()
             .find_map(|i| match &i.kind {
-                ItemKind::Footage(f) if f.kind == effectcraft_project::FootageKind::Video => Some(f.clone()),
+                ItemKind::Footage(f) if f.kind == pulso_project::FootageKind::Video => Some(f.clone()),
                 _ => None,
             })
             .unwrap_or_else(|| panic!("{name}: no video footage"));
         assert_eq!((footage.missing, footage.has_audio), (name == "absent", name == "beside"), "{name}");
-        let audible = s.project.comps().any(|(id, _)| effectcraft_render::audio::comp_has_audio(&s.project, *id));
+        let audible = s.project.comps().any(|(id, _)| pulso_render::audio::comp_has_audio(&s.project, *id));
         assert_eq!(audible, name == "beside", "{name}: audible mix");
     }
     let _ = std::fs::remove_dir_all(&root);

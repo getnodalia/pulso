@@ -4,7 +4,7 @@
 //! [`crate::Hooks::audio_device`], the web app one on Web Audio. During preview playback an
 //! [`AudioPlayback`] runs a feeder thread (wasm32: [`AudioPlayback::pump`] every UI frame) that
 //! mixes the composition ahead of the device with the same mixdown export uses
-//! (`effectcraft_render::audio::mix_comp`: Audio switch, solo, Audio Levels, audio effects) and
+//! (`pulso_render::audio::mix_comp`: Audio switch, solo, Audio Levels, audio effects) and
 //! pushes it into an [`AudioFeed`]; the device callback pulls from the feed.
 //!
 //! **A/V sync:** while audio plays, the audio clock drives playback. The clock is the number of
@@ -23,8 +23,8 @@ use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
-use effectcraft_engine::project::{GroupKind, ItemId, ItemKind, Layer, LayerSource, Project, PropGroup};
-use effectcraft_engine::time::{FrameRate, Tick};
+use pulso_engine::project::{GroupKind, ItemId, ItemKind, Layer, LayerSource, Project, PropGroup};
+use pulso_engine::time::{FrameRate, Tick};
 
 use crate::frames::RenderSource;
 
@@ -62,7 +62,7 @@ pub struct AudioOutput {
 }
 
 impl AudioOutput {
-    pub fn from_prefs(p: &effectcraft_engine::prefs::Prefs) -> AudioOutput {
+    pub fn from_prefs(p: &pulso_engine::prefs::Prefs) -> AudioOutput {
         AudioOutput { device: p.audio.output_device.clone(), left: p.audio.output_left, right: p.audio.output_right, rate: p.audio.preview_sample_rate }
     }
 }
@@ -411,7 +411,7 @@ fn audio_changed_inner(old: &Project, new: &Project, comp: ItemId, seen: &mut Ha
     /// The layer's audio effects (Effect > Audio), the only effects the mixer applies; a video effect
     /// edit leaves them as they were.
     fn audio_effects(l: &Layer) -> Vec<&PropGroup> {
-        let is_audio = |g: &&PropGroup| matches!(&g.kind, GroupKind::Effect { effect } if effectcraft_engine::effects::audio_fx::is_audio_effect(effect));
+        let is_audio = |g: &&PropGroup| matches!(&g.kind, GroupKind::Effect { effect } if pulso_engine::effects::audio_fx::is_audio_effect(effect));
         l.effects().into_iter().flat_map(|fx| fx.groups()).filter(is_audio).collect()
     }
     /// Audio expressions can read any property in any comp (including video-only effects and
@@ -451,7 +451,7 @@ fn feed_block(state: &Mutex<Feeder>, comp: ItemId, feed: &AudioFeed, span: &Play
             mix_block(&src, comp, timeline.time(cursor), n, timeline.rate(), mix)
         } else {
             timeline.mix(cursor, n, mix, |t, frames| {
-                effectcraft_engine::render::audio::mix_comp(&src.project, src.footage.as_ref(), src.expr.as_deref(), comp, t, frames, mix)
+                pulso_engine::render::audio::mix_comp(&src.project, src.footage.as_ref(), src.expr.as_deref(), comp, t, frames, mix)
             })
         });
         cursor += n as i64;
@@ -470,8 +470,7 @@ fn feed_block(state: &Mutex<Feeder>, comp: ItemId, feed: &AudioFeed, span: &Play
 /// `n` stereo frames of `comp`'s mix from comp time `t` at the device `rate`, mixed at `mix` Hz
 /// (resampled when they differ).
 fn mix_block(src: &RenderSource, comp: ItemId, t: Tick, n: usize, rate: u32, mix: u32) -> Vec<f32> {
-    let render =
-        |frames: usize, at: u32| effectcraft_engine::render::audio::mix_comp(&src.project, src.footage.as_ref(), src.expr.as_deref(), comp, t, frames, at);
+    let render = |frames: usize, at: u32| pulso_engine::render::audio::mix_comp(&src.project, src.footage.as_ref(), src.expr.as_deref(), comp, t, frames, at);
     if mix == rate {
         return render(n, rate);
     }
@@ -669,10 +668,10 @@ mod tests {
     /// calling (UI) thread. The sound arrives from the feeder thread, and the clock waits for it.
     #[test]
     fn starting_audio_does_not_wait_for_slow_footage() {
-        use effectcraft_engine::color::Label;
-        use effectcraft_engine::project::{Comp, Footage, FootageKind, ItemKind, LayerSource, Project, build};
-        use effectcraft_engine::render::FootageSource;
-        use effectcraft_engine::render::cache::LayerCache;
+        use pulso_engine::color::Label;
+        use pulso_engine::project::{Comp, Footage, FootageKind, ItemKind, LayerSource, Project, build};
+        use pulso_engine::render::FootageSource;
+        use pulso_engine::render::cache::LayerCache;
         use std::time::{Duration, Instant};
 
         /// Footage audio that takes `delay` to read the first time (then a constant 0.5).
@@ -681,7 +680,7 @@ mod tests {
             opened: Mutex<bool>,
         }
         impl FootageSource for Slow {
-            fn frame(&self, _: ItemId, _: &Footage, _: Tick) -> Option<Arc<effectcraft_engine::raster::Image>> {
+            fn frame(&self, _: ItemId, _: &Footage, _: Tick) -> Option<Arc<pulso_engine::raster::Image>> {
                 None
             }
             fn audio(&self, _: ItemId, _: &Footage, _: Tick, frames: usize, _: u32) -> Option<Vec<f32>> {
@@ -742,16 +741,16 @@ mod tests {
     /// and everything mixed afterwards comes from the edited project.
     #[test]
     fn muting_a_layer_while_playing_silences_the_preview() {
-        use effectcraft_engine::color::Label;
-        use effectcraft_engine::project::{Comp, Footage, FootageKind, ItemKind, LayerSource, build};
-        use effectcraft_engine::render::FootageSource;
-        use effectcraft_engine::render::cache::LayerCache;
+        use pulso_engine::color::Label;
+        use pulso_engine::project::{Comp, Footage, FootageKind, ItemKind, LayerSource, build};
+        use pulso_engine::render::FootageSource;
+        use pulso_engine::render::cache::LayerCache;
         use std::time::{Duration, Instant};
 
         /// Footage audio that is a constant 0.5.
         struct Steady;
         impl FootageSource for Steady {
-            fn frame(&self, _: ItemId, _: &Footage, _: Tick) -> Option<Arc<effectcraft_engine::raster::Image>> {
+            fn frame(&self, _: ItemId, _: &Footage, _: Tick) -> Option<Arc<pulso_engine::raster::Image>> {
                 None
             }
             fn audio(&self, _: ItemId, _: &Footage, _: Tick, frames: usize, _: u32) -> Option<Vec<f32>> {
@@ -814,8 +813,8 @@ mod tests {
     /// #2104: only edits that change the mix drop the queued sound.
     #[test]
     fn only_audible_edits_change_the_audio() {
-        use effectcraft_engine::color::Label;
-        use effectcraft_engine::project::{Comp, Footage, FootageKind, build};
+        use pulso_engine::color::Label;
+        use pulso_engine::project::{Comp, Footage, FootageKind, build};
 
         let mut p = Project::default();
         let footage =
@@ -850,9 +849,9 @@ mod tests {
     /// #2104: a video effect edit leaves the mix alone, an audio effect changes it.
     #[test]
     fn only_audio_effects_change_the_audio() {
-        use effectcraft_engine::color::Label;
-        use effectcraft_engine::project::build::{self, Ids};
-        use effectcraft_engine::project::{Comp, Footage, FootageKind};
+        use pulso_engine::color::Label;
+        use pulso_engine::project::build::{self, Ids};
+        use pulso_engine::project::{Comp, Footage, FootageKind};
 
         let mut p = Project::default();
         let footage =
@@ -864,9 +863,9 @@ mod tests {
         let cid = p.add_item("Comp", Label::Sandstone, None, ItemKind::Comp(comp.into()));
         let with_effect = |id: &str| {
             let mut edited = p.clone();
-            let spec = effectcraft_engine::effects::find(id).expect("the effect exists");
+            let spec = pulso_engine::effects::find(id).expect("the effect exists");
             let mut next = edited.next_id;
-            let g = effectcraft_engine::effects::instantiate(spec, &mut Ids(&mut next), spec.name, [64.0, 36.0]);
+            let g = pulso_engine::effects::instantiate(spec, &mut Ids(&mut next), spec.name, [64.0, 36.0]);
             edited.next_id = next;
             if let Some(fx) = edited.comp_mut(cid).and_then(|c| c.layers.first_mut()).and_then(|l| l.props.sub_mut("effects")) {
                 fx.children.push(g.into());

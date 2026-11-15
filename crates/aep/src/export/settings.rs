@@ -3,8 +3,8 @@
 //! frame count start, written into the template's top-level chunks.
 
 use crate::{AepFile, Chunk};
-use effectcraft_color::ColorSpace;
-use effectcraft_project::{BitDepth, ColorEngine, HdrMode, ProjectSettings, TimeDisplayStyle};
+use pulso_color::ColorSpace;
+use pulso_project::{BitDepth, ColorEngine, HdrMode, ProjectSettings, TimeDisplayStyle};
 
 use crate::export::report::{Collector, LossCategory};
 use crate::export::tree::{R, data_mut, put_u8, tpl};

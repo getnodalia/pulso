@@ -1,5 +1,5 @@
-//! File access confinement for automation (`effectcraft-cli mcp --automation-read-root DIR
-//! --automation-write-root DIR`, as in PhotoCraft): an agent may only read files under a read
+//! File access confinement for automation (`pulso-cli mcp --automation-read-root DIR
+//! --automation-write-root DIR`, as in Lienzo): an agent may only read files under a read
 //! root (or a write root) and only write under a write root.
 //!
 //! Every engine command an agent runs ([`crate::Backend::exec`], also each step of an
@@ -18,11 +18,11 @@ use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
-use effectcraft_engine::Services;
-use effectcraft_engine::project::{Footage, ItemId};
-use effectcraft_engine::raster::{AuxChannels, Image};
-use effectcraft_engine::render::{FloatCurve, FootageSource};
-use effectcraft_engine::time::Tick;
+use pulso_engine::Services;
+use pulso_engine::project::{Footage, ItemId};
+use pulso_engine::raster::{AuxChannels, Image};
+use pulso_engine::render::{FloatCurve, FootageSource};
+use pulso_engine::time::Tick;
 use serde_json::Value;
 
 use crate::{Error, Result};
@@ -41,7 +41,7 @@ pub struct Confinement {
 }
 
 /// Commands that run code, act outside the project or open other applications, besides the
-/// commands that run scripts ([`effectcraft_engine::commands::scripts::RUNS_SCRIPTS`]).
+/// commands that run scripts ([`pulso_engine::commands::scripts::RUNS_SCRIPTS`]).
 const REFUSED: &[&str] = &[
     "file.installScript",
     "file.installScriptUIPanel",
@@ -205,11 +205,11 @@ impl Confinement {
     /// Check engine command `id` with `params` before it runs. Returns what must still be looked
     /// up and passed to [`Confinement::check_lookup`] for commands that write implicitly.
     pub fn check_command(&self, id: &str, params: &Value) -> Result<Vec<Lookup>> {
-        if REFUSED.contains(&id) || effectcraft_engine::commands::scripts::RUNS_SCRIPTS.contains(&id) {
+        if REFUSED.contains(&id) || pulso_engine::commands::scripts::RUNS_SCRIPTS.contains(&id) {
             return Err(Error::BadArgs(format!("`{id}` is not available while file access is confined (--automation-read-root/--automation-write-root)")));
         }
         // Scripts can't grant themselves the access the user withheld
-        // (`effectcraft_engine::prefs::Scripting::same_permissions`), and neither may a confined
+        // (`pulso_engine::prefs::Scripting::same_permissions`), and neither may a confined
         // agent: `prefs.set` saves the settings file, so a script run long after this session
         // would still have it. (`prefs.reset` only puts the defaults back, which grant nothing.)
         if id == "prefs.set" && prefs_keys(params).iter().any(|k| is_scripting_pref(k)) {
@@ -401,7 +401,7 @@ impl FootageSource for ConfinedFootage {
         self.inner.set_aux_footage(paths)
     }
     /// The 3D model for the footage, or `None` when the footage lies outside the allowed roots.
-    fn model(&self, item: ItemId, footage: &Footage) -> Option<Arc<effectcraft_model::Model>> {
+    fn model(&self, item: ItemId, footage: &Footage) -> Option<Arc<pulso_model::Model>> {
         self.readable(footage).then(|| self.inner.model(item, footage)).flatten()
     }
     /// The rasterised vector footage at `scale`, or `None` when the footage lies outside the allowed roots.
@@ -443,7 +443,7 @@ impl FootageSource for ConfinedFootage {
     /// nothing, and what is made without it can't be listed by its files: a refused read makes
     /// the list incomplete, so it never outlives the session in a disk cache (another session
     /// with other roots would read the footage).
-    fn recording(&self, reads: &effectcraft_engine::render::reads::ReadLog, f: &mut dyn FnMut()) {
+    fn recording(&self, reads: &pulso_engine::render::reads::ReadLog, f: &mut dyn FnMut()) {
         let refused = refused_reads();
         self.inner.recording(reads, f);
         if refused_reads() != refused {
@@ -620,13 +620,13 @@ mod tests {
         const FILE_KEYS: &[&str] =
             &["path", "paths", "folder", "file", "files", "dir", "directory", "output", "outputs", "source", "target", "projectPath", "footageDir"];
         let mut missing = vec![];
-        for spec in effectcraft_engine::command_specs() {
-            let Some(params) = effectcraft_engine::commands::accepted_params(spec.params) else { continue };
+        for spec in pulso_engine::command_specs() {
+            let Some(params) = pulso_engine::commands::accepted_params(spec.params) else { continue };
             let id = spec.id;
             let classified = keys_of(READS, id).is_some()
                 || keys_of(WRITES, id).is_some()
                 || REFUSED.contains(&id)
-                || effectcraft_engine::commands::scripts::RUNS_SCRIPTS.contains(&id)
+                || pulso_engine::commands::scripts::RUNS_SCRIPTS.contains(&id)
                 || IMPLICIT_WRITES.contains(&id)
                 || id.starts_with("renderQueue.")
                 || id == "render.addOutputModule"
@@ -638,7 +638,7 @@ mod tests {
         assert!(missing.is_empty(), "add these to READS / WRITES / REFUSED or NOT_FILES:\n{}", missing.join("\n"));
         // And every listed command exists.
         for id in READS.iter().chain(WRITES).chain(MIXED_WRITES).map(|(c, _)| *c).chain(NOT_FILES.iter().copied()) {
-            assert!(effectcraft_engine::command_specs().iter().any(|s| s.id == id), "{id} is not a command");
+            assert!(pulso_engine::command_specs().iter().any(|s| s.id == id), "{id} is not a command");
         }
     }
 
@@ -647,7 +647,7 @@ mod tests {
     /// roots. Reads inside the roots record as the inner source tells.
     #[test]
     fn a_refused_footage_read_makes_the_render_unlisted() {
-        use effectcraft_engine::render::reads::{FileStamp, ReadFile, ReadLog};
+        use pulso_engine::render::reads::{FileStamp, ReadFile, ReadLog};
         /// Reads every file, noting it.
         struct Noting;
         impl FootageSource for Noting {
