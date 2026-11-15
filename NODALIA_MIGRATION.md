@@ -39,11 +39,18 @@ interface follows Foundation's [NDL standard](https://github.com/getnodalia/foun
 getnodalia/foundation (vendored crates, fonts, translations, reusable workflows);
 getnodalia/nodalia-design (theme, icons).
 
-## NDL work pending
+## NDL
 
-Check the interface against Foundation's NDL standard: hamburger menu with About, Preferences and
-Keyboard shortcuts; theme selector only in Preferences; NDL window controls on Linux only; global
-menu exported over D-Bus on Linux.
+Pulso belongs to the creator suite. Done: the creator app bar (44 pt) with the main menu (About,
+Preferences, Keyboard Shortcuts, Quit), Home and the shared workspace selector; panels as islands
+in the window colour; the NDL palette with Pulso's accent; Nodalia icons where NDL has the glyph;
+the theme selector only in Preferences; NDL's round window controls on Linux only (Preferences >
+Appearance > Window Controls brings back the desktop's), native ones on macOS and Windows; the
+menus exported over D-Bus to the shell's top bar on Linux (`apps/pulso/src/linux_menu.rs`); the
+app icon (Eadweard Muybridge) in About.
+
+Pending: Pulso's own icons that NDL has no glyph for yet (the After Effects-style tools and the
+Timeline switches) move to nodalia-design as they are drawn there.
 
 ## Risks and priorities
 
@@ -54,7 +61,6 @@ menu exported over D-Bus on Linux.
 
 1. A Foundation release workflow, tested with a dry run, then Pulso's release on it.
 2. A Foundation Windows ARM64 workflow.
-3. NDL review of the interface.
 
 ## What the first agent should do
 
