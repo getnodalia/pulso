@@ -52,6 +52,9 @@ pub struct Hooks {
     /// Application actions the OS performs (`app.hide`, `app.hideOthers`, `app.showAll` on
     /// macOS). Returns false when the host doesn't handle the id.
     pub app_action: Option<Box<dyn Fn(&str) -> bool>>,
+    /// Whether the desktop shows the app's menus in its top bar (a Linux global menu): the
+    /// in-window menu bar hides while it does.
+    pub global_menu_shown: Option<Box<dyn Fn() -> bool>>,
     /// Shows a command's file dialog without blocking the frame and calls `done` with the
     /// answer (the host then asks for a repaint). Used in place of the blocking pickers above for
     /// the commands' dialogs (File ▸ Import, Open, Save As…) where blocking the frame is unsafe or

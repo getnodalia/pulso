@@ -437,6 +437,7 @@ impl PulsoApp {
             let mut child = ui.new_child(egui::UiBuilder::new().max_rect(body).id_salt("home"));
             child.set_clip_rect(body.intersect(ui.clip_rect()));
             panels::home::show(self, &mut child, body);
+            crate::theme::round_island_corners(&ui.painter().with_clip_rect(body), &t, body);
             return;
         }
         let style = dock_style(ui, &t);
@@ -466,6 +467,15 @@ impl PulsoApp {
         };
         let mut output = area.show_content(&mut child, &layout, &style, &mut content);
         let EffectContent { doc_actions, locks, menu, bodies, ime, .. } = content;
+        // Nodalia's islands: each docked group, its tab strip included, with rounded corners cut
+        // into the window colour around it. Floating windows keep their own frames.
+        let corners = ctx.layer_painter(child.layer_id()).with_clip_rect(body);
+        for (panel, r) in &bodies {
+            let group = Rect::from_min_max(egui::pos2(r.min.x, r.min.y - t.tab_h), r.max);
+            if self.ui.dock.is_docked(*panel) && body.expand(1.0).contains_rect(group) {
+                crate::theme::round_island_corners(&corners, &t, group);
+            }
+        }
         self.dock_rects = bodies;
         self.unpublished_viewports = ime.unpublished();
         // A window that closed or docked takes its composition with it.

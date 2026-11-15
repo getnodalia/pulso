@@ -1314,7 +1314,6 @@ Help
   Enable Logging | help.enableLogging
   Reveal Logging File | help.revealLogFile
   ---
-  Join the Nodalia Discord... | help.discord
   Provide Feedback... | help.reportIssue
   ---
   Nodalia Website | help.website

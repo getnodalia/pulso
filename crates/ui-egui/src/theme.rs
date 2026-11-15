@@ -197,7 +197,7 @@ impl Tokens {
             row_h: 19.0,
             gradients: true,
         };
-        match kind {
+        let base = match kind {
             ThemeKind::Dark => dark,
             ThemeKind::Darker => Tokens {
                 app_bg: Color32::from_rgb(0x08, 0x08, 0x08),
@@ -250,7 +250,75 @@ impl Tokens {
                 expr_text: Color32::from_rgb(0xa3, 0x34, 0x17),
                 ..dark
             },
+        };
+        base.nodalia()
+    }
+
+    /// The Nodalia Design Language over these tokens: the window, the islands, text, controls and
+    /// the accent come from `nodalia-theme` with Pulso's accent (NDL's dark palette for Darker
+    /// and Dark, the latter lifted a step; its light palette for Light). Media surfaces (label
+    /// colours, keyframes, the cache bars, the expression colour) keep their own colours.
+    fn nodalia(self) -> Self {
+        let p = ndl_palette(self.kind);
+        let c = ndl;
+        let island = c(p.surface_panel);
+        let light = self.kind.is_light();
+        Tokens {
+            app_bg: c(p.surface_window),
+            header_bg: c(p.surface_window),
+            panel_bg: island,
+            tab_text: c(p.text_secondary),
+            tab_text_active: c(p.text_primary),
+            focus: c(p.accent_default),
+            accent: c(p.accent_default),
+            accent_hover: c(p.accent_hover),
+            text: c(p.text_primary),
+            text_dim: c(p.text_secondary),
+            text_faint: c(p.text_tertiary),
+            icon: c(p.text_secondary),
+            icon_active: c(p.text_primary),
+            hover: c(p.control_bg_hover),
+            pressed: c(p.control_bg_pressed),
+            field_bg: c(p.control_field_bg),
+            field_border: c(p.border_default),
+            separator: c(p.border_subtle),
+            row: island,
+            row_alt: if light { island.lerp_to_gamma(Color32::BLACK, 0.025) } else { island.lerp_to_gamma(Color32::WHITE, 0.025) },
+            row_selected: c(p.selection_bg),
+            hot_text: c(p.accent_text),
+            tl_bg: island,
+            tl_ruler_bg: island,
+            cti: c(p.accent_default),
+            keyframe_selected: c(p.accent_text),
+            timecode: c(p.accent_text),
+            fx_header: c(p.control_bg),
+            fx_header_active: c(p.selection_bg),
+            tl_graph_selected: c(p.control_bg),
+            switch_well: c(p.control_field_bg),
+            expr_bg: c(p.control_field_bg),
+            pasteboard: c(p.surface_window),
+            radius: ISLAND_RADIUS,
+            radius_sm: 8.0,
+            gap: ISLAND_GAP,
+            // NDL draws flat fills: no decorative gradients.
+            gradients: false,
+            ..self
         }
+    }
+
+    /// The creator suite's shared parts (`nodalia_theme::creator`) in these tokens' colours, so
+    /// Pulso draws the workspace selector, dialog buttons, Home and Preferences with the same code
+    /// as Lienzo, Pluma and Toma.
+    pub fn creator(&self) -> nodalia_theme::creator::Look {
+        let mut p = ndl_palette(self.kind);
+        p.accent_default = rgba(self.accent);
+        p.accent_hover = rgba(self.accent_hover);
+        nodalia_theme::creator::Look::new(p).strong_family(FontFamily::Name("semibold".into())).medium_family(FontFamily::Name("medium".into()))
+    }
+
+    /// Whether these tokens are a dark theme.
+    pub fn dark(&self) -> bool {
+        !self.kind.is_light()
     }
 
     pub fn mono(size: f32) -> FontId {
@@ -323,6 +391,49 @@ impl Tokens {
         }
         self
     }
+}
+
+/// Pulso's accent in the Nodalia palette.
+pub const PULSO: nodalia_theme::Accent = nodalia_theme::Accent::Pulso;
+/// An island's corner radius.
+pub const ISLAND_RADIUS: f32 = nodalia_theme::component::PANEL_RADIUS;
+/// The window-colour gap between two islands, and between an island and the window's edge.
+pub const ISLAND_GAP: f32 = nodalia_theme::component::WINDOW_GAP;
+
+pub(crate) fn ndl(c: nodalia_theme::Rgba) -> Color32 {
+    Color32::from_rgba_unmultiplied(c.r, c.g, c.b, c.a)
+}
+
+fn rgba(c: Color32) -> nodalia_theme::Rgba {
+    nodalia_theme::Rgba::new(c.r(), c.g(), c.b(), c.a())
+}
+
+/// Nodalia's palette with Pulso's accent for `kind`: Dark lifts NDL's near-black surfaces a step.
+pub(crate) fn ndl_palette(kind: ThemeKind) -> nodalia_theme::Palette {
+    let mode = if kind.is_light() { nodalia_theme::Mode::Light } else { nodalia_theme::Mode::Dark };
+    let mut p = mode.palette_with(PULSO);
+    if kind == ThemeKind::Dark {
+        let lift = |c: nodalia_theme::Rgba, k: f32| {
+            let m = |v: u8| (f32::from(v) + (255.0 - f32::from(v)) * k).round() as u8;
+            nodalia_theme::Rgba::new(m(c.r), m(c.g), m(c.b), c.a)
+        };
+        p.surface_window = lift(p.surface_window, 0.08);
+        p.surface_panel = lift(p.surface_panel, 0.09);
+        p.surface_raised = lift(p.surface_raised, 0.09);
+        p.surface_overlay = lift(p.surface_overlay, 0.09);
+        p.control_bg = lift(p.control_bg, 0.09);
+        p.control_bg_hover = lift(p.control_bg_hover, 0.09);
+        p.control_bg_pressed = lift(p.control_bg_pressed, 0.09);
+        p.control_field_bg = lift(p.control_field_bg, 0.06);
+        p.border_subtle = lift(p.border_subtle, 0.09);
+    }
+    p
+}
+
+/// Rounds the corners of an island whose contents paint edge to edge (a dock group, the viewer):
+/// a window-coloured ring outside the rounded `rect`. Paint it after the contents.
+pub fn round_island_corners(painter: &egui::Painter, t: &Tokens, rect: egui::Rect) {
+    nodalia_theme::creator::round_island_corners(painter, &t.creator(), rect);
 }
 
 /// The default label colours, one RGB colour per [`pulso_color::Label`] in
@@ -601,14 +712,15 @@ pub fn apply_visuals(ctx: &egui::Context, t: &Tokens) {
     v.extreme_bg_color = t.field_bg;
     v.faint_bg_color = t.row_alt;
     v.override_text_color = Some(t.text);
-    v.selection.bg_fill = t.accent;
-    v.selection.stroke = Stroke::new(1.0, Color32::WHITE);
+    v.selection.bg_fill = t.row_selected;
+    v.selection.stroke = Stroke::new(1.0, t.text);
     v.hyperlink_color = t.accent;
-    v.window_stroke = Stroke::new(1.0, t.field_border);
-    v.window_corner_radius = egui::CornerRadius::same(8);
-    v.menu_corner_radius = egui::CornerRadius::same(6);
-    v.popup_shadow = egui::epaint::Shadow { offset: [0, 6], blur: 20, spread: 0, color: Color32::from_black_alpha(150) };
-    v.window_shadow = egui::epaint::Shadow { offset: [0, 10], blur: 36, spread: 0, color: Color32::from_black_alpha(170) };
+    // NDL: dialogs are islands, menus and popovers take the control radius.
+    v.window_stroke = Stroke::new(1.0, t.separator);
+    v.window_corner_radius = egui::CornerRadius::same(ISLAND_RADIUS as u8);
+    v.menu_corner_radius = egui::CornerRadius::same(nodalia_theme::component::CONTROL_RADIUS as u8);
+    v.popup_shadow = egui::epaint::Shadow { offset: [0, 4], blur: 16, spread: 0, color: Color32::from_black_alpha(if light { 40 } else { 140 }) };
+    v.window_shadow = egui::epaint::Shadow { offset: [0, 10], blur: 36, spread: 0, color: Color32::from_black_alpha(if light { 50 } else { 170 }) };
     for w in [&mut v.widgets.noninteractive, &mut v.widgets.inactive, &mut v.widgets.hovered, &mut v.widgets.active, &mut v.widgets.open] {
         w.corner_radius = egui::CornerRadius::same(t.radius_sm as u8);
     }

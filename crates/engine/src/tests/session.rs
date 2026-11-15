@@ -491,9 +491,9 @@ fn save_and_open_roundtrip() {
 #[test]
 fn help_links_emit_urls() {
     let mut s = Session::default();
-    let r = s.execute("help.discord", json!({})).unwrap();
+    let r = s.execute("help.reportIssue", json!({})).unwrap();
     assert_eq!(r["url"], "https://github.com/getnodalia/pulso/issues");
-    assert!(s.drain_events().iter().any(|e| matches!(e, crate::Event::OpenUrl(u) if u.ends_with("/pulso/issues"))));
+    assert!(s.drain_events().iter().any(|e| matches!(e, crate::Event::OpenUrl(u) if u.ends_with("/issues"))));
     assert_eq!(s.execute("help.github", json!({})).unwrap()["url"], "https://github.com/getnodalia/pulso");
 }
 

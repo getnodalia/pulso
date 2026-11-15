@@ -25,11 +25,13 @@ struct Args {
     scale: f32,
     settle: f64,
     demo: bool,
+    /// Draw Nodalia's own title bar and window controls, as the Linux app does.
+    titlebar: bool,
     steps: Vec<Value>,
 }
 
 fn parse_args() -> Result<Args, String> {
-    let mut a = Args { out: "ui.png".into(), size: (1680.0, 1020.0), scale: 2.0, settle: 1.5, demo: true, steps: Vec::new() };
+    let mut a = Args { out: "ui.png".into(), size: (1680.0, 1020.0), scale: 2.0, settle: 1.5, demo: true, titlebar: false, steps: Vec::new() };
     let mut it = std::env::args().skip(1);
     while let Some(arg) = it.next() {
         let mut val = || it.next().ok_or_else(|| format!("{arg} needs a value"));
@@ -43,6 +45,7 @@ fn parse_args() -> Result<Args, String> {
             "--scale" => a.scale = val()?.parse().map_err(|_| "bad --scale")?,
             "--settle" => a.settle = val()?.parse().map_err(|_| "bad --settle")?,
             "--empty" => a.demo = false,
+            "--titlebar" => a.titlebar = true,
             "--step" => a.steps.push(serde_json::from_str(&val()?).map_err(|e| format!("--step: {e}"))?),
             "--script" => {
                 let path = val()?;
@@ -99,11 +102,12 @@ fn main() {
         let _ = session.execute("file.openDemoProject", json!({}));
     }
     let (tx, rx) = mpsc::channel::<ControlRequest>();
-    let mut harness = Harness::builder()
-        .with_size(egui::vec2(args.size.0, args.size.1))
-        .with_pixels_per_point(args.scale)
-        .wgpu()
-        .build_eframe(move |_cc| PulsoApp::new(session).with_control(rx));
+    let titlebar = args.titlebar;
+    let mut harness = Harness::builder().with_size(egui::vec2(args.size.0, args.size.1)).with_pixels_per_point(args.scale).wgpu().build_eframe(move |_cc| {
+        let mut app = PulsoApp::new(session).with_control(rx);
+        app.custom_titlebar = titlebar;
+        app
+    });
     settle(&mut harness, args.settle);
     for step in &args.steps {
         let method = step["method"].as_str().unwrap_or_default().to_string();

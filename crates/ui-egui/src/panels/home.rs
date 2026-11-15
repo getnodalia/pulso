@@ -285,10 +285,10 @@ fn rail_ui(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, rail: Rect,
     }
     // Community links at the foot (below the pages when the window is short).
     let links = [
-        (Icon::Chat, "Join the Nodalia Discord", "help.discord"),
         (Icon::Globe, "getnodalia.com", "help.website"),
         (Icon::Globe, "Pulso home page", "help.appPage"),
         (Icon::Code, "Pulso on GitHub", "help.github"),
+        (Icon::Chat, "Report an Issue", "help.reportIssue"),
     ];
     let sib = pulso_engine::links::SIBLINGS;
     let sib_rows = sib.len().div_ceil(2) as f32;
@@ -300,13 +300,10 @@ fn rail_ui(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, rail: Rect,
     for (icon, label, cmd) in links {
         let r = Rect::from_min_size(pos2(x0, cy), vec2(w, 26.0));
         let resp = ui.interact(r, egui::Id::unique(("home-link", cmd)), Sense::click());
-        let discord = cmd == "help.discord";
-        if discord {
-            p.rect_filled(r, 13.0, Color32::from_rgb(0x58, 0x65, 0xf2));
-        } else if resp.hovered() {
-            p.rect_filled(r, 13.0, t.hover);
+        if resp.hovered() {
+            p.rect_filled(r, nodalia_theme::component::CONTROL_RADIUS, t.hover);
         }
-        let col = if discord { Color32::WHITE } else { t.text };
+        let col = t.text;
         icons::paint(p, Rect::from_center_size(pos2(r.min.x + 16.0, r.center().y), vec2(13.0, 13.0)), icon, col);
         p.text(pos2(r.min.x + 30.0, r.center().y), Align2::LEFT_CENTER, tr(label), Tokens::medium(12.0), col);
         app.auto.add(&format!("home.{cmd}"), r, label);
@@ -589,7 +586,7 @@ mod tests {
             "home.file.open",
             "home.app.newComp",
             "home.file.openDemoProject",
-            "home.help.discord",
+            "home.help.reportIssue",
             "home.help.github",
             "home.recent.0",
             "home.filter",

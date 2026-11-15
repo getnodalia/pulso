@@ -125,6 +125,9 @@ page!(Appearance {
     use_gradients: bool = true,
     /// macOS: draw the menu bar inside the window instead of the system menu bar.
     in_window_menu_bar_mac: bool = false,
+    /// Linux: `nodalia` draws Nodalia's round window controls in the app bar; `system` keeps the
+    /// desktop's title bar. Read at start.
+    window_controls: String = "nodalia".into(),
 });
 
 page!(Grids {

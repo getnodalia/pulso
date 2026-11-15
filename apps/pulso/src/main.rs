@@ -25,6 +25,8 @@ mod control_server;
 mod crash_report;
 mod diagnostic_state;
 mod launch_guard;
+#[cfg(target_os = "linux")]
+mod linux_menu;
 #[cfg(target_os = "macos")]
 mod native_menu;
 // Built everywhere so it stays checked; the macOS and Linux apps use it.
@@ -119,6 +121,19 @@ fn parse_args(args: impl IntoIterator<Item = String>, env_port: Result<String, s
 /// Whether the app looks for a newer release when it starts. Not when started for an agent
 /// (`--control`): the "update available" prompt is modal and would block the run until a person
 /// dismisses it. Help ▸ Check for Updates still works.
+/// Whether the window draws Nodalia's own title bar and round window controls: on Linux, unless
+/// Preferences ▸ Appearance ▸ Window Controls asks for the desktop's. macOS and Windows keep the
+/// system's controls. Read once at start, as the window is created with or without decorations.
+fn nodalia_title_bar() -> bool {
+    if !cfg!(target_os = "linux") {
+        return false;
+    }
+    let saved = pulso_host::config_dir().and_then(|d| std::fs::read_to_string(d.join(pulso_engine::prefs::PREFS_FILE)).ok());
+    let controls =
+        saved.and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok()).and_then(|v| v["appearance"]["windowControls"].as_str().map(str::to_owned));
+    controls.as_deref() != Some("system")
+}
+
 fn startup_update_check(control_port: Option<u16>) -> bool {
     control_port.is_none()
 }
@@ -253,9 +268,12 @@ fn run_desktop(reporter: &crash_report::Shutdown) -> eframe::Result {
     }
     let on_gl = launch.backends == Some(eframe::wgpu::Backends::GL);
     let notice = launch.notice.take();
+    let nodalia_frame = nodalia_title_bar();
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title("Pulso")
+            // Linux with Nodalia's window controls: no decorations, the app bar is the title bar.
+            .with_decorations(!nodalia_frame)
             .with_inner_size(window::DEFAULT_SIZE)
             .with_min_inner_size(window::MIN_SIZE)
             .with_drag_and_drop(true)
@@ -370,6 +388,7 @@ fn run_desktop(reporter: &crash_report::Shutdown) -> eframe::Result {
             // reported in a toast and forgotten).
             let _ = session.execute("window.restoreScriptPanels", json!({}));
             let mut app = PulsoApp::new(session);
+            app.custom_titlebar = nodalia_frame;
             app.set_startup_update_check(startup_update_check(control_port));
             app.set_gpu_failure_bridge(gpu_failures);
             app.ui.start_screen = show_home;
@@ -433,6 +452,13 @@ fn run_desktop(reporter: &crash_report::Shutdown) -> eframe::Result {
                 app.hooks.app_action = Some(Box::new(native_menu::app_action));
                 app.hooks.clipboard_text = Some(Box::new(native_menu::clipboard_text));
             }
+            // Linux: the menus go to the top bar when the desktop has a global menu (Nodalix), and
+            // the in-window bar shows only while it doesn't.
+            #[cfg(target_os = "linux")]
+            let global_menu = linux_menu::install(&cc.egui_ctx, &app).map(|mut menu| {
+                app.hooks.global_menu_shown = Some(std::mem::replace(&mut menu.shown, Box::new(|| false)));
+                menu
+            });
             if let Some(port) = control_port {
                 disable_app_nap();
                 let rx = control_server::start(port, cc.egui_ctx.clone());
@@ -444,6 +470,8 @@ fn run_desktop(reporter: &crash_report::Shutdown) -> eframe::Result {
                 menu: native_menu::NativeBar::new(&cc.egui_ctx),
                 #[cfg(target_os = "macos")]
                 apple_events: apple_events.connect(&cc.egui_ctx),
+                #[cfg(target_os = "linux")]
+                global_menu,
                 app,
                 file_dialogs,
                 window: window::Tracker::new(opened, saved_window, control_port.is_none()),
@@ -537,6 +565,9 @@ struct Desktop {
     /// The window's size and position, saved for the next launch.
     window: window::Tracker,
     launch: launch_guard::Launch,
+    /// Linux: the menus in the desktop's top bar, when it has a global menu.
+    #[cfg(target_os = "linux")]
+    global_menu: Option<linux_menu::GlobalMenu>,
     /// The first frame was drawn (logged once).
     drawn: bool,
     reporter: crash_report::Shutdown,
@@ -548,6 +579,10 @@ impl eframe::App for Desktop {
     fn logic(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         #[cfg(target_os = "macos")]
         self.menu.update(&mut self.app, ctx);
+        #[cfg(target_os = "linux")]
+        if let Some(menu) = &mut self.global_menu {
+            menu.update(&mut self.app, ctx);
+        }
         self.app.tick(ctx, frame);
         self.app.finish_ime_logic(ctx);
         if let Some(asked) = &self.file_dialogs {

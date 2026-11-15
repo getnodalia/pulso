@@ -7,7 +7,6 @@ use pulso_engine::project::{ItemId, ItemKind, LayerId, LayerSource};
 use serde_json::{Value, json};
 
 pub use super::forms::{Field, form, info, open_form};
-use crate::icons::{self, Icon};
 use crate::theme::Tokens;
 use crate::{Dialog, PulsoApp};
 
@@ -392,60 +391,38 @@ fn about(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
     }
 }
 
-/// The About tab: logo, version, blurb and community links.
+/// The About tab: the app icon, version, blurb and project links.
 fn about_main(app: &mut PulsoApp, ui: &mut egui::Ui, t: &Tokens, cmd: &mut Option<&'static str>) {
-    let (r, _) = ui.allocate_exact_size(vec2(ui.available_width(), 96.0), Sense::hover());
-    let p = ui.painter();
-    p.rect_filled(r, 10.0, Color32::from_rgb(0x1b, 0x22, 0x3c));
-    crate::header::paint_logo(p, Rect::from_min_size(r.min + vec2(18.0, 20.0), vec2(56.0, 56.0)));
-    p.text(r.min + vec2(90.0, 34.0), Align2::LEFT_CENTER, "Pulso", Tokens::semibold(24.0), Color32::WHITE);
-    p.text(
-        r.min + vec2(90.0, 62.0),
-        Align2::LEFT_CENTER,
-        format!("Version {}  •  Motion graphics & VFX in pure Rust", env!("CARGO_PKG_VERSION")),
-        Tokens::ui(12.0),
-        t.text_dim,
-    );
-    ui.add_space(12.0);
-    ui.label(tr("A clean-room, open-source compositor for motion graphics and visual effects: native on macOS, Windows and Linux, and in the browser. Part of the Nodalia family of creative apps."));
-    ui.add_space(14.0);
-    let links: [(Icon, &str, &str, &'static str); 4] = [
-        (Icon::Chat, "Join the Nodalia Discord", pulso_engine::links::DISCORD, "help.discord"),
-        (Icon::Globe, "Nodalia website", pulso_engine::links::WEBSITE, "help.website"),
-        (Icon::Sparkle, "Pulso home page", pulso_engine::links::APP_PAGE, "help.appPage"),
-        (Icon::Code, "Source code on GitHub", pulso_engine::links::GITHUB, "help.github"),
-    ];
-    for (icon, label, url, c) in links {
-        let (r, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 30.0), Sense::click());
-        let p = ui.painter();
-        let discord = c == "help.discord";
-        p.rect_filled(
-            r,
-            6.0,
-            if discord {
-                Color32::from_rgb(0x58, 0x65, 0xf2)
-            } else if resp.hovered() {
-                t.hover
-            } else {
-                t.field_bg
-            },
-        );
-        let foreground = if discord { Color32::WHITE } else { t.text };
-        icons::paint(p, Rect::from_center_size(pos2(r.min.x + 18.0, r.center().y), vec2(15.0, 15.0)), icon, foreground);
-        p.text(pos2(r.min.x + 36.0, r.center().y), Align2::LEFT_CENTER, tr(label), Tokens::medium(12.5), foreground);
-        p.text(
-            pos2(r.max.x - 12.0, r.center().y),
-            Align2::RIGHT_CENTER,
-            url,
-            Tokens::ui(11.0),
-            if discord { Color32::from_white_alpha(200) } else { t.text_dim },
-        );
-        app.auto.add(&format!("about.{c}"), r, label);
-        if resp.clicked() {
-            *cmd = Some(c);
-        }
-        ui.add_space(4.0);
-    }
+    ui.vertical_centered(|ui| {
+        ui.add_space(8.0);
+        let (r, _) = ui.allocate_exact_size(vec2(96.0, 96.0), Sense::hover());
+        crate::brand::paint_mark(ui.painter(), r);
+        ui.add_space(10.0);
+        ui.label(egui::RichText::new("Pulso").font(Tokens::semibold(26.0)).color(t.text));
+        ui.add_space(2.0);
+        ui.label(egui::RichText::new(crate::i18n::tr_args("Version {}", &[&env!("CARGO_PKG_VERSION")])).color(t.text_dim));
+        ui.add_space(10.0);
+        ui.label(egui::RichText::new(tr("A clean-room, open-source compositor for motion graphics and visual effects: native on macOS, Windows and Linux, and in the browser. Part of the Nodalia family of creative apps.")).color(t.text_dim));
+        ui.add_space(14.0);
+        let links: [(&str, &str, &'static str); 4] = [
+            ("Nodalia website", pulso_engine::links::WEBSITE, "help.website"),
+            ("Pulso home page", pulso_engine::links::APP_PAGE, "help.appPage"),
+            ("Source code on GitHub", pulso_engine::links::GITHUB, "help.github"),
+            ("Report an Issue", pulso_engine::links::ISSUES, "help.reportIssue"),
+        ];
+        ui.horizontal_wrapped(|ui| {
+            ui.spacing_mut().item_spacing.x = 14.0;
+            let total: f32 = links.iter().map(|(l, _, _)| ui.painter().layout_no_wrap(tr(l).to_string(), Tokens::ui(13.0), t.accent).size().x + 14.0).sum::<f32>() - 14.0;
+            ui.add_space(((ui.available_width() - total) / 2.0).max(0.0));
+            for (label, url, c) in links {
+                let r = ui.add(egui::Button::new(egui::RichText::new(tr(label)).color(t.accent).font(Tokens::ui(13.0))).frame(false));
+                app.auto.add(&format!("about.{c}"), r.rect, label);
+                if r.on_hover_text(url).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                    *cmd = Some(c);
+                }
+            }
+        });
+    });
 }
 
 fn comp_settings(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens, existing: bool) {

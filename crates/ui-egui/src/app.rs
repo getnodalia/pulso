@@ -104,6 +104,7 @@ impl PulsoApp {
             pointer_comp: None,
             dialog_state: Default::default(),
             integrated_titlebar: false,
+            custom_titlebar: false,
             audio: None,
             scrub: None,
             meter: Default::default(),

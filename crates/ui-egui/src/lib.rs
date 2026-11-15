@@ -17,6 +17,7 @@ pub const UPDATE_APP: nodalia_update::App =
 pub mod audio;
 pub mod automation;
 pub mod bench;
+pub mod brand;
 pub mod color_picker;
 pub mod control;
 pub mod credits;
@@ -37,6 +38,7 @@ mod pointer_wrap;
 pub mod prefs_live;
 pub mod state;
 pub mod theme;
+pub mod titlebar;
 pub mod updates_ui;
 pub mod widgets;
 mod workspace_state;
@@ -371,6 +373,9 @@ pub struct PulsoApp {
     pub(crate) pointer_comp: Option<[f32; 2]>,
     pub(crate) dialog_state: panels::dialogs::DialogState,
     pub integrated_titlebar: bool,
+    /// Linux with Nodalia's window controls: the window has no decorations, the app bar is its
+    /// title bar and draws the round controls ([`titlebar`]).
+    pub custom_titlebar: bool,
     /// Audio preview while playing (audio clock drives playback).
     pub audio: Option<audio::AudioPlayback>,
     /// Audio scrubbing's open output (Ctrl/Cmd-drag the current time, `playback.scrubAudio`).

@@ -32,7 +32,6 @@ fn docs(s: &mut Session, p: &Value) -> Result<Value> {
 pub fn specs() -> Vec<CommandSpec> {
     vec![
         cmd!("help.docs", "Pulso Help...", [], Some("F1"), "{page?: help|scripting|expressions|effects|agents}", always, docs),
-        cmd!("help.discord", "Join the Nodalia Discord...", ["Help"], None, "{}", always, |s, _| open(s, links::DISCORD.into())),
         cmd!("help.website", "Nodalia Website", ["Help"], None, "{}", always, |s, _| open(s, links::WEBSITE.into())),
         cmd!("help.appPage", "Pulso Home Page", ["Help"], None, "{}", always, |s, _| open(s, links::APP_PAGE.into())),
         cmd!("help.github", "Pulso on GitHub", ["Help"], None, "{}", always, |s, _| open(s, links::GITHUB.into())),
