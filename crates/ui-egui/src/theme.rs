@@ -274,7 +274,9 @@ impl Tokens {
             accent_hover: c(p.accent_hover),
             text: c(p.text_primary),
             text_dim: c(p.text_secondary),
-            text_faint: c(p.text_tertiary),
+            // NDL's tertiary text is a shade too light for line numbers on a matched bracket in
+            // the light theme's expression field; darken it there just enough to stay readable.
+            text_faint: if light { c(p.text_tertiary).lerp_to_gamma(Color32::BLACK, 0.12) } else { c(p.text_tertiary) },
             icon: c(p.text_secondary),
             icon_active: c(p.text_primary),
             hover: c(p.control_bg_hover),

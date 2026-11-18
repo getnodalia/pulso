@@ -195,7 +195,7 @@ pub fn pages() -> Vec<Page> {
                 Section("Menu Bar"),
                 s("appearance.inWindowMenuBarMac", "Use In-Window Menu Bar on macOS", B, true),
                 Section("Window"),
-                s("appearance.windowControls", "Window Controls on Linux", Kind::Choice(&[("Nodalia", "nodalia"), ("Desktop's Own", "system")]), false),
+                s("appearance.windowControls", "Window Controls on Linux", Kind::Choice(&[("Nodalia", "nodalia"), ("Desktop's Own", "system")]), true),
                 Note("Window controls change the next time Pulso starts."),
             ],
         },

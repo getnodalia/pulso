@@ -182,7 +182,6 @@ pub(crate) fn tr_args(text: &str, args: &[&dyn Display]) -> String {
 /// Japanese: the same rows, in the same order, as the Chinese catalogs below.
 const JAPANESE: &[(&str, &str)] = &[
     ("Click to sample color", "クリックして色をサンプル"),
-    ("Appearance Settings…", "外観設定…"),
     ("Add to favorites", "お気に入りに追加"),
     ("Remove from favorites", "お気に入りから削除"),
     ("   OK   ", "   OK   "),
@@ -223,7 +222,6 @@ const JAPANESE: &[(&str, &str)] = &[
     ("Anchor:", "アンカー:"),
     ("Aperture", "絞り"),
     ("Appearance Mode", "外観モード"),
-    ("Appearance Mode: {}", "外観モード：{}"),
     ("Apply Dimensions:", "適用する次元:"),
     ("Apply Motion To:", "モーションの適用先:"),
     ("Arrange", "重ね順"),
@@ -1293,7 +1291,6 @@ const JAPANESE: &[(&str, &str)] = &[
     ("Reset Transform", "トランスフォームをリセット"),
     ("Text Animation", "テキストアニメーション"),
     ("Text Animation Presets", "テキストアニメーションのプリセット"),
-    ("Pulso on getnodalia.com", "getnodalia.com の Pulso"),
     ("Small Screen", "小さい画面"),
     ("Tool Creates Shape", "ツールでシェイプを作成"),
     ("Tool Creates Mask", "ツールでマスクを作成"),
@@ -1322,7 +1319,6 @@ const JAPANESE: &[(&str, &str)] = &[
 
 const SIMPLIFIED_CHINESE: &[(&str, &str)] = &[
     ("Click to sample color", "单击以取样颜色"),
-    ("Appearance Settings…", "外观设置…"),
     ("Add to favorites", "添加到收藏"),
     ("Remove from favorites", "从收藏中移除"),
     ("   OK   ", "   确定   "),
@@ -1362,7 +1358,6 @@ const SIMPLIFIED_CHINESE: &[(&str, &str)] = &[
     ("Anchor:", "定位点："),
     ("Aperture", "光圈"),
     ("Appearance Mode", "外观模式"),
-    ("Appearance Mode: {}", "外观模式：{}"),
     ("Apply Dimensions:", "应用尺寸："),
     ("Apply Motion To:", "将运动应用于："),
     ("Arrange", "排列"),
@@ -2422,7 +2417,6 @@ const SIMPLIFIED_CHINESE: &[(&str, &str)] = &[
     ("Reset Transform", "重置变换"),
     ("Text Animation", "文本动画"),
     ("Text Animation Presets", "文本动画预设"),
-    ("Pulso on getnodalia.com", "getnodalia.com 上的 Pulso"),
     ("Small Screen", "小屏幕"),
     ("Tool Creates Shape", "工具创建形状"),
     ("Tool Creates Mask", "工具创建遮罩"),
@@ -2434,7 +2428,6 @@ const SIMPLIFIED_CHINESE: &[(&str, &str)] = &[
 
 /// Swedish (`sv`), written from the English source.
 const SWEDISH: &[(&str, &str)] = &[
-    ("Appearance Settings…", "Utseendeinställningar…"),
     ("Add to favorites", "Lägg till i favoriter"),
     ("Remove from favorites", "Ta bort från favoriter"),
     ("   OK   ", "   OK   "),
@@ -2473,7 +2466,6 @@ const SWEDISH: &[(&str, &str)] = &[
     ("Anchor:", "Ankare:"),
     ("Aperture", "Bländare"),
     ("Appearance Mode", "Utseendeläge"),
-    ("Appearance Mode: {}", "Utseendeläge: {}"),
     ("Apply Dimensions:", "Använd dimensioner:"),
     ("Apply Motion To:", "Använd rörelse på:"),
     ("Arrange", "Ordna"),
@@ -3591,7 +3583,6 @@ const SWEDISH: &[(&str, &str)] = &[
     ("Reset Transform", "Återställ transformering"),
     ("Text Animation", "Textanimering"),
     ("Text Animation Presets", "Förinställningar för textanimering"),
-    ("Pulso on getnodalia.com", "Pulso på getnodalia.com"),
     ("Small Screen", "Liten skärm"),
     ("Tool Creates Shape", "Verktyget skapar form"),
     ("Tool Creates Mask", "Verktyget skapar mask"),
@@ -3708,7 +3699,6 @@ const SWEDISH: &[(&str, &str)] = &[
 
 const TRADITIONAL_CHINESE: &[(&str, &str)] = &[
     ("Click to sample color", "按一下以取樣顏色"),
-    ("Appearance Settings…", "外觀設定…"),
     ("Add to favorites", "加入最愛"),
     ("Remove from favorites", "從最愛移除"),
     ("   OK   ", "   確定   "),
@@ -3748,7 +3738,6 @@ const TRADITIONAL_CHINESE: &[(&str, &str)] = &[
     ("Anchor:", "釘選點："),
     ("Aperture", "光圈"),
     ("Appearance Mode", "外觀模式"),
-    ("Appearance Mode: {}", "外觀模式：{}"),
     ("Apply Dimensions:", "應用尺寸："),
     ("Apply Motion To:", "將運動應用於："),
     ("Arrange", "排列"),
@@ -4754,7 +4743,6 @@ const TRADITIONAL_CHINESE: &[(&str, &str)] = &[
     ("Reset Transform", "重設變換"),
     ("Text Animation", "文字動畫"),
     ("Text Animation Presets", "文字動畫預設集"),
-    ("Pulso on getnodalia.com", "getnodalia.com 上的 Pulso"),
     ("Small Screen", "小螢幕"),
     ("Tool Creates Shape", "工具建立形狀"),
     ("Tool Creates Mask", "工具建立遮罩"),
@@ -4770,7 +4758,6 @@ const TRADITIONAL_CHINESE: &[(&str, &str)] = &[
 /// Technical names, key names and substituted project content keep their original spelling.
 const UKRAINIAN: &[(&str, &str)] = &[
     ("Click to sample color", "Клацніть, щоб узяти зразок кольору"),
-    ("Appearance Settings…", "Налаштування вигляду…"),
     ("Add to favorites", "Додати до вибраного"),
     ("Remove from favorites", "Видалити з вибраного"),
     ("   OK   ", "   Гаразд   "),
@@ -4809,7 +4796,6 @@ const UKRAINIAN: &[(&str, &str)] = &[
     ("Anchor:", "Опорна точка:"),
     ("Aperture", "Діафрагма"),
     ("Appearance Mode", "Режим оформлення"),
-    ("Appearance Mode: {}", "Режим оформлення: {}"),
     ("Apply Dimensions:", "Застосувати виміри:"),
     ("Apply Motion To:", "Застосувати рух до:"),
     ("Arrange", "Упорядкувати"),
@@ -6058,8 +6044,6 @@ const PORTUGUESE: &[(&str, &str)] = &[
     ("Alpha", "Alfa"),
     ("Appearance", "Aparência"),
     ("Appearance Mode", "Modo de aparência"),
-    ("Appearance Mode: {}", "Modo de aparência: {}"),
-    ("Appearance Settings…", "Configurações de aparência…"),
     ("Audio", "Áudio"),
     ("Auto-Save", "Auto-salvar"),
     ("Cache Frames When Idle", "Armazenar quadros em cache quando ocioso"),
@@ -6120,7 +6104,6 @@ const PORTUGUESE: &[(&str, &str)] = &[
 /// Polish (pl): original translations covering every row in the Chinese panel catalogs.
 const POLISH: &[(&str, &str)] = &[
     ("Click to sample color", "Kliknij, aby pobrać próbkę koloru"),
-    ("Appearance Settings…", "Ustawienia wyglądu…"),
     ("Add to favorites", "Dodaj do ulubionych"),
     ("Remove from favorites", "Usuń z ulubionych"),
     ("   OK   ", "   OK   "),
@@ -6159,7 +6142,6 @@ const POLISH: &[(&str, &str)] = &[
     ("Anchor:", "Zakotwiczenie:"),
     ("Aperture", "Przysłona"),
     ("Appearance Mode", "Tryb wyglądu"),
-    ("Appearance Mode: {}", "Tryb wyglądu: {}"),
     ("Apply Dimensions:", "Zastosuj wymiary:"),
     ("Apply Motion To:", "Zastosuj ruch do:"),
     ("Arrange", "Kolejność"),
@@ -6913,7 +6895,6 @@ const CZECH: &[(&str, &str)] = &[
     ("Anchor:", "Kotevní bod:"),
     ("Aperture", "Clona"),
     ("Appearance Mode", "Režim vzhledu"),
-    ("Appearance Mode: {}", "Režim vzhledu: {}"),
     ("Apply Dimensions:", "Použít rozměry:"),
     ("Apply Motion To:", "Použít pohyb na:"),
     ("Arrange", "Uspořádat"),
@@ -7444,7 +7425,6 @@ const CZECH: &[(&str, &str)] = &[
 const SPANISH: &[(&str, &str)] = &[
     ("Click to sample color", "Haz clic para tomar una muestra de color"),
     ("Copy Source Path", "Copiar ruta de origen"),
-    ("Appearance Settings…", "Ajustes de apariencia…"),
     ("Add to favorites", "Añadir a favoritos"),
     ("Remove from favorites", "Quitar de favoritos"),
     ("   OK   ", "   Aceptar   "),
@@ -7486,7 +7466,6 @@ const SPANISH: &[(&str, &str)] = &[
     ("Anchor:", "Punto de anclaje:"),
     ("Aperture", "Abertura"),
     ("Appearance Mode", "Modo de apariencia"),
-    ("Appearance Mode: {}", "Modo de apariencia: {}"),
     ("Apply Dimensions:", "Aplicar dimensiones:"),
     ("Apply Motion To:", "Aplicar movimiento a:"),
     ("Arrange", "Organizar"),
@@ -8588,7 +8567,6 @@ const SPANISH: &[(&str, &str)] = &[
     ("Layer Transform", "Transformación de capa"),
     ("Reset Transform", "Restablecer transformación"),
     ("Text Animation", "Animación de texto"),
-    ("Pulso on getnodalia.com", "Pulso en getnodalia.com"),
     ("Tool Creates Shape", "La herramienta crea una forma"),
     ("Tool Creates Mask", "La herramienta crea una máscara"),
     ("Blend Mode", "Modo de fusión"),
@@ -8823,7 +8801,6 @@ const SPANISH: &[(&str, &str)] = &[
 /// Georgian (ka): every row of the Chinese catalogs, in the same order (the tests keep them in step).
 const GEORGIAN: &[(&str, &str)] = &[
     ("Click to sample color", "დააწკაპუნეთ ფერის ნიმუშის ასაღებად"),
-    ("Appearance Settings…", "იერსახის პარამეტრები…"),
     ("Add to favorites", "რჩეულებში დამატება"),
     ("Remove from favorites", "რჩეულებიდან ამოშლა"),
     ("   OK   ", "   OK   "),
@@ -8862,7 +8839,6 @@ const GEORGIAN: &[(&str, &str)] = &[
     ("Anchor:", "მიმაგრება:"),
     ("Aperture", "დიაფრაგმა"),
     ("Appearance Mode", "იერსახის რეჟიმი"),
-    ("Appearance Mode: {}", "იერსახის რეჟიმი: {}"),
     ("Apply Dimensions:", "განზომილებების გამოყენება:"),
     ("Apply Motion To:", "მოძრაობის გამოყენება:"),
     ("Arrange", "დალაგება"),
@@ -9791,7 +9767,6 @@ const GEORGIAN_PANELS: &[(&str, &str)] = &[
 /// clé, métrage, file d'attente de rendu, chronologie, repère, estampe). A no-break space precedes
 /// `:`, `;`, `?` and `!`, and the apostrophe is the typographic one. Written from the English source.
 const FRENCH: &[(&str, &str)] = &[
-    ("Appearance Settings…", "Paramètres d’apparence…"),
     ("Add to favorites", "Ajouter aux favoris"),
     ("Remove from favorites", "Retirer des favoris"),
     ("   OK   ", "   OK   "),
@@ -9833,7 +9808,6 @@ const FRENCH: &[(&str, &str)] = &[
     ("Anchor:", "Ancrage :"),
     ("Aperture", "Ouverture"),
     ("Appearance Mode", "Mode d’apparence"),
-    ("Appearance Mode: {}", "Mode d’apparence : {}"),
     ("Apply Dimensions:", "Appliquer les dimensions :"),
     ("Apply Motion To:", "Appliquer le mouvement à :"),
     ("Arrange", "Disposition"),
@@ -11042,7 +11016,6 @@ const FRENCH: &[(&str, &str)] = &[
     ("Reset Transform", "Réinitialiser la transformation"),
     ("Text Animation", "Animation de texte"),
     ("Text Animation Presets", "Animations de texte prédéfinies"),
-    ("Pulso on getnodalia.com", "Pulso sur getnodalia.com"),
     ("Small Screen", "Petit écran"),
     ("Tool Creates Shape", "L’outil crée une forme"),
     ("Tool Creates Mask", "L’outil crée un masque"),
@@ -11123,6 +11096,7 @@ mod tests {
         ("menus/shortcuts.rs", include_str!("../menus/shortcuts.rs")),
         ("state.rs", include_str!("../state.rs")),
         ("prefs_live.rs", include_str!("../prefs_live.rs")),
+        ("titlebar.rs", include_str!("../titlebar.rs")),
         ("updates_ui.rs", include_str!("../updates_ui.rs")),
         ("widgets.rs", include_str!("../widgets.rs")),
         ("panels/aep_losses.rs", include_str!("../panels/aep_losses.rs")),

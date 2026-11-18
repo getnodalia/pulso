@@ -31,7 +31,7 @@ fn toggle_maximize(ctx: &egui::Context) {
 pub fn drag_area(ui: &Ui, rect: Rect) {
     let ctx = ui.ctx();
     // Not focusable (`click_and_drag` is): Tab goes through the bar's widgets, not its background.
-    let resp = ui.interact(rect, Id::new("titlebar-drag").with(rect.min.y.to_bits()), Sense::CLICK | Sense::DRAG);
+    let resp = ui.interact(rect, Id::unique(("titlebar-drag", rect.min.y.to_bits())), Sense::CLICK | Sense::DRAG);
     // egui hands a drag that starts on a click-only widget (a menu title) to the drag-sensing
     // background below it, so remember whether the press itself landed on bare background.
     if ctx.input(|i| i.pointer.any_pressed()) {
