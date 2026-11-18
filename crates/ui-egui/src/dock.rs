@@ -1,14 +1,14 @@
-//! Pulso's panels and built-in workspaces in craft-ui's shared docking model
-//! ([`craft_ui::docking`]): splits, tab groups, After Effects' stacked panels and floating
-//! windows. craft-ui owns the layout model, its validation and every transaction; Pulso
+//! Pulso's panels and built-in workspaces in nodalia-ui's shared docking model
+//! ([`nodalia_ui::docking`]): splits, tab groups, After Effects' stacked panels and floating
+//! windows. nodalia-ui owns the layout model, its validation and every transaction; Pulso
 //! owns the panel ids, the built-in workspaces and the decorations of its tabs (the comp tabs of
 //! the Timeline, label swatches and viewer locks).
 
 use egui::{Align2, Rect, Sense, Stroke, pos2, vec2};
 use serde::{Deserialize, Serialize};
 
-pub use craft_ui::docking::{Floating, Node, PanelState, Permissions, StackEntry};
-pub use craft_ui::layout::{SplitAxis, SplitSize};
+pub use nodalia_ui::docking::{Floating, Node, PanelState, Permissions, StackEntry};
+pub use nodalia_ui::layout::{SplitAxis, SplitSize};
 
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
@@ -172,9 +172,9 @@ impl PanelKind {
 }
 
 /// The docked tree plus floating windows.
-pub type Layout = craft_ui::docking::Layout<PanelKind>;
+pub type Layout = nodalia_ui::docking::Layout<PanelKind>;
 /// What a workspace saves: the layout, closed panels with where each goes back, and the lock.
-pub type Workspace = craft_ui::docking::Workspace<PanelKind>;
+pub type Workspace = nodalia_ui::docking::Workspace<PanelKind>;
 
 /// What may happen to a panel. Every panel moves, floats and closes, as in After Effects
 /// (the Composition panel too: Window ▸ Composition reopens it); the last docked group staying
@@ -188,7 +188,7 @@ pub fn tabs(p: &[PanelKind], active: usize) -> Node<PanelKind> {
     Node::Tabs { panels: p.to_vec(), active }
 }
 /// Stacked panels: (panel, open, height). Open entries share the stack's height in proportion to
-/// their heights; an entry without one counts as craft-ui's `DockStyle::min_pane` (40).
+/// their heights; an entry without one counts as nodalia-ui's `DockStyle::min_pane` (40).
 pub fn stack(e: &[(PanelKind, bool, Option<f32>)]) -> Node<PanelKind> {
     Node::Stack { entries: e.iter().map(|&(panel, open, height)| StackEntry { panel, open, height }).collect() }
 }
@@ -229,7 +229,7 @@ pub const WORKSPACES: &[&str] = &[
 ];
 
 /// The floating windows a workspace starts with (Undocked Panels), in points for a window of
-/// about 1680×1020 (craft-ui keeps them inside the window when drawn). Each window has a fixed
+/// about 1680×1020 (nodalia-ui keeps them inside the window when drawn). Each window has a fixed
 /// id, so a built-in layout built again is the same set of windows.
 fn workspace_floating(name: &str) -> Vec<Floating<PanelKind>> {
     use PanelKind::*;
@@ -491,7 +491,7 @@ pub fn referenced_panels(workspace: &Workspace) -> Vec<PanelKind> {
 /// stack's split path (`a`/`b` per level) and the entry's index.
 pub fn stack_gutter_id(layout: &Layout, p: PanelKind) -> Option<String> {
     fn rec(node: &Node<PanelKind>, p: PanelKind, path: &mut String, depth: usize) -> Option<String> {
-        if depth > craft_ui::docking::MAX_DEPTH {
+        if depth > nodalia_ui::docking::MAX_DEPTH {
             return None;
         }
         match node {
@@ -534,7 +534,7 @@ pub enum DocAction {
     Close(u64),
 }
 
-/// Room around a tab's label, as craft-ui gives its dock tabs.
+/// Room around a tab's label, as nodalia-ui gives its dock tabs.
 const TAB_PADDING: f32 = 24.0;
 /// Width of the » button that lists the comp tabs with no room in the strip.
 const DOC_OVERFLOW: f32 = 22.0;
@@ -569,7 +569,7 @@ fn doc_close(
     clip: Rect,
     doc: &DocTab,
     shown: bool,
-    style: &craft_ui::docking::DockStyle,
+    style: &nodalia_ui::docking::DockStyle,
     reg: &mut crate::automation::Registry,
 ) -> bool {
     let timeline = PanelKind::Timeline.id();
@@ -600,14 +600,14 @@ pub fn doc_tabs(
     strip: Rect,
     docs: &[DocTab],
     selected: bool,
-    style: &craft_ui::docking::DockStyle,
+    style: &nodalia_ui::docking::DockStyle,
     reg: &mut crate::automation::Registry,
 ) -> Vec<DocAction> {
     let mut out = Vec::new();
     let timeline = PanelKind::Timeline.id();
     let widths = doc_widths(ui.ctx(), docs, &style.font);
     let active = docs.iter().position(|d| d.active).unwrap_or(0);
-    let fit = craft_ui::tabs::fit_whole(&widths, active, strip.width(), DOC_OVERFLOW);
+    let fit = nodalia_ui::tabs::fit_whole(&widths, active, strip.width(), DOC_OVERFLOW);
     let clip = strip.intersect(ui.clip_rect());
     let mid = strip.center().y;
     let mut x = strip.min.x;
@@ -626,7 +626,7 @@ pub fn doc_tabs(
         };
         let galley = ui.fonts_mut(|f| f.layout_job(job));
         let label_end = tab.min.x + TAB_PADDING * 0.5 + galley.size().x;
-        let resp = craft_ui::tabs::Tab::new(egui::Id::unique(("comp-tab", doc.id)), &doc.title, on).focus_stroke(Stroke::new(1.0, style.accent)).show_at(
+        let resp = nodalia_ui::tabs::Tab::new(egui::Id::unique(("comp-tab", doc.id)), &doc.title, on).focus_stroke(Stroke::new(1.0, style.accent)).show_at(
             ui,
             tab,
             |ui, response| {
@@ -703,7 +703,7 @@ pub fn placeholder(ui: &mut egui::Ui, rect: Rect, t: &Tokens, text: &str) {
 mod tests {
     use super::*;
     use PanelKind::*;
-    use craft_ui::docking::{Action, Placement, Zone};
+    use nodalia_ui::docking::{Action, Placement, Zone};
 
     fn apply(w: &mut Workspace, action: Action<PanelKind>) {
         w.apply(action, permissions).unwrap();

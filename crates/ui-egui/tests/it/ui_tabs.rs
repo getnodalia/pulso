@@ -182,7 +182,7 @@ fn panels_dock_beside_others_and_gutters_resize_them() {
     let tab = rect(&h, "panel.tab.EffectControls");
     let tl = rect(&h, "panel.Timeline");
     // Inside the Timeline body's left drop zone.
-    let depth = craft_ui::docking::SIDE_EDGE_ZONE_DEPTH.min(tl.width().min(tl.height()) / 4.0);
+    let depth = nodalia_ui::docking::SIDE_EDGE_ZONE_DEPTH.min(tl.width().min(tl.height()) / 4.0);
     drag(&mut h, tab.center(), pos2(tl.min.x + depth / 2.0, tl.center().y));
     assert_eq!(group_of(&dock(&h), PanelKind::EffectControls), Some(vec![PanelKind::EffectControls]));
     assert!(!group_of(&dock(&h), PanelKind::Timeline).unwrap().contains(&PanelKind::EffectControls));

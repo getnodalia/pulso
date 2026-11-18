@@ -11,8 +11,8 @@ workspace = true
 
 [dependencies]
 nodalia-theme = { workspace = true, features = ["creator"] }
-craft-ui = { workspace = true }
-craft-quit = { workspace = true, features = ["egui"] }
+nodalia-ui = { workspace = true }
+nodalia-quit = { workspace = true, features = ["egui"] }
 pulso-time = { workspace = true }
 pulso-geom = { workspace = true }
 pulso-color = { workspace = true }
@@ -40,7 +40,7 @@ bytemuck = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 # Floating panels open in OS windows of their own on desktop; the web keeps them in the page.
-craft-ui = { workspace = true, features = ["native-windows"] }
+nodalia-ui = { workspace = true, features = ["native-windows"] }
 nodalia-update = { workspace = true }
 # Waits for the display pass's error scopes (immediately ready on native wgpu).
 pollster = { workspace = true }

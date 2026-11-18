@@ -462,7 +462,7 @@ fn effect_values_stay_clear_of_the_keyframe_navigator() {
     app.session.execute("prop.toggleAnimation", json!({"layer": lid, "path": path})).unwrap();
     app.session.execute("prop.set", json!({"layer": lid, "path": path, "value": [123456.7, 123456.7]})).unwrap();
     let uid = app.session.active_comp().unwrap().layer(pulso_engine::project::LayerId(lid)).unwrap().props.prop(path).unwrap().uid;
-    app.apply_dock(craft_ui::docking::Action::Float { panel: PanelKind::EffectControls, rect: [300.0, 150.0, 330.0, 500.0] }).unwrap();
+    app.apply_dock(nodalia_ui::docking::Action::Float { panel: PanelKind::EffectControls, rect: [300.0, 150.0, 330.0, 500.0] }).unwrap();
     h.run_steps(3);
     let value = rect(&h, &format!("effectControls.prop.{uid}.value.1"));
     let nav = rect(&h, &format!("effectControls.prop.{uid}.prevKey"));
@@ -508,7 +508,7 @@ fn settings_page_column_fits_japanese_names() {
         .expect("the Settings menu lists the Scripting & Expressions page");
     assert!(name.chars().any(|c| c >= '\u{3000}'), "the actual sidebar label is Japanese: {name}");
     // Use the same external-directory scan and face coverage as production, before rendering.
-    // The managed job supplies CRAFT_FONTS_DIR; register its canonical fonts folder through the
+    // The managed job supplies NODALIA_FONTS_DIR; register its canonical fonts folder through the
     // same directory source production scans for PULSO_FONT_DIRS, without changing the env.
     crate::add_canonical_test_fonts();
     fonts::scan_system();
@@ -517,9 +517,9 @@ fn settings_page_column_fits_japanese_names() {
     for ch in ['あ', 'フ'].into_iter().chain(name.chars()) {
         assert!(japanese.has_char(ch), "Japanese fixture lacks {ch:?} for {name:?}: {:?}", japanese.info);
     }
-    let required_canonical = std::env::var("CRAFT_FONTS_REQUIRED").as_deref() == Ok("1");
+    let required_canonical = std::env::var("NODALIA_FONTS_REQUIRED").as_deref() == Ok("1");
     if required_canonical {
-        let root = std::env::var_os("CRAFT_FONTS_DIR").expect("required canonical craft-fonts input");
+        let root = std::env::var_os("NODALIA_FONTS_DIR").expect("required canonical nodalia-fonts input");
         let expected =
             std::path::PathBuf::from(root).join("fonts/biz-ud-pgothic/BIZUDPGothic-Regular.ttf").canonicalize().expect("canonical BIZ UDPGothic Regular input");
         let resolved = fonts::resolve("BIZ UDPGothic", "Regular");

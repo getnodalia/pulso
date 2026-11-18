@@ -12,4 +12,4 @@ workspace = true
 [dependencies]
 
 [dev-dependencies]
-filmcraft-opus = { workspace = true }
+toma-opus = { workspace = true }

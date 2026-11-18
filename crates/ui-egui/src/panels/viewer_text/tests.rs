@@ -143,9 +143,9 @@ impl ImePass {
 }
 
 /// One native floating window holding the Timeline's group and then the Viewer's.
-fn two_group_window() -> craft_ui::docking::Floating<PanelKind> {
-    let groups = vec![craft_ui::docking::Group::new(vec![PanelKind::Timeline], 0), craft_ui::docking::Group::new(vec![PanelKind::Viewer(1)], 0)];
-    craft_ui::docking::Floating::stack(groups, [0.0, 0.0, 320.0, 360.0]).expect("two groups make a window")
+fn two_group_window() -> nodalia_ui::docking::Floating<PanelKind> {
+    let groups = vec![nodalia_ui::docking::Group::new(vec![PanelKind::Timeline], 0), nodalia_ui::docking::Group::new(vec![PanelKind::Viewer(1)], 0)];
+    nodalia_ui::docking::Floating::stack(groups, [0.0, 0.0, 320.0, 360.0]).expect("two groups make a window")
 }
 
 impl ImePass {
@@ -155,7 +155,7 @@ impl ImePass {
     fn window(
         &mut self,
         app: &mut PulsoApp,
-        window: &craft_ui::docking::Floating<PanelKind>,
+        window: &nodalia_ui::docking::Floating<PanelKind>,
         events: Vec<egui::Event>,
         viewer_first: bool,
         every: bool,
@@ -196,7 +196,7 @@ impl ImePass {
 #[test]
 fn native_window_with_a_group_before_the_viewer_keeps_the_composition() {
     let window = two_group_window();
-    let viewport = craft_ui::docking::DockArea::<PanelKind>::window_viewport(crate::dock_ui::area_id(), window.id);
+    let viewport = nodalia_ui::docking::DockArea::<PanelKind>::window_viewport(crate::dock_ui::area_id(), window.id);
     let preview = || egui::Event::Ime(egui::ImeEvent::Preedit { text: "é".into(), active_range_chars: None });
     for viewer_first in [false, true] {
         let (mut app, _) = editor("abcd", 4, 4);

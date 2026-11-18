@@ -5,8 +5,8 @@ use std::process::Command;
 
 use serde_json::Value;
 
-const REV: &str = "e11f9d9aebea5f6b8e74643c1ea1ed172ba5f545";
-const PACKAGES: &[(&str, &str)] = &[("craft-pdf", "0.1.0"), ("hayro-syntax", "0.7.2"), ("hayro-jbig2", "0.3.0")];
+const REV: &str = "7e52986747f361f86799feaaacc5af8281bdcaa5";
+const PACKAGES: &[(&str, &str)] = &[("nodalia-pdf", "0.1.0"), ("hayro-syntax", "0.7.2"), ("hayro-jbig2", "0.3.0")];
 
 pub fn run(root: &Path) -> Result<(), String> {
     let output = Command::new(std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into()))
@@ -33,7 +33,7 @@ fn validate(metadata: &Value) -> Result<(), String> {
             return Err(format!("{name}: expected exactly {version} from {source}"));
         }
     }
-    for (name, allowed) in [("craft-pdf", "read"), ("hayro-syntax", "std")] {
+    for (name, allowed) in [("nodalia-pdf", "read"), ("hayro-syntax", "std")] {
         let package = packages.iter().find(|p| p["name"] == name).ok_or_else(|| format!("missing {name}"))?;
         let node = nodes.iter().find(|n| n["id"] == package["id"]).ok_or_else(|| format!("{name}: missing resolved node"))?;
         let features = node["features"].as_array().ok_or_else(|| format!("{name}: missing resolved features"))?;
@@ -45,7 +45,7 @@ fn validate(metadata: &Value) -> Result<(), String> {
         let name = package["name"].as_str().unwrap_or("");
         let active = nodes.iter().any(|node| node["id"] == package["id"]);
         if active && matches!(name, "hayro" | "hayro-interpret" | "hayro-cmap" | "krilla") {
-            return Err(format!("{name}: Pulso must use craft-pdf with only the read feature"));
+            return Err(format!("{name}: Pulso must use nodalia-pdf with only the read feature"));
         }
     }
     Ok(())
@@ -61,7 +61,7 @@ mod tests {
             json!({"id": name, "name": name, "version": version, "source": format!("git+https://github.com/getnodalia/foundation?rev={REV}#{REV}")})
         }).collect();
         json!({"packages": packages, "resolve": {"nodes": [
-            {"id": "hayro-syntax", "features": ["std"]}, {"id": "craft-pdf", "features": ["read"]}
+            {"id": "hayro-syntax", "features": ["std"]}, {"id": "nodalia-pdf", "features": ["read"]}
         ]}})
     }
 

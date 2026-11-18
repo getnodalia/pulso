@@ -263,7 +263,7 @@ fn scroll_controls_to_end(h: &mut Harness<'_, PulsoApp>) {
 
 #[test]
 fn viewer_theme_and_width_visual_matrix() {
-    let Ok(directory) = std::env::var("CRAFT_UI_VISUAL_DIR") else { return };
+    let Ok(directory) = std::env::var("NODALIA_UI_VISUAL_DIR") else { return };
     std::fs::create_dir_all(&directory).unwrap();
     for kind in [ThemeKind::Dark, ThemeKind::Darker, ThemeKind::Light] {
         for width in [900.0, 300.0] {

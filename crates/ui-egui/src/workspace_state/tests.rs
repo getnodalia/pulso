@@ -1,7 +1,7 @@
 use super::*;
 use crate::dock::{Floating, Layout, Node, StackEntry, WorkspaceExt as _};
-use craft_ui::docking::Action;
-use craft_ui::layout::{SplitAxis, SplitSize};
+use nodalia_ui::docking::Action;
+use nodalia_ui::layout::{SplitAxis, SplitSize};
 use pulso_engine::config::MemoryConfig;
 
 fn minimal() -> Workspace {
@@ -16,14 +16,14 @@ fn tabs(panels: &[PanelKind]) -> Node<PanelKind> {
 fn corrupt_future_or_unknown_workspace_keeps_defaults_and_original_file() {
     let valid = Snapshot::capture(&UiState::default());
     // Damaged files of the earlier version: a panel in two places, a bad split, an unknown
-    // panel, a tree deeper than craft-ui allows, a missing field.
+    // panel, a tree deeper than nodalia-ui allows, a missing field.
     let earlier = |dock: &str| {
         format!(
             r#"{{"version":1,"workspace":"Default","dock":{dock},"floating":[],"focused":"Composition","maximized":null,"saved_workspaces":{{}},"saved_floating":{{}}}}"#
         )
     };
     let mut deep = r#"{"Tabs":{"panels":["Composition"],"active":0}}"#.to_string();
-    for _ in 0..=craft_ui::docking::MAX_DEPTH {
+    for _ in 0..=nodalia_ui::docking::MAX_DEPTH {
         deep = format!(r#"{{"Split":{{"vertical":true,"size":{{"Ratio":0.5}},"a":{deep},"b":{{"Tabs":{{"panels":[],"active":0}}}}}}}}"#);
     }
     let twice =
@@ -59,7 +59,7 @@ fn corrupt_future_or_unknown_workspace_keeps_defaults_and_original_file() {
     }
 }
 
-/// A file written by Pulso 0.10 (craft-libs 5c874d51): the Default workspace with
+/// A file written by Pulso 0.10 (nodalia-libs 5c874d51): the Default workspace with
 /// Preview floating, Render Queue floating in its own native window, Align closed,
 /// Effects & Presets moved into the Project group and Audio split beside the Timeline,
 /// saved as "My Layout"; then Layer closed.
@@ -222,7 +222,7 @@ fn invalid_tabs_split_and_deep_tree_are_rejected() {
     });
     assert!(snapshot.validate().is_err());
     let mut root = tabs(&[PanelKind::Composition]);
-    for _ in 0..=craft_ui::docking::MAX_DEPTH {
+    for _ in 0..=nodalia_ui::docking::MAX_DEPTH {
         root = split(SplitSize::Ratio(0.5), root, tabs(&[]));
     }
     snapshot.dock = Workspace::new(Layout { root: Some(root), floating: vec![] });

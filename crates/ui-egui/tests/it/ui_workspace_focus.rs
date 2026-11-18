@@ -13,7 +13,7 @@ use serde_json::json;
 
 /// The egui id of panel `p`'s dock tab.
 fn tab_id(p: PanelKind) -> Id {
-    craft_ui::docking::DockArea::<PanelKind>::hit_id(pulso_ui_egui::dock_ui::area_id(), &craft_ui::docking::Hit::Tab(p))
+    nodalia_ui::docking::DockArea::<PanelKind>::hit_id(pulso_ui_egui::dock_ui::area_id(), &nodalia_ui::docking::Hit::Tab(p))
 }
 
 #[test]
@@ -218,7 +218,7 @@ fn tab_traversal_activates_an_inactive_dock_tab_without_editing_the_project() {
     assert_eq!(h.ctx.memory(|m| m.focused()), Some(target));
     println!("Tab presses from no focus to Effect Controls: {tabs}");
     assert_eq!(h.state().ui.dock, before, "traversal alone must not activate a tab");
-    // craft-ui outlines the keyboard-focused tab, inset 2 pt, in the dock's accent (Pulso's
+    // nodalia-ui outlines the keyboard-focused tab, inset 2 pt, in the dock's accent (Pulso's
     // focus colour).
     let response = h.ctx.read_response(target).unwrap();
     assert!(
@@ -229,7 +229,7 @@ fn tab_traversal_activates_an_inactive_dock_tab_without_editing_the_project() {
     );
     key(&mut h, Key::Space, Modifiers::NONE);
     let mut activated = before;
-    activated.apply(craft_ui::docking::Action::Activate { panel: PanelKind::EffectControls }, dock::permissions).unwrap();
+    activated.apply(nodalia_ui::docking::Action::Activate { panel: PanelKind::EffectControls }, dock::permissions).unwrap();
     assert_eq!(h.state().ui.dock, activated);
     assert_eq!(h.state().ui.focused, PanelKind::EffectControls);
     assert!(!h.state().playback.playing);

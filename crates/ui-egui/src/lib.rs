@@ -100,7 +100,7 @@ struct PendingShot {
     /// The geometry epoch bound to the issued capture command, if it was issued.
     issued: Option<DrawGeometry>,
     /// The shared completion slot; dropping it cancels a late callback.
-    slot: Option<craft_ui::capture::CaptureSlot>,
+    slot: Option<nodalia_ui::capture::CaptureSlot>,
     /// Bytes reserved against [`PulsoApp::shot_bytes`].
     reserved_bytes: usize,
     /// Geometry retries used.
@@ -419,7 +419,7 @@ pub struct PulsoApp {
 pub const WORKSPACES_FILE: &str = "workspaces.json";
 
 /// Non-blocking file dialogs ([`Hooks::file_dialog_async`]) that are up. While one is, the dock
-/// area blocks floating panels' OS windows, as it does for a modal dialog; otherwise craft-ui
+/// area blocks floating panels' OS windows, as it does for a modal dialog; otherwise nodalia-ui
 /// takes the app for inactive while the dialog has the keyboard, and hides floating palettes.
 ///
 /// A dialog can end without answering: on macOS a sheet whose window goes away ends without its
@@ -467,7 +467,7 @@ impl FileDialogsUp {
     }
 }
 
-/// Keys and dropped files from floating panels' OS windows (craft-ui `DockOutput`).
+/// Keys and dropped files from floating panels' OS windows (nodalia-ui `DockOutput`).
 #[derive(Default)]
 pub(crate) struct ForwardedInput {
     pub(crate) events: Vec<egui::Event>,

@@ -3,33 +3,33 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use filmcraft_project as fp;
 use pulso_keyframe::{Keyframe, Value};
 use pulso_project::{Comp, Footage, FootageKind, ItemId, ItemKind, Layer, LayerSource, Project};
 use pulso_time::{FrameRate, Tick};
+use toma_project as fp;
 
 use crate::*;
 
 const W: u32 = 640;
 const H: u32 = 360;
 
-fn secs(s: f64) -> filmcraft_time::Tick {
-    filmcraft_time::Tick::from_seconds_f64(s)
+fn secs(s: f64) -> toma_time::Tick {
+    toma_time::Tick::from_seconds_f64(s)
 }
 
 fn t(s: f64) -> Tick {
     Tick::from_seconds_f64(s)
 }
 
-fn info(kind: filmcraft_media::MediaKind, video: bool, audio: bool) -> filmcraft_media::MediaInfo {
-    filmcraft_media::MediaInfo {
+fn info(kind: toma_media::MediaKind, video: bool, audio: bool) -> toma_media::MediaInfo {
+    toma_media::MediaInfo {
         name: String::new(),
         kind,
         duration: secs(20.0),
-        video: video.then(|| filmcraft_media::VideoStreamInfo {
+        video: video.then(|| toma_media::VideoStreamInfo {
             width: W,
             height: H,
-            frame_rate: filmcraft_time::FrameRate { num: 25, den: 1 },
+            frame_rate: toma_time::FrameRate { num: 25, den: 1 },
             par: (1, 1),
             codec: "png".into(),
             pixel_format: String::new(),
@@ -39,7 +39,7 @@ fn info(kind: filmcraft_media::MediaKind, video: bool, audio: bool) -> filmcraft
             hdr: None,
         }),
         audio_streams: audio
-            .then(|| filmcraft_media::AudioStreamInfo { sample_rate: 48_000, channels: 2, codec: "pcm".into(), bits_per_sample: Some(16) })
+            .then(|| toma_media::AudioStreamInfo { sample_rate: 48_000, channels: 2, codec: "pcm".into(), bits_per_sample: Some(16) })
             .into_iter()
             .collect(),
         container: String::new(),
@@ -48,7 +48,7 @@ fn info(kind: filmcraft_media::MediaKind, video: bool, audio: bool) -> filmcraft
     }
 }
 
-fn media(p: &mut fp::Project, name: &str, path: &str, kind: filmcraft_media::MediaKind, video: bool, audio: bool, bin: Option<fp::BinId>) -> fp::ItemId {
+fn media(p: &mut fp::Project, name: &str, path: &str, kind: toma_media::MediaKind, video: bool, audio: bool, bin: Option<fp::BinId>) -> fp::ItemId {
     let clip = fp::MediaClip {
         media: fp::MediaRef::File { path: path.into() },
         info: info(kind, video, audio),
@@ -63,12 +63,12 @@ fn media(p: &mut fp::Project, name: &str, path: &str, kind: filmcraft_media::Med
     p.add_item(name, fp::Label::Iris, fp::ItemKind::Media(clip), bin)
 }
 
-fn rate() -> filmcraft_time::FrameRate {
-    filmcraft_time::FrameRate { num: 25, den: 1 }
+fn rate() -> toma_time::FrameRate {
+    toma_time::FrameRate { num: 25, den: 1 }
 }
 
 fn item(p: &mut fp::Project, it: fp::ItemId, kind: fp::TrackKind, start: f64, src: f64, dur: f64) -> fp::TrackItem {
-    p.make_track_item(it, kind, secs(start), filmcraft_time::TimeRange::new(secs(src), secs(dur)), rate()).unwrap()
+    p.make_track_item(it, kind, secs(start), toma_time::TimeRange::new(secs(src), secs(dur)), rate()).unwrap()
 }
 
 /// A Premiere-like edit: two clips with a cross dissolve on V1, a speed-changed, scaled and
@@ -76,9 +76,9 @@ fn item(p: &mut fp::Project, it: fp::ItemId, kind: fp::TrackKind, start: f64, sr
 fn edit() -> (fp::Project, fp::ItemId) {
     let mut p = fp::Project::new("Edit");
     let bin = p.add_bin("Footage", None);
-    let a = media(&mut p, "a.png", "/media/a.mov", filmcraft_media::MediaKind::Movie, true, false, Some(bin));
-    let b = media(&mut p, "b.png", "/media/b.mov", filmcraft_media::MediaKind::Movie, true, false, Some(bin));
-    let s = media(&mut p, "tone.wav", "/media/tone.wav", filmcraft_media::MediaKind::AudioOnly, false, true, Some(bin));
+    let a = media(&mut p, "a.png", "/media/a.mov", toma_media::MediaKind::Movie, true, false, Some(bin));
+    let b = media(&mut p, "b.png", "/media/b.mov", toma_media::MediaKind::Movie, true, false, Some(bin));
+    let s = media(&mut p, "tone.wav", "/media/tone.wav", toma_media::MediaKind::AudioOnly, false, true, Some(bin));
     let settings = fp::SequenceSettings { width: W, height: H, frame_rate: rate(), ..Default::default() };
     let nested = p.new_sequence("Nested", settings.clone(), 1, 0, None);
     let n_clip = item(&mut p, a, fp::TrackKind::Video, 0.0, 0.0, 2.0);
@@ -102,10 +102,10 @@ fn edit() -> (fp::Project, fp::ItemId) {
     let m = cc.effect_mut("motion").unwrap();
     m.params.insert("scale".into(), fp::Param::new(fp::ParamValue::Float(50.0)));
     m.params.insert("rotation".into(), fp::Param::new(fp::ParamValue::Float(30.0)));
-    let mut pos = fp::Param::new(fp::ParamValue::Vec2(filmcraft_geom::Vec2 { x: 100.0, y: 100.0 }));
+    let mut pos = fp::Param::new(fp::ParamValue::Vec2(toma_geom::Vec2 { x: 100.0, y: 100.0 }));
     pos.keyframes = vec![
-        fp::Keyframe::new(secs(0.0), fp::ParamValue::Vec2(filmcraft_geom::Vec2 { x: 100.0, y: 100.0 })),
-        fp::Keyframe::new(secs(1.0), fp::ParamValue::Vec2(filmcraft_geom::Vec2 { x: 300.0, y: 200.0 })),
+        fp::Keyframe::new(secs(0.0), fp::ParamValue::Vec2(toma_geom::Vec2 { x: 100.0, y: 100.0 })),
+        fp::Keyframe::new(secs(1.0), fp::ParamValue::Vec2(toma_geom::Vec2 { x: 300.0, y: 200.0 })),
     ];
     m.params.insert("position".into(), pos);
     cc.effect_mut("opacity").unwrap().params.insert("opacity".into(), fp::Param::new(fp::ParamValue::Float(50.0)));

@@ -3,14 +3,14 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-use filmcraft_media::{Generator, MediaKind};
-use filmcraft_project as fp;
 use pulso_color::{BlendMode, Label};
 use pulso_keyframe::{Keyframe, Value};
 use pulso_project::build::Ids;
 use pulso_project::{AlphaMode, Comp, Footage, FootageKind, ItemId, ItemKind, Layer, LayerSource, Marker, Node, ParamUi, Project, Property, Solid};
 use pulso_time::{FrameRate, Tick};
 use serde::{Deserialize, Serialize};
+use toma_media::{Generator, MediaKind};
+use toma_project as fp;
 
 use crate::{Error, Result, TimelineFormat, rate_in, tick_in};
 
@@ -148,7 +148,7 @@ pub fn import(
     if matches!(format, TimelineFormat::Fcp7Xml | TimelineFormat::Fcpxml) && bytes.windows(8).any(|w| w == b"<!ENTITY") {
         return Err(Error::XmlEntities);
     }
-    let fc_opts = filmcraft_interchange::ImportOptions {
+    let fc_opts = toma_interchange::ImportOptions {
         base_dir: opts.base_dir.clone(),
         edl_frame_rate: opts.edl_frame_rate.map(|f| {
             let r = FrameRate::from_f64(f);
@@ -156,7 +156,7 @@ pub fn import(
         }),
         name: Some(opts.name.trim_end_matches(|c| c != '.').trim_end_matches('.').to_string()).filter(|s| !s.is_empty()),
     };
-    let (mut imported, report) = filmcraft_interchange::import_with(bytes, format.fc(), &fc_opts)?;
+    let (mut imported, report) = toma_interchange::import_with(bytes, format.fc(), &fc_opts)?;
     // Each file is probed once, though an EDL's media are probed before the layers are made.
     let mut probed: HashMap<String, Option<Footage>> = HashMap::new();
     // An EDL's guessed paths that leave the list's folder are not probed (see `guessed_outside`).
@@ -237,7 +237,7 @@ fn rebase_to_file_timecode(project: &mut fp::Project, probe: &mut dyn FnMut(&str
         if let fp::ItemKind::Sequence(seq) = &it.kind {
             // 01:00:00:00 as the list counts it: 01:00:00;00 drop-frame at 29.97 fps is 3599.996 s
             let (rate, df) = (seq.settings.frame_rate, seq.settings.drop_frame);
-            let hour = rate.tick_of(filmcraft_time::fields_to_frames(1, 0, 0, 0, rate, df));
+            let hour = rate.tick_of(toma_time::fields_to_frames(1, 0, 0, 0, rate, df));
             on_timecode.extend(seq.all_tracks().flat_map(|t| &t.items).filter(|ti| ti.source_in >= hour).map(|ti| ti.item));
         }
     }
@@ -258,7 +258,7 @@ fn rebase_to_file_timecode(project: &mut fp::Project, probe: &mut dyn FnMut(&str
             // A corrupt timecode past a day of frames (at up to 1000 fps) would overflow the tick
             // arithmetic; such a file stays on timecode.
             Some(Footage { file_timecode: Some(tc), native_rate, frame_rate, .. }) if (0..=MAX_FILE_TIMECODE).contains(&tc) => {
-                filmcraft_interchange::rebase_source_timecode(project, id, tc, crate::rate_out(native_rate.unwrap_or(frame_rate)));
+                toma_interchange::rebase_source_timecode(project, id, tc, crate::rate_out(native_rate.unwrap_or(frame_rate)));
             }
             _ if on_timecode.contains(&id) => left.push(name),
             _ => {}
@@ -609,7 +609,7 @@ impl Importer<'_> {
             self.time_remap(&mut l, ti);
         }
         // Keyframe times: clip time → layer time.
-        let to_layer = |l: &Layer, k: filmcraft_time::Tick| l.layer_time(start + tick_in(k));
+        let to_layer = |l: &Layer, k: toma_time::Tick| l.layer_time(start + tick_in(k));
         if audio_track {
             self.audio_levels(&mut l, ti, track, &fades, to_layer);
         } else {
@@ -647,7 +647,7 @@ impl Importer<'_> {
         l.props.children.insert(0, Node::Prop(p));
     }
 
-    fn motion(&mut self, l: &mut Layer, ti: &fp::TrackItem, comp: &Comp, size: (u32, u32), to_layer: impl Fn(&Layer, filmcraft_time::Tick) -> Tick) {
+    fn motion(&mut self, l: &mut Layer, ti: &fp::TrackItem, comp: &Comp, size: (u32, u32), to_layer: impl Fn(&Layer, toma_time::Tick) -> Tick) {
         let Some(m) = ti.effect("motion") else { return };
         if !m.enabled {
             return;
@@ -670,11 +670,11 @@ impl Importer<'_> {
             match sw {
                 None => set_prop(dp, s, |v| v.as_f64().map(|x| Value::Vec3([x * fit, x * fit, 100.0])), &lc, &to_layer),
                 Some(w) => {
-                    let mut times: Vec<filmcraft_time::Tick> = s.keyframes.iter().chain(&w.keyframes).map(|k| k.time).collect();
+                    let mut times: Vec<toma_time::Tick> = s.keyframes.iter().chain(&w.keyframes).map(|k| k.time).collect();
                     times.sort();
                     times.dedup();
                     if times.is_empty() {
-                        dp.value = Value::Vec3([w.f64_at(filmcraft_time::Tick::ZERO) * fit, s.f64_at(filmcraft_time::Tick::ZERO) * fit, 100.0]);
+                        dp.value = Value::Vec3([w.f64_at(toma_time::Tick::ZERO) * fit, s.f64_at(toma_time::Tick::ZERO) * fit, 100.0]);
                     } else {
                         dp.keys =
                             times.iter().map(|t| Keyframe::new(to_layer(&lc, *t), Value::Vec3([w.f64_at(*t) * fit, s.f64_at(*t) * fit, 100.0]))).collect();
@@ -688,7 +688,7 @@ impl Importer<'_> {
         }
     }
 
-    fn opacity(&mut self, l: &mut Layer, ti: &fp::TrackItem, fades: &[(Tick, Tick, f64, f64)], to_layer: impl Fn(&Layer, filmcraft_time::Tick) -> Tick) {
+    fn opacity(&mut self, l: &mut Layer, ti: &fp::TrackItem, fades: &[(Tick, Tick, f64, f64)], to_layer: impl Fn(&Layer, toma_time::Tick) -> Tick) {
         let lc = l.clone();
         if let Some(o) = ti.effect("opacity").filter(|e| e.enabled) {
             if let Some(b) = o.param("blend").and_then(|p| match p.value {
@@ -718,7 +718,7 @@ impl Importer<'_> {
         ti: &fp::TrackItem,
         track: &fp::Track,
         fades: &[(Tick, Tick, f64, f64)],
-        to_layer: impl Fn(&Layer, filmcraft_time::Tick) -> Tick,
+        to_layer: impl Fn(&Layer, toma_time::Tick) -> Tick,
     ) {
         let lc = l.clone();
         let base = ti.gain_db + track.volume_db;
@@ -767,13 +767,7 @@ fn interp_in(k: Keyframe, i: fp::Interpolation) -> Keyframe {
 }
 
 /// Copy a Toma parameter (static value or clip-time keyframes) to a property.
-fn set_prop(
-    dp: &mut Property,
-    p: &fp::Param,
-    conv: impl Fn(&fp::ParamValue) -> Option<Value>,
-    l: &Layer,
-    to_layer: &impl Fn(&Layer, filmcraft_time::Tick) -> Tick,
-) {
+fn set_prop(dp: &mut Property, p: &fp::Param, conv: impl Fn(&fp::ParamValue) -> Option<Value>, l: &Layer, to_layer: &impl Fn(&Layer, toma_time::Tick) -> Tick) {
     if p.keyframes.is_empty() {
         if let Some(v) = conv(&p.value) {
             dp.value = v;

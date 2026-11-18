@@ -61,7 +61,7 @@ reaches 45.8 dB PSNR-Y at QP 22.
 
 `cargo test -p pulso-hevcenc`:
 
-- every stream is decoded with the first-party `filmcraft-hevc` decoder and compared bit-exactly
+- every stream is decoded with the first-party `toma-hevc` decoder and compared bit-exactly
   with the encoder's reconstruction (`Encoder::last_reconstruction`, hidden API);
 - when `ffmpeg` is on `PATH`, the Annex-B elementary stream is decoded with
   `ffmpeg -v error -xerror` (no stderr output allowed) and compared bit-exactly as well (skipped
@@ -83,6 +83,6 @@ Implemented from the specification text. Constant tables (CABAC context layout a
 rangeTabLPS / transIdx, scan orders, the DCT / DST matrices, intra angles, interpolation filters,
 the chroma QP table, the deblocking beta / tC tables) and the decoder-side reconstruction
 arithmetic (intra reference substitution / filtering / prediction, fractional interpolation,
-deblocking) are mirrored from Toma's first-party, spec-derived `filmcraft-hevc` decoder (same
+deblocking) are mirrored from Toma's first-party, spec-derived `toma-hevc` decoder (same
 organisation, MIT OR Apache-2.0), so that encoder and decoder reconstruct identically. No
 third-party encoder or decoder source (x265, libde265, ffmpeg, HM, ...) was consulted.

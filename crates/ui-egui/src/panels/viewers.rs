@@ -324,7 +324,7 @@ fn add_viewer(app: &mut PulsoApp, near: u32) -> u32 {
     app.ui.viewers.insert(id, None);
     let p = panel(id);
     let anchor = [panel(near), PanelKind::Composition].into_iter().find(|q| app.ui.dock.is_open(*q));
-    let _ = app.ui.dock.apply(craft_ui::docking::Action::Open { panel: p, anchor }, crate::dock::permissions);
+    let _ = app.ui.dock.apply(nodalia_ui::docking::Action::Open { panel: p, anchor }, crate::dock::permissions);
     id
 }
 

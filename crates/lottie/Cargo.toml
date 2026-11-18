@@ -10,7 +10,7 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-craft-docpath = { workspace = true }
+nodalia-docpath = { workspace = true }
 pulso-time = { workspace = true }
 pulso-color = { workspace = true }
 pulso-keyframe = { workspace = true }

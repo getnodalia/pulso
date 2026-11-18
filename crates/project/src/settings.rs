@@ -4,7 +4,7 @@ use super::{BTreeMap, ColorSpace, Deserialize, Label, Serialize, Tick};
 /// The project file schema. 2: effects on layers without a source rectangle (shape, text)
 /// measure positions from the top-left of their comp-sized bounds (effect space), not from
 /// the layer's origin; projects from schema 1 are converted when opened (#227).
-pub use craft_ecproj_format::SCHEMA_VERSION;
+pub use nodalia_ecproj_format::SCHEMA_VERSION;
 
 /// The first schema in which effect positions are in effect space (see [`SCHEMA_VERSION`]).
 pub const SCHEMA_EFFECT_SPACE: u32 = 2;
@@ -15,9 +15,9 @@ pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// The Pulso version that wrote a project file (its `savedBy`), when it says, also for a
 /// project whose schema is newer than [`SCHEMA_VERSION`].
 pub fn saved_by(text: &str) -> Option<String> {
-    match craft_ecproj_format::Head::read(text) {
+    match nodalia_ecproj_format::Head::read(text) {
         Ok(head) => head.saved_by,
-        Err(craft_ecproj_format::ReadError::TooNew { saved_by, .. }) => saved_by,
+        Err(nodalia_ecproj_format::ReadError::TooNew { saved_by, .. }) => saved_by,
         Err(_) => None,
     }
 }

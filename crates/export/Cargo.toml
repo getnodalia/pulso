@@ -14,10 +14,10 @@ pulso-time = { workspace = true }
 pulso-project = { workspace = true }
 pulso-raster = { workspace = true }
 pulso-render = { workspace = true }
-filmcraft-h264enc = { workspace = true }
-filmcraft-prores = { workspace = true }
-filmcraft-aac = { workspace = true }
-filmcraft-isobmff = { workspace = true }
+toma-h264enc = { workspace = true }
+toma-prores = { workspace = true }
+toma-aac = { workspace = true }
+toma-isobmff = { workspace = true }
 pulso-opusenc = { workspace = true }
 pulso-vp9enc = { workspace = true }
 pulso-hevcenc = { workspace = true }
@@ -34,6 +34,6 @@ log = { workspace = true }
 pulso-media = { workspace = true }
 pulso-effects = { workspace = true }
 pulso-color = { workspace = true }
-filmcraft-opus = { workspace = true }
-filmcraft-vp9 = { workspace = true }
+toma-opus = { workspace = true }
+toma-vp9 = { workspace = true }
 pulso-keyframe = { workspace = true }

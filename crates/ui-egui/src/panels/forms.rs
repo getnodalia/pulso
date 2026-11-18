@@ -902,7 +902,7 @@ fn form_grid(ui: &mut egui::Ui, f: &mut Form, regs: &mut Vec<(String, egui::Rect
                     let cur = options.get(*sel).map(|o| o.0.clone()).unwrap_or_default();
                     // The column keeps its width: a long choice (a GPU adapter's name) ends in an
                     // ellipsis instead of widening the form past the dialog (#978).
-                    craft_ui::ComboBox::from_id_salt(("form", fl.key.as_str()))
+                    nodalia_ui::ComboBox::from_id_salt(("form", fl.key.as_str()))
                         .selected_text(tr(&cur))
                         .width(240.0)
                         .truncate()

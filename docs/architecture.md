@@ -40,7 +40,7 @@ cpal or muda. Everything in L0 to L4, the egui UI and the web app also build for
 | L3 | `export` | Render queue encoding: H.264, HEVC and AV1 MP4, ProRes, WebM (VP9 + alpha or AV1, Opus), PNG/JPEG/TIFF/EXR/Targa sequences, GIF, WAV/AIFF |
 | L3 | `gpu` | The GPU compositor and GPU effects on wgpu compute shaders (Metal, Vulkan, Direct3D 12, WebGPU), checked against the CPU renderer |
 | L3 | `sam2` | SAM 2.1 image segmentation and video object tracking for Roto Brush, with candle CPU inference and optional wgpu acceleration; native only, empty on wasm32, with user-installed weights |
-| L3 | `interchange` | Premiere Pro interop through timeline interchange (FCP7 XML, FCPXML, OTIO, EDL, AAF, OMF via Toma's `filmcraft-interchange`): sequences ↔ compositions (§6a) |
+| L3 | `interchange` | Premiere Pro interop through timeline interchange (FCP7 XML, FCPXML, OTIO, EDL, AAF, OMF via Toma's `toma-interchange`): sequences ↔ compositions (§6a) |
 | L3 | `aep` | After Effects projects in one crate (like `lottie`): `container` reads and writes the `.aep` container (RIFX `Egg!`) as a lossless chunk tree with a byte-identical round trip, bounded for hostile input, reads the `.aepx` XML form into the same tree, and has a typed view of items, layers, properties, effects, masks, shapes, text, markers, footage, cameras, lights and layer styles, from our own observations of generated files ([aep-format.md](aep-format.md)); `import` maps the typed view into a project (items, settings, compositions, every layer kind, Transform, keyframes, expressions, masks, text, shapes, cameras, lights, mattes, markers, time remapping, layer styles, the effects of a shared table, footage) with a report of everything not imported ([aep-import.md](aep-import.md)); `export` builds every chunk in code (prototypes in the layout After Effects writes, cloned and edited only at verified fields) for the same scope, with a report of everything not exported, verified by opening the output in After Effects ([aep-export.md](aep-export.md)) |
 | L3 | `lottie` | Lottie JSON / dotLottie import and export (layers, precomps, eased and spatial keyframes, shapes, masks, mattes) with a warnings list for what Lottie cannot express |
 | L3 | `plugin` | Effect plug-ins: loads sandboxed WebAssembly effect modules (WebAssembly ABI v1 and v2, the latter with neighbouring frames; the wasmi interpreter behind the `wasm` feature, on for native hosts) into the effect registry ([plugins.md](plugins.md)) |
@@ -56,12 +56,12 @@ Allowed same-layer edges: `path → keyframe, raster`, `text → path`, `pdf →
 `media / expr / export / gpu → render`, `export → media`, `lottie → format`, `host → engine, script`,
 `script → engine`.
 
-The frontend uses `craft-ui::docking` for atomic layout transactions and pointer drop targets,
-and `craft-ui::layout` for bounded split geometry and resize interactions. A small adapter
+The frontend uses `nodalia-ui::docking` for atomic layout transactions and pointer drop targets,
+and `nodalia-ui::layout` for bounded split geometry and resize interactions. A small adapter
 preserves Pulso's saved dock tree, stacked entries, floating rectangles and dynamic
 viewer/ScriptUI identities. Tab moves, edge splits, reordering, float/redock, activation and
 close operations use the shared model. The app retains composition-tab behavior, accordion
-height allocation and ScriptUI close callbacks. Lower layers cannot depend on `craft-ui`.
+height allocation and ScriptUI close callbacks. Lower layers cannot depend on `nodalia-ui`.
 
 Viewer controls retain their native widgets inside a horizontal scroll area, so narrow panels
 keep dropdowns, exposure dragging and snapshot holds reachable. Keyboard focus scrolls the
@@ -713,8 +713,8 @@ The shortcut dispatcher and the menus read the active preset. See
 After Effects' File ▸ Import / Export ▸ Adobe Premiere Pro Project… go through the public
 interchange formats Premiere Pro itself reads and writes, not the native `.prproj` file (it has no
 public specification; supporting it awaits a decision). `crates/interchange` (L3, no file I/O)
-maps Toma's timeline model (`filmcraft-project`, parsed and written by `filmcraft-interchange`,
-pinned at the same git revision as the other `filmcraft-*` crates; pure Rust, builds for wasm32)
+maps Toma's timeline model (`toma-project`, parsed and written by `toma-interchange`,
+pinned at the same git revision as the other `toma-*` crates; pure Rust, builds for wasm32)
 to compositions and back:
 
 - **Import** (`file.importTimeline {path, format?, edlFrameRate?}`): Final Cut Pro 7 XML (`xmeml`,
@@ -816,4 +816,4 @@ JSON parsing is now the bulk of open), and rendering 5,000-layer comps faster.
 |---|---|---|
 | 2026-10-10 | minor | Status line added; crate table checked against `crates/` (every crate listed); effect count and VP9 encoder description corrected |
 
-PDF document structure uses the `craft-pdf` read feature through an app-owned bounded object adapter. Pulso retains its drawing tree, fonts, content/image filters and EPS interpreter; ordinary object/xref limits remain 256 MiB on 64-bit and 64 MiB on 32-bit/WASM, including repair.
+PDF document structure uses the `nodalia-pdf` read feature through an app-owned bounded object adapter. Pulso retains its drawing tree, fonts, content/image filters and EPS interpreter; ordinary object/xref limits remain 256 MiB on 64-bit and 64 MiB on 32-bit/WASM, including repair.

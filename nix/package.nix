@@ -5,7 +5,7 @@
 #
 # Kept in step with the release workflow (.github/workflows/release.yml) and packaging/:
 #   * `Cargo.lock` drives the dependencies (`cargoLock`), so there is no vendorHash to bump. The
-#     git sources (storytold/craft-libs, storytold/filmcraft) are fetched at the revision the lock file pins;
+#     git sources (getnodalia/foundation: nodalia/libs and nodalia/toma) are fetched at the revision the lock file pins;
 #   * the desktop file, hicolor icons, MIME types and AppStream metadata are the same files the
 #     .deb/.rpm ship (packaging/linux/), so `apt` and NixOS users see one identical Pulso;
 #   * `doCheck` is off: the test suite needs corpora and a GPU the Nix sandbox cannot provide

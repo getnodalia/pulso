@@ -16,7 +16,7 @@ Charstring Format) for CFF font programs; **Adobe Type 1 Font Format** (version 
 font programs; the **PostScript Language Reference, third edition** and the **Encapsulated
 PostScript File Format Specification 3.0** for EPS; **ITU-T T.4** (07/2003) and **ITU-T T.6**
 (11/1988) for CCITT fax images. TrueType font programs are read through skrifa and JPEG (DCT)
-images through zune-jpeg (both permissively licensed, pure Rust). PDF document/object loading uses the shared `craft-pdf` parser described below. The retained
+images through zune-jpeg (both permissively licensed, pure Rust). PDF document/object loading uses the shared `nodalia-pdf` parser described below. The retained
 drawing, PostScript, font and filter implementations were developed from the public
 specifications without copying third-party implementations. Test files (including the CFF
 and Type 1 fonts and the CCITT data) are generated in code ([`write`](src/write.rs) and the tests). One CCITT fixture was
@@ -25,7 +25,7 @@ ffmpeg elsewhere) to check the code tables against an independent implementation
 
 ## What is read
 
-- **Structure:** `craft-pdf` resolves cross-reference tables/streams and indirect objects into
+- **Structure:** `nodalia-pdf` resolves cross-reference tables/streams and indirect objects into
   the app's existing object model. References retain object and generation numbers. A bounded
   compatibility repair recovers referenced objects from object streams when damaged xrefs omit
   them; every recovery or unresolved reference is reported in `Doc::skipped` (up to 64 messages).
@@ -143,8 +143,8 @@ ffmpeg elsewhere) to check the code tables against an independent implementation
 
 ## Shared parser setup and bounds
 
-The workspace pins `craft-pdf` to `craft-libs` Git revision
-`e11f9d9aebea5f6b8e74643c1ea1ed172ba5f545`, with `default-features = false` and only the explicit `read`
+The workspace pins `nodalia-pdf` to `nodalia-libs` Git revision
+`7e52986747f361f86799feaaacc5af8281bdcaa5`, with `default-features = false` and only the explicit `read`
 feature. This excludes the backend's bundled fonts and Adobe CMaps and preserves Pulso's
 font and asset policies. The shared parser does not change the supported drawing operators,
 image codecs, continuously rasterized SVG tree, editable shapes, or EPS interpreter.
@@ -154,7 +154,7 @@ page parser and rasterizer on native and WASM targets. It also bounds xref, obje
 graphics-state work, reads the full `/W[0]` xref type width, and caps JBIG2 segment references
 and bitmap allocation.
 
-The root Cargo patch pins Hayro-syntax and Hayro-jbig2 to the same `storytold/craft-libs` revision. `cargo xtask pdf-deps` checks this graph and refuses
+The root Cargo patch pins Hayro-syntax and Hayro-jbig2 to the same `getnodalia/foundation (nodalia/libs)` revision. `cargo xtask pdf-deps` checks this graph and refuses
 an enabled Hayro interpreter, rasterizer or CMap dependency. The shared revision must be
 published before a fresh app checkout can resolve it; no sibling checkout is required.
 

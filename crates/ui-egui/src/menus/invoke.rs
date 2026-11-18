@@ -237,7 +237,7 @@ pub fn invoke(app: &mut PulsoApp, ctx: &egui::Context, id: &str, params: Value) 
     // Close follows panel focus too: with the Render Queue active, Cmd+W closes that panel and
     // leaves the active composition open (it used to close the composition next to it).
     if id == "file.close" && no_params(&params) && app.ui.focused == PanelKind::RenderQueue {
-        app.apply_dock(craft_ui::docking::Action::Close { panel: PanelKind::RenderQueue })?;
+        app.apply_dock(nodalia_ui::docking::Action::Close { panel: PanelKind::RenderQueue })?;
         // The focus goes to a panel that is still there, so the next Close acts on the composition
         // instead of on the queue that is gone.
         let next = [PanelKind::Timeline, PanelKind::Composition, PanelKind::Project].into_iter().find(|p| panel_shown(app, *p)).unwrap_or(PanelKind::Project);
@@ -326,7 +326,7 @@ pub fn invoke(app: &mut PulsoApp, ctx: &egui::Context, id: &str, params: Value) 
     if crate::panels::layer_styles_dialog::route(app, id, &params)? {
         return Ok(Value::Null);
     }
-    // Shared docking: `window.dockAction`, craft-ui's `window.panel.*` commands, `ui.dock`,
+    // Shared docking: `window.dockAction`, nodalia-ui's `window.panel.*` commands, `ui.dock`,
     // `ui.dock.reset` and `window.panelWindow`.
     if let Some(result) = crate::dock_ui::route(app, ctx, id, &params) {
         return result;
@@ -437,7 +437,7 @@ pub fn invoke(app: &mut PulsoApp, ctx: &egui::Context, id: &str, params: Value) 
             "closePanel" => {
                 let p = panel_of("panel").ok_or("closePanel: need `panel`")??;
                 if app.ui.dock.is_open(p) {
-                    app.apply_dock(craft_ui::docking::Action::Close { panel: p })?;
+                    app.apply_dock(nodalia_ui::docking::Action::Close { panel: p })?;
                 }
                 return Ok(Value::Null);
             }
@@ -447,11 +447,11 @@ pub fn invoke(app: &mut PulsoApp, ctx: &egui::Context, id: &str, params: Value) 
                     Some(value) => serde_json::from_value::<[f32; 4]>(value.clone()).map_err(|_| "rect must contain four finite numbers")?,
                     None => crate::dock_ui::default_float_rect(ctx.content_rect()),
                 };
-                app.apply_dock(craft_ui::docking::Action::Float { panel: p, rect: r }).map_err(|e| format!("can't undock {}: {e}", p.title()))?;
+                app.apply_dock(nodalia_ui::docking::Action::Float { panel: p, rect: r }).map_err(|e| format!("can't undock {}: {e}", p.title()))?;
                 return Ok(Value::Null);
             }
             _ => {
-                // craft-ui's `window.panel.dock`: zones center/tab, left/right/top/bottom (a split
+                // nodalia-ui's `window.panel.dock`: zones center/tab, left/right/top/bottom (a split
                 // beside the anchor), above/below; without an anchor a side zone docks along that
                 // edge of the whole workspace.
                 let p = panel_of("panel").ok_or("dockPanel: need `panel`")??;
@@ -469,7 +469,7 @@ pub fn invoke(app: &mut PulsoApp, ctx: &egui::Context, id: &str, params: Value) 
                 if let Some(before) = panel_of("before") {
                     command["before"] = json!(before?);
                 }
-                let command: craft_ui::docking::DockCommand<PanelKind> =
+                let command: nodalia_ui::docking::DockCommand<PanelKind> =
                     serde_json::from_value(command).map_err(|e| format!("dockPanel: zone: center|tab|left|right|top|bottom|above|below ({e})"))?;
                 app.run_dock_command(ctx, command).map_err(|e| format!("can't dock {}: {e}", p.title()))?;
                 app.show_panel(p);

@@ -14,7 +14,7 @@ pulso-time = { workspace = true }
 pulso-geom = { workspace = true }
 pulso-color = { workspace = true }
 pulso-keyframe = { workspace = true }
-craft-ecproj-format = { workspace = true }
+nodalia-ecproj-format = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

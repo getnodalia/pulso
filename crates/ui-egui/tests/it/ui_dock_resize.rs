@@ -1,9 +1,9 @@
 //! Shared pane resizing in the full application, including application shortcut ownership.
 
 use crate::gpu_test::RenderSerial;
-use craft_ui::docking::{Divider, DockArea, Hit};
 use egui::{Event, Key, Modifiers, PointerButton, Rect, pos2, vec2};
 use egui_kittest::Harness;
+use nodalia_ui::docking::{Divider, DockArea, Hit};
 use pulso_engine::Session;
 use pulso_ui_egui::PulsoApp;
 use pulso_ui_egui::dock::{self, Node, PanelKind, SplitSize};

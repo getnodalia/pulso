@@ -19,12 +19,19 @@ interface follows Foundation's [NDL standard](https://github.com/getnodalia/foun
 | Dependency | Where | Replacement | Blocked on |
 |---|---|---|---|
 | `storytold/craft-common-actions` | `.github/workflows/freebsd.yml`, `.github/workflows/windows-arm64.yml` | Foundation reusable workflows (release, refresh-contributors, windows-arm64) | writing and testing them |
-| `storytold/craft-libs` | `Cargo.toml`, `nix/package.nix` | to decide | — |
 | `storytold/effectcraft` | `.github/workflows/upstream-sync.yml` | none: the intended upstream sync, renamed by `scripts/rebrand.py` | — | <!-- rebrand: keep -->
 | `storytold/egui.git` | `xtask/src/lock_patches.rs` | to decide | — |
-| `storytold/filmcraft` | `nix/package.nix` | to decide | — |
 | `storytold/pdfcraft` | `packaging/macos/package.sh` | to decide | — |
 | `storytold/vectorcraft` | `packaging/macos/dmg/README.md`, `packaging/macos/package.sh` | to decide | — |
+
+## Shared libraries
+
+Done (2026-11-18): Pulso depends on the shared libraries under Nodalia's names only. The
+`nodalia-*` crates come from `nodalia/libs`, Toma's media crates (`toma-*`) from `nodalia/toma`,
+and the fonts build input from `nodalia/fonts` (`NODALIA_FONTS_DIR`), all in getnodalia/foundation
+at the commits made from the upstream revisions Pulso pinned before. The weekly upstream sync runs
+foundation's `scripts/nodalia_libs.py app` after `rebrand.py`, so upstream's `craft-*` and
+`filmcraft-*` dependencies arrive renamed and pinned the same way.
 
 ## Technical debt
 
