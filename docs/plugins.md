@@ -191,7 +191,7 @@ Every plug-in describes itself with a JSON manifest:
 ```json
 {
   "api": 1,
-  "id": "org.pulso.example.posterize-bands",
+  "id": "org.effectcraft.example.posterize-bands",
   "name": "Posterize Bands",
   "category": "Stylize",
   "version": "1.0.0",

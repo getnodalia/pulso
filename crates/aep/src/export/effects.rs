@@ -1,5 +1,5 @@
 //! Effects: the inverse of the importer, through the same table (`crate::effect_map`).
-//! An Pulso effect the table maps is written as the After Effects effect it came from:
+//! A Pulso effect the table maps is written as the After Effects effect it came from:
 //!
 //! * the instance is the effect's default instance, built in code from the effect table
 //!   (`fx_defs`, `fxsynth`: `tdmn` + `sspc` with its full `parT` and the records After Effects
@@ -274,7 +274,7 @@ fn defs() -> &'static HashMap<String, HashMap<u16, ParDef>> {
 // ---------------------------------------------------------------------------------------------
 // Planning.
 
-/// The stored components of an Pulso value, `None` when it does not fit.
+/// The stored components of a Pulso value, `None` when it does not fit.
 fn stored(conv: Conv, kind: PKind, v: &Value, size: (f64, f64), ui: &ParamUi, def: &ParDef) -> Option<Vec<f64>> {
     let c = v.components();
     let g = |i: usize| c.get(i).copied().and_then(sane);

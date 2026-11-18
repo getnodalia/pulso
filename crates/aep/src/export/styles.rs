@@ -59,7 +59,7 @@ fn sane(v: f64) -> Option<f64> {
     (v.is_finite() && v.abs() <= crate::export::plan::LIMIT).then_some(v)
 }
 
-/// An Pulso value in the file's units.
+/// A Pulso value in the file's units.
 pub(crate) fn stored(conv: StyleConv, v: &Value) -> Option<Vec<f64>> {
     let out = match (conv, v) {
         (StyleConv::Number, Value::Scalar(x)) => vec![sane(*x)?],

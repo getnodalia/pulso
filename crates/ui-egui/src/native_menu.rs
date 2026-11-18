@@ -282,7 +282,7 @@ pub fn build(app: &PulsoApp) -> NativeMenu {
     NativeMenu { menus }
 }
 
-/// The `muda` accelerator for an Pulso shortcut, or `None` when it must stay a plain
+/// The `muda` accelerator for a Pulso shortcut, or `None` when it must stay a plain
 /// keyboard shortcut. Only shortcuts with Cmd or Ctrl (and function keys) become menu key
 /// equivalents: a single-key shortcut (`V`, `Space`, `U`) or an Alt/Shift-only one would be
 /// swallowed by the menu while typing into a text field. Those still work through the

@@ -107,7 +107,7 @@ enum Data {
 /// What a Lumetri parameter is.
 #[derive(Clone, Copy, Debug)]
 enum Role {
-    /// An Pulso parameter and the conversion.
+    /// A Pulso parameter and the conversion.
     To(&'static str, Conv),
     /// The on / off switch of a section.
     Switch,

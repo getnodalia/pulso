@@ -163,7 +163,7 @@ Units, the "absent = default" rule and the keyframe templates are the reader's
 ### Effects
 
 A table in `crates/aep/src/container/effect_map.rs` (shared with the exporter, which writes the inverse) maps an effect's match name and each parameter's
-index in the file's parameter list to an Pulso effect id, a parameter id and a unit
+index in the file's parameter list to a Pulso effect id, a parameter id and a unit
 conversion; it also names the parameter type the file must declare and, for sliders, the valid
 maximum it was verified with (`pard@128` for fixed sliders, `pard@108` for float sliders). A parameter whose type or maximum differs is reported,
 not guessed. `supported_effects()` lists the table. The effect is built with Pulso's own

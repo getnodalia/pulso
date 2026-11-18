@@ -105,5 +105,5 @@ rustflags = ["-C", "link-self-contained=yes", "-L", "native=C:/gnu-import-libs"]
 
 ## Talk to us
 
-Questions, ideas and bug reports are welcome on [Discord](https://github.com/getnodalia/pulso/issues) and in
-GitHub issues.
+Questions, ideas and bug reports are welcome in
+[GitHub issues](https://github.com/getnodalia/pulso/issues).

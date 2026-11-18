@@ -21,7 +21,7 @@ use crate::import::props::{Kind, import_expression, import_keys, sane};
 use crate::import::report::{Collector, LossCategory};
 use crate::import::time::TimeMap;
 
-/// A stored style value as an Pulso value; `None` when it does not fit the conversion.
+/// A stored style value as a Pulso value; `None` when it does not fit the conversion.
 pub(crate) fn value(conv: StyleConv, c: &[f64]) -> Option<Value> {
     let g = |i: usize| c.get(i).copied().filter(|v| v.is_finite());
     let v = match conv {

@@ -1,6 +1,6 @@
 ---
 title: Import footage and image sequences
-description: Bring video, images and numbered image sequences into an Pulso project, and change how footage is read.
+description: Bring video, images and numbered image sequences into a Pulso project, and change how footage is read.
 order: 50
 verified: 0.9.2
 ---

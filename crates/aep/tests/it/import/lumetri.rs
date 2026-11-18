@@ -284,7 +284,7 @@ fn run_with(defs: &[(u16, Def)], recs: &[(u16, Rec)]) -> (PropGroup, ImportResul
         .comps()
         .flat_map(|(_, c)| c.layers.iter())
         .find_map(|l| l.props.sub("effects").and_then(|fx| fx.children.iter().filter_map(|n| n.as_group()).find(|g| g.match_id == "ec.color.lumetri").cloned()))
-        .expect("an Pulso Lumetri Color");
+        .expect("a Pulso Lumetri Color");
     (g, r)
 }
 

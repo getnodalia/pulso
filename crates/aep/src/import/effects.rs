@@ -1,5 +1,5 @@
 //! Effects: a table maps an After Effects effect (its match name) and its parameters (by their
-//! index in `parT`) to an Pulso effect, a parameter id and a unit conversion. Effects and
+//! index in `parT`) to a Pulso effect, a parameter id and a unit conversion. Effects and
 //! parameters outside the table are reported in [`LossCategory::Effects`] by match name, never
 //! dropped silently.
 //!

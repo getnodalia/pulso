@@ -30,6 +30,8 @@ keep = [
     "effectcraftAnimationPreset\\b",
     "effectcraft(?=\\.animationPresets/)",
     "effectcraft-template\\b",
+    # Plug-in ids are saved in projects: the example plug-in keeps the id projects already name.
+    "org\\.effectcraft\\.example\\.[\\w.-]+",
     # Credit for work done upstream.
     "EffectCraft contributors",
     "ArtCraft Team",
@@ -134,7 +136,15 @@ to = "Pliego"
 from = "ArtCraft"
 to = "Nodalia"
 
-# The name, in every casing upstream uses.
+# The name, in every casing upstream uses ("a Pulso", where upstream wrote "an EffectCraft").
+[[replace]]
+from = "an EffectCraft"
+to = "a Pulso"
+
+[[replace]]
+from = "An EffectCraft"
+to = "A Pulso"
+
 [[replace]]
 from = "EffectCraft"
 to = "Pulso"

@@ -33,4 +33,4 @@ Pulso is young and in alpha. It cannot open After Effects projects (`.aep`), and
 
 ## Get help
 
-Ask in [Discord](https://github.com/getnodalia/pulso/issues) or open an issue in the [issue tracker](https://github.com/getnodalia/pulso/issues). Say which version and which system you use.
+Open an issue in the [issue tracker](https://github.com/getnodalia/pulso/issues). Say which version and which system you use.

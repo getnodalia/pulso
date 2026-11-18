@@ -6,7 +6,7 @@ What `crates/aep` ([`pulso-aep`](../crates/aep/README.md)) reads and writes, and
 for each statement. Everything here was observed on project files we generated ourselves; no
 source code, specification or format documentation of any other reader was used (every layout is
 backed by our own cases, see section 5). This is the container and a set of
-verified field layouts, not a project importer: turning a parsed `.aep` into an Pulso
+verified field layouts, not a project importer: turning a parsed `.aep` into a Pulso
 document is done by the `import` module of the same crate, see [aep-import.md](aep-import.md) (status and
 gaps: [gaps.md](gaps.md) G4 and [file-format-parity.md](file-format-parity.md)).
 

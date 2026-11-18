@@ -1,6 +1,6 @@
 ---
 title: Footage is missing or offline
-description: Find missing footage in an Pulso project, relink it to a folder or replace it with another file.
+description: Find missing footage in a Pulso project, relink it to a folder or replace it with another file.
 order: 20
 verified: 0.9.2
 ---
@@ -32,4 +32,4 @@ Projects built with the command-line tool or an agent can use relative paths suc
 
 ## Still stuck?
 
-Ask in [Discord](https://github.com/getnodalia/pulso/issues) or open an issue in the [issue tracker](https://github.com/getnodalia/pulso/issues). Say which system you use, whether the project came from another computer or from the command-line tool, and where the footage is stored.
+Open an issue in the [issue tracker](https://github.com/getnodalia/pulso/issues). Say which system you use, whether the project came from another computer or from the command-line tool, and where the footage is stored.

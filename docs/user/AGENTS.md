@@ -7,7 +7,7 @@ Renaming a file breaks links, so add the old path to `redirect_from` when you re
 
 ## Who reads this
 
-Artists using Pulso, Discord mods answering them, and AI assistants looking things up for
+Artists using Pulso, people answering their questions, and AI assistants looking things up for
 either. Write for an artist, not a developer.
 
 ## Page rules
@@ -24,7 +24,7 @@ either. Write for an artist, not a developer.
 - Shortcuts: the code writes `Cmd`, which is Ctrl on Windows and Linux. Write Ctrl for Windows.
 - Windows 11 is the only Windows version to name.
 - Troubleshooting pages: `## Symptoms`, `## Fix`, `## Why this happens` (optional),
-  `## Still stuck?` (link the issue tracker or Discord).
+  `## Still stuck?` (link the issue tracker).
 
 ## Frontmatter
 

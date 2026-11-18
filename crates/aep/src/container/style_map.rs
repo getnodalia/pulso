@@ -34,7 +34,7 @@ pub const FLAGS_GROUP_UNUSED: u32 = 3;
 /// command in After Effects 2026).
 pub const PATTERN_OVERLAY: &str = "patternFill";
 
-/// How a stored style value becomes an Pulso value.
+/// How a stored style value becomes a Pulso value.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum StyleConv {
     /// A number used as stored (percent, pixels, degrees; 966-974, 977).
@@ -137,7 +137,7 @@ pub fn mode_name(code: f64) -> Option<&'static str> {
     *STYLE_MODES.get(i.checked_sub(1)?)?
 }
 
-/// A popup's stored value for an Pulso item (the inverse of `map`).
+/// A popup's stored value for a Pulso item (the inverse of `map`).
 pub fn popup_code(map: &[u32], item: u32) -> Option<u32> {
     map.iter().position(|m| *m == item).and_then(|i| u32::try_from(i + 1).ok())
 }

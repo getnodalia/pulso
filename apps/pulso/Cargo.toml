@@ -20,7 +20,7 @@ pulso-engine = { workspace = true }
 pulso-host = { workspace = true }
 pulso-ui-egui = { workspace = true }
 egui = { workspace = true }
-# `links`: links (Help menu, Discord, Settings) open in the system browser.
+# `links`: links (Help menu, About, Settings) open in the system browser.
 eframe = { workspace = true, features = ["default_fonts", "wgpu", "accesskit", "clipboard", "links", "wayland", "x11"] }
 serde = { workspace = true }
 serde_json = { workspace = true }

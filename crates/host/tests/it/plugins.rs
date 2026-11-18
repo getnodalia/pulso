@@ -241,7 +241,7 @@ fn example_wasm_plugin_loads_and_renders() {
     let Some(wasm) = build_example() else { return };
     let (mut s, l) = setup();
     let r = s.execute("effect.plugins.load", json!({"path": wasm.to_string_lossy()})).unwrap();
-    assert_eq!(r["loaded"][0]["id"], "org.pulso.example.posterize-bands", "{r}");
+    assert_eq!(r["loaded"][0]["id"], "org.effectcraft.example.posterize-bands", "{r}");
     s.execute("effect.apply", json!({"layer": l, "effect": "Posterize Bands"})).unwrap();
     s.execute("prop.set", json!({"layer": l, "path": "effects/#1/mix", "value": 0})).unwrap();
     s.execute("prop.set", json!({"layer": l, "path": "effects/#1/levels", "value": 2})).unwrap();

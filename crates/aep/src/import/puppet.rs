@@ -73,7 +73,7 @@ pub(crate) fn import_puppet<'f, 'a>(
         }
     }
     report_meshes(fx, &params.iter().map(|p| p.match_name.as_str()).collect::<Vec<_>>(), &here, col);
-    // The effect itself arrives (an Pulso Puppet the user can pin again), so it counts as
+    // The effect itself arrives (a Pulso Puppet the user can pin again), so it counts as
     // imported; what it held is in the losses above.
     col.imported.effects = col.imported.effects.saturating_add(1);
     target.children.push(Node::Group(group));

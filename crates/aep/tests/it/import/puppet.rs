@@ -108,7 +108,7 @@ fn puppet_arrives_and_its_pins_are_reported_mesh_by_mesh() {
         sspc(1, Some(arap), vec![("ADBE FreePin3 On Transparent", record(t, 1.0))])
     });
     let (g, r) = import_bytes(&bytes, pulso_effects::puppet::ID);
-    let g = g.expect("an Pulso Puppet in the Glow's place");
+    let g = g.expect("a Pulso Puppet in the Glow's place");
     assert!(g.enabled);
     assert_eq!(g.name, "Puppet");
     // No pin is made up: the rest places are not decoded.
@@ -148,7 +148,7 @@ fn many_meshes_are_listed_up_to_ten_and_names_once() {
 fn a_puppet_without_a_mesh_loses_nothing_and_keeps_its_fx_switch() {
     let bytes = bytes_with_effect(PUPPET, |_| sspc(0, Some(group(vec![("ADBE FreePin3 Mesh Group", group(vec![]))])), vec![]));
     let (g, r) = import_bytes(&bytes, pulso_effects::puppet::ID);
-    let g = g.expect("an Pulso Puppet");
+    let g = g.expect("a Pulso Puppet");
     assert!(!g.enabled, "switched off in the Effect Controls");
     assert_eq!(losses(&r, LossCategory::Effects, PUPPET), Vec::<String>::new());
 }

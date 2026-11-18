@@ -1,13 +1,13 @@
 //! The effect table shared by the importer (`crate::import`) and the exporter
 //! (`crate::export`): an After Effects effect (its match name) and its parameters (by
-//! their index in `parT`) map to an Pulso effect, a parameter id and a unit conversion.
+//! their index in `parT`) map to a Pulso effect, a parameter id and a unit conversion.
 //! Plain data; the evidence for each row is in `docs/aep-format.md` 3.7 and the case numbers in
 //! the comments. The importer reads a file through it, the exporter writes the inverse.
 
 use crate::container::effects::ParamKind;
 use ParamKind as K;
 
-/// How a stored parameter value becomes an Pulso value.
+/// How a stored parameter value becomes a Pulso value.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Conv {
     /// A colour (ARGB 0..255 or the reader's ARGB fractions) to opaque RGBA 0..1.
@@ -1152,7 +1152,7 @@ pub fn by_match_name(match_name: &str) -> Option<&'static EffectMap> {
     EFFECTS.iter().find(|m| m.match_name == match_name)
 }
 
-/// The table row of an Pulso effect id.
+/// The table row of a Pulso effect id.
 pub fn by_effect(effect: &str) -> Option<&'static EffectMap> {
     EFFECTS.iter().find(|m| m.effect == effect)
 }
