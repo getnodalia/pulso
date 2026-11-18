@@ -68,7 +68,7 @@ fn nested_groups_keep_indentation_value_alignment_and_effect_gaps_at_fixed_compa
     a.ui.timeline.search = "Temperature".into();
     let mut h = Harness::builder().with_size(vec2(1500.0, 1800.0)).build_eframe(|_| a);
     h.run_steps(4);
-    let rect = |h: &Harness<'_, PulsoApp>, id: String| h.state().auto.find(&id).unwrap_or_else(|| panic!("no {id}")).rect;
+    let rect = |h: &Harness<'_, PulsoApp>, id: String| h.state().auto.find(&id).unwrap_or_else(|| panic!("missing UI element")).rect;
     let name_x = |kind: &str, uid| rect(&h, format!("effectControls.{kind}.{uid}.name"))[0];
     assert!(name_x("effect", fx) < name_x("group", basic_id));
     assert_eq!(name_x("prop", root), name_x("group", basic_id), "siblings align even when their icons differ");
