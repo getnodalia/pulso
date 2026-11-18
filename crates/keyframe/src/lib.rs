@@ -13,7 +13,7 @@
 pub mod text_doc;
 pub mod value;
 
-use effectcraft_time::{TICKS_PER_SECOND, Tick};
+use pulso_time::{TICKS_PER_SECOND, Tick};
 use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
 pub use text_doc::{BaselineOption, CharStyle, Composer, Direction, FigureStyle, FigureWidth, Kerning, LineJoin, OpenType, ParaStyle, StyleRun};
@@ -554,7 +554,7 @@ fn evaluate_active<K: Borrow<Keyframe>>(keys: &[K], t: Tick, spatial: bool) -> O
 
 /// Evaluate keyed 3D Orientation at `t` as After Effects does: the temporal ease gives the
 /// progress through each segment, and the rotation moves along the shortest arc between the two
-/// keys ([`effectcraft_geom::orientation_slerp`]) instead of blending each angle. Speeds are
+/// keys ([`pulso_geom::orientation_slerp`]) instead of blending each angle. Speeds are
 /// degrees per second along that arc. Values other than 3D vectors evaluate as [`evaluate`].
 pub fn evaluate_orientation(keys: &[Keyframe], t: Tick) -> Option<Value> {
     let first = keys.first()?;
@@ -578,7 +578,7 @@ pub fn evaluate_orientation(keys: &[Keyframe], t: Tick) -> Option<Value> {
     if x <= 0.0 {
         return Some(a.value.clone());
     }
-    let arc = effectcraft_geom::orientation_arc_deg((*va).into(), (*vb).into());
+    let arc = pulso_geom::orientation_arc_deg((*va).into(), (*vb).into());
     let lin_out = a.out_interp == Interp::Linear;
     let lin_in = b.in_interp != Interp::Bezier;
     let f = if lin_out && lin_in || arc <= 1e-9 {
@@ -596,7 +596,7 @@ pub fn evaluate_orientation(keys: &[Keyframe], t: Tick) -> Option<Value> {
             if k.auto_bezier && j > 0 && j + 1 < keys.len() {
                 let span = (secs(keys[j + 1].time) - secs(keys[j - 1].time)).max(1e-12);
                 let (Value::Vec3(p), Value::Vec3(n)) = (&keys[j - 1].value, &keys[j + 1].value) else { return Ease { speed: arc / dur, influence: 1.0 / 6.0 } };
-                return Ease { speed: effectcraft_geom::orientation_arc_deg((*p).into(), (*n).into()) / span, influence: 1.0 / 6.0 };
+                return Ease { speed: pulso_geom::orientation_arc_deg((*p).into(), (*n).into()) / span, influence: 1.0 / 6.0 };
             }
             let list = if out { &k.out_ease } else { &k.in_ease };
             list.first().copied().unwrap_or_default()
@@ -605,7 +605,7 @@ pub fn evaluate_orientation(keys: &[Keyframe], t: Tick) -> Option<Value> {
         ease_progress(eo.speed * dur / arc, eo.influence, ei.speed * dur / arc, ei.influence, x)
     };
     let f = if f.is_finite() { f } else { x };
-    let o = effectcraft_geom::orientation_slerp((*va).into(), (*vb).into(), f);
+    let o = pulso_geom::orientation_slerp((*va).into(), (*vb).into(), f);
     Some(Value::Vec3([o.x, o.y, o.z]))
 }
 

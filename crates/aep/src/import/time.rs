@@ -5,7 +5,7 @@
 //! stay frames at every rate (29.97 fps is `23976 / 800` in the file and `30000 / 1001` in the
 //! project). Any other time is rounded to the nearest tick.
 
-use effectcraft_time::{FrameRate, TICKS_PER_SECOND, Tick};
+use pulso_time::{FrameRate, TICKS_PER_SECOND, Tick};
 
 /// The composition's frame structure: the stored time base and the rate the project gets.
 #[derive(Clone, Copy, Debug)]

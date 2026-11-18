@@ -22,8 +22,8 @@ pub trait FootageSource: Send + Sync {
     fn frame(&self, item: ItemId, footage: &Footage, t: Tick) -> Option<Arc<Image>>;
     /// [`FootageSource::frame`] for a render that shows it at `width` × `height`, at most half its
     /// size: either that frame or, when the source can make it more cheaply than the whole frame
-    /// (movies, see `effectcraft-media`), the frame already resampled to that size as
-    /// [`effectcraft_raster::resample`] would.
+    /// (movies, see `pulso-media`), the frame already resampled to that size as
+    /// [`pulso_raster::resample`] would.
     fn frame_at_size(&self, item: ItemId, footage: &Footage, t: Tick, _width: u32, _height: u32) -> Option<Arc<Image>> {
         self.frame(item, footage, t)
     }
@@ -46,7 +46,7 @@ pub trait FootageSource: Send + Sync {
     /// Auxiliary 3D channels of `item` at source time `t` (multi-layer OpenEXR: depth, IDs,
     /// Cryptomatte, any named channel), with `scale` relative to the file's pixels. `None` when
     /// the footage has none.
-    fn aux(&self, _item: ItemId, _footage: &Footage, _t: Tick) -> Option<Arc<effectcraft_raster::AuxChannels>> {
+    fn aux(&self, _item: ItemId, _footage: &Footage, _t: Tick) -> Option<Arc<pulso_raster::AuxChannels>> {
         None
     }
     /// The footage files (by [`Footage::path`]) whose channels effects of the project read
@@ -55,8 +55,8 @@ pub trait FootageSource: Send + Sync {
     /// separately can decode both at once for these from the first frame on. Sources that don't
     /// ignore it.
     fn set_aux_footage(&self, _paths: &[String]) {}
-    /// The parsed 3D model of a [`effectcraft_project::FootageKind::Model`] item (Advanced 3D).
-    fn model(&self, _item: ItemId, _footage: &Footage) -> Option<Arc<effectcraft_model::Model>> {
+    /// The parsed 3D model of a [`pulso_project::FootageKind::Model`] item (Advanced 3D).
+    fn model(&self, _item: ItemId, _footage: &Footage) -> Option<Arc<pulso_model::Model>> {
         None
     }
     /// Set the decoded-frame cache budget in bytes (Settings ▸ Memory & CPU); sources without
@@ -113,7 +113,7 @@ pub trait FootageSource: Send + Sync {
     /// Missing files and [`Self::problem`] of what `item` shows: its proxy's while Use Proxy shows the proxy
     /// instead (the reason then says it is the proxy's), else the footage item's own. A
     /// composition has one only through its proxy.
-    fn item_problem(&self, item: &effectcraft_project::Item) -> Option<String> {
+    fn item_problem(&self, item: &pulso_project::Item) -> Option<String> {
         match item.proxy.as_deref().filter(|px| px.enabled && px.footage.has_video) {
             Some(px) => {
                 missing_problem(&px.footage, "Use Set Proxy to locate the proxy file.").or_else(|| self.problem(&px.footage)).map(|why| format!("Proxy: {why}"))
@@ -128,12 +128,12 @@ pub trait FootageSource: Send + Sync {
 
 /// A known offline source, without filesystem access while painting or querying.
 fn missing_problem(f: &Footage, remedy: &str) -> Option<String> {
-    (f.missing && !f.path.is_empty() && f.kind != effectcraft_project::FootageKind::Data).then(|| format!("Missing footage: {}. {remedy}", f.path))
+    (f.missing && !f.path.is_empty() && f.kind != pulso_project::FootageKind::Data).then(|| format!("Missing footage: {}. {remedy}", f.path))
 }
 
 /// Inventory warning, including an unused proxy or an original currently replaced by a proxy.
 /// Viewer warnings instead use `item_problem`, which follows the active render source.
-pub fn missing_item_problem(item: &effectcraft_project::Item) -> Option<String> {
+pub fn missing_item_problem(item: &pulso_project::Item) -> Option<String> {
     if let ItemKind::Footage(f) = &item.kind
         && let Some(why) = missing_problem(f, "Use File ▸ Dependencies ▸ Relink Missing Footage or Replace Footage.")
     {
@@ -172,13 +172,13 @@ impl FootageSource for CancellableFootage<'_> {
     fn audio(&self, item: ItemId, footage: &Footage, t: Tick, frames: usize, rate: u32) -> Option<Vec<f32>> {
         self.inner.audio(item, footage, t, frames, rate)
     }
-    fn aux(&self, item: ItemId, footage: &Footage, t: Tick) -> Option<Arc<effectcraft_raster::AuxChannels>> {
+    fn aux(&self, item: ItemId, footage: &Footage, t: Tick) -> Option<Arc<pulso_raster::AuxChannels>> {
         self.inner.aux(item, footage, t)
     }
     fn set_aux_footage(&self, paths: &[String]) {
         self.inner.set_aux_footage(paths)
     }
-    fn model(&self, item: ItemId, footage: &Footage) -> Option<Arc<effectcraft_model::Model>> {
+    fn model(&self, item: ItemId, footage: &Footage) -> Option<Arc<pulso_model::Model>> {
         self.inner.model(item, footage)
     }
     fn set_cache_budget(&self, bytes: usize) {

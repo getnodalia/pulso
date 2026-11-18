@@ -1,12 +1,12 @@
 //! The helper protocol, version [`PROTOCOL_VERSION`] (`docs/external-helpers.md`).
 //!
-//! Control messages are JSON, one per line. EffectCraft writes requests ([`Request`]) to the
+//! Control messages are JSON, one per line. Pulso writes requests ([`Request`]) to the
 //! helper's stdin; the helper writes replies ([`Reply`]) to its stdout, each line starting with
 //! [`MAGIC`] so that anything else a helper (or a library it loads) prints is ignored. Pixels
 //! never travel over the pipe: they live in the **frame exchange file** named in
 //! [`Request::Hello`] and are addressed by [`ImageRef`]s (byte offset + size).
 
-use effectcraft_effects::plugin::PluginManifest;
+use pulso_effects::plugin::PluginManifest;
 use serde::{Deserialize, Serialize};
 
 /// The protocol version this build speaks. A helper that answers `hello` with another version
@@ -17,8 +17,8 @@ pub const PROTOCOL_VERSION: u32 = 1;
 /// without it, are the helper's own output and only logged).
 pub const MAGIC: &str = "@ec-helper ";
 
-/// The argument EffectCraft starts helpers with.
-pub const HELPER_ARG: &str = "--effectcraft-helper";
+/// The argument Pulso starts helpers with.
+pub const HELPER_ARG: &str = "--pulso-helper";
 
 /// The longest control line either side accepts (bytes). Hidden parameters can carry a few MB.
 pub const MAX_LINE: u64 = 256 << 20;
@@ -31,7 +31,7 @@ pub const PIXEL_BYTES: u64 = 16;
 
 /// An image in the frame exchange file: `width * height` premultiplied RGBA `f32` pixels, row 0
 /// on top, starting `offset` bytes into the file. `origin` and `scale` are as in
-/// [`effectcraft_effects::plugin::PluginImage`].
+/// [`pulso_effects::plugin::PluginImage`].
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ImageRef {
     pub offset: u64,
@@ -64,7 +64,7 @@ impl ImageRef {
 pub struct RenderRequest {
     /// The effect id (as described by the helper).
     pub effect: String,
-    /// A stable id of the applied effect instance ([`effectcraft_effects::plugin::PluginHost::instance_key`]).
+    /// A stable id of the applied effect instance ([`pulso_effects::plugin::PluginHost::instance_key`]).
     pub instance: u64,
     /// Layer time, seconds.
     pub time: f64,
@@ -83,7 +83,7 @@ pub struct RenderRequest {
     pub frame_range: Option<(f64, f64)>,
 }
 
-/// EffectCraft → helper.
+/// Pulso → helper.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum Request {
@@ -121,7 +121,7 @@ pub struct RemoteEffect {
     pub padding: bool,
 }
 
-/// Helper → EffectCraft.
+/// Helper → Pulso.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum Reply {

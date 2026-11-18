@@ -1,14 +1,14 @@
 //! Odd projects never panic and always produce a container that parses and writes back.
 
 use crate::export::helpers::*;
-use effectcraft_aep::export::{ExportOptions, LossCategory, export};
-use effectcraft_aep::{parse, write};
-use effectcraft_color::Label;
-use effectcraft_keyframe::{Ease, Interp, Value};
-use effectcraft_project::{ItemKind, LayerSource, Project};
-use effectcraft_time::{FrameRate, Tick};
+use pulso_aep::export::{ExportOptions, LossCategory, export};
+use pulso_aep::{parse, write};
+use pulso_color::Label;
+use pulso_keyframe::{Ease, Interp, Value};
+use pulso_project::{ItemKind, LayerSource, Project};
+use pulso_time::{FrameRate, Tick};
 
-fn check(p: &Project) -> effectcraft_aep::export::ExportResult {
+fn check(p: &Project) -> pulso_aep::export::ExportResult {
     let r = export(p, &ExportOptions { allow_losses: true }).expect("export");
     let f = parse(&r.bytes).expect("parse");
     assert_eq!(write(&f).expect("write"), r.bytes);
@@ -49,7 +49,7 @@ fn strange_frame_rates() {
     let mut p = Project::default();
     for (n, d) in [(0, 1), (1, 0), (-25, 1), (7, 3), (i64::MAX, 1), (1, i64::MAX), (25, 1), (1000, 1), (24_000, 1001)] {
         let rate = FrameRate { num: n, den: d };
-        let mut c = effectcraft_project::Comp::new(100, 100, FrameRate::new(25, 1), Tick(254_016_000_000));
+        let mut c = pulso_project::Comp::new(100, 100, FrameRate::new(25, 1), Tick(254_016_000_000));
         c.frame_rate = rate;
         p.add_item("r", Label::None, None, ItemKind::Comp(std::sync::Arc::new(c)));
     }
@@ -85,7 +85,7 @@ fn thousands_of_layers_and_keys() {
     let s = add_solid(&mut p, "S", 64, 64, [0.5; 3], None);
     let mut comp = p.comp(c).cloned().expect("comp");
     for i in 0..2000 {
-        let mut l = effectcraft_project::build::layer(&mut p, &comp, &format!("L{i}"), LayerSource::Solid { item: s }, (64, 64), None);
+        let mut l = pulso_project::build::layer(&mut p, &comp, &format!("L{i}"), LayerSource::Solid { item: s }, (64, 64), None);
         l.name = format!("L{i}");
         let pos = l.transform_mut().expect("tr").get_mut("position").expect("p");
         pos.keys = (0..10).map(|k| key(f64::from(k), Value::Vec3([f64::from(i), f64::from(k), 0.0]))).collect();
@@ -102,7 +102,7 @@ fn thousands_of_layers_and_keys() {
 #[test]
 fn parent_loops_missing_sources_and_folder_loops() {
     let (mut p, c, _) = simple();
-    add_layer(&mut p, c, "B", LayerSource::Solid { item: effectcraft_project::ItemId(9999) }, (10, 10));
+    add_layer(&mut p, c, "B", LayerSource::Solid { item: pulso_project::ItemId(9999) }, (10, 10));
     add_layer(&mut p, c, "A", LayerSource::Null, (10, 10));
     let (a, b) = {
         let cc = p.comp(c).expect("c");

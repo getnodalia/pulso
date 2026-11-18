@@ -2,9 +2,9 @@
 //! exposure, snapshots, Fast Previews, guides dragged out of the rulers, and the Pen tool for
 //! shape layers (`shape.newPath`).
 
-use effectcraft_keyframe::ShapePath;
-use effectcraft_project::build::{self, Ids};
-use effectcraft_render::RenderOpts;
+use pulso_keyframe::ShapePath;
+use pulso_project::build::{self, Ids};
+use pulso_render::RenderOpts;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -100,8 +100,8 @@ impl Default for ViewOptions {
 /// comp and 3D view whatever comp is active.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct LockedViewer {
-    pub comp: effectcraft_project::ItemId,
-    pub view: effectcraft_render::three_d::View3D,
+    pub comp: pulso_project::ItemId,
+    pub view: pulso_render::three_d::View3D,
 }
 
 fn snapping(s: &mut Session, p: &Value) -> Result<Value> {
@@ -202,7 +202,7 @@ fn fast_previews(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!(m.id()))
 }
 
-fn guide_index(s: &Session, p: &Value, cmd: &str) -> Result<(effectcraft_project::ItemId, usize)> {
+fn guide_index(s: &Session, p: &Value, cmd: &str) -> Result<(pulso_project::ItemId, usize)> {
     let cid = comp_id(s, p)?;
     let n = s.project.comp(cid).ok_or(EngineError::NoComp)?.guides.len();
     let i = p.get("index").and_then(Value::as_u64).ok_or_else(|| bad(cmd, "missing `index`"))? as usize;
@@ -261,17 +261,17 @@ fn new_path(s: &mut Session, p: &Value) -> Result<Value> {
         // Comp → layer space of the target (a new layer sits at the comp centre, unrotated).
         let inv = match target.and_then(|l| comp.layer(l)) {
             Some(l) => {
-                let ctx = effectcraft_render::EvalCtx::new(&s.project, cid, &comp, s.time_of(cid));
-                ctx.layer_to_comp(l).0.inverse().unwrap_or(effectcraft_geom::Mat3::IDENTITY)
+                let ctx = pulso_render::EvalCtx::new(&s.project, cid, &comp, s.time_of(cid));
+                ctx.layer_to_comp(l).0.inverse().unwrap_or(pulso_geom::Mat3::IDENTITY)
             }
-            None => effectcraft_geom::Mat3::translate(effectcraft_geom::vec2(-(comp.width as f64) / 2.0, -(comp.height as f64) / 2.0)),
+            None => pulso_geom::Mat3::translate(pulso_geom::vec2(-(comp.width as f64) / 2.0, -(comp.height as f64) / 2.0)),
         };
         for q in &mut v {
-            let r = inv.apply(effectcraft_geom::vec2(q[0], q[1]));
+            let r = inv.apply(pulso_geom::vec2(q[0], q[1]));
             *q = [r.x, r.y];
         }
         for t in ins.iter_mut().chain(outs.iter_mut()) {
-            let r = inv.apply_vec(effectcraft_geom::vec2(t[0], t[1]));
+            let r = inv.apply_vec(pulso_geom::vec2(t[0], t[1]));
             *t = [r.x, r.y];
         }
     }
@@ -454,7 +454,7 @@ fn custom_rgb(s: &mut Session, p: &Value) -> Result<Value> {
 fn split_locked(s: &mut Session, p: &Value) -> Result<Value> {
     let cid = comp_id(s, p)?;
     let view = match str_p(p, "view") {
-        Some(v) => effectcraft_render::three_d::View3D::from_id(v).ok_or_else(|| bad("view.splitLockedViewer", format!("unknown view `{v}`")))?,
+        Some(v) => pulso_render::three_d::View3D::from_id(v).ok_or_else(|| bad("view.splitLockedViewer", format!("unknown view `{v}`")))?,
         None => s.state.views3d.get(&cid).map(|v| v.current).unwrap_or_default(),
     };
     s.state.locked_viewer = Some(LockedViewer { comp: cid, view });

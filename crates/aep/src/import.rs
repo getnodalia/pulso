@@ -1,5 +1,5 @@
-//! After Effects project (`.aep`) import: the typed view of [`effectcraft_aep`] mapped into an
-//! EffectCraft [`Project`]. The XML form (`.aepx`) is accepted as well: it is read into the same
+//! After Effects project (`.aep`) import: the typed view of [`pulso_aep`] mapped into an
+//! Pulso [`Project`]. The XML form (`.aepx`) is accepted as well: it is read into the same
 //! chunk tree ([`crate::parse_any`] picks the reader by content).
 //!
 //! What arrives: the project item tree (folders), project settings (depth, working space, time
@@ -20,7 +20,7 @@
 //! is refused when anything would be lost ([`ImportOptions::allow_losses`] lifts that); a refusal
 //! changes nothing. A damaged file yields an error or a report, never a panic.
 //!
-//! The crate sits at L3 (above `effectcraft-project`, as `effectcraft-lottie` does) so it builds
+//! The crate sits at L3 (above `pulso-project`, as `pulso-lottie` does) so it builds
 //! for wasm32; it reads no files itself: the caller passes the bytes, a way to ask whether a
 //! footage path exists and one to ask whether a font is installed.
 
@@ -40,7 +40,7 @@ mod text;
 mod text_anim;
 mod time;
 
-use effectcraft_project::{ItemId, Project, ProjectSettings};
+use pulso_project::{ItemId, Project, ProjectSettings};
 
 pub use effects::supported_effects;
 pub use report::{AeVersionInfo, ImportReport, Imported, LIMITATIONS, Loss, LossCategory, MAX_DETAILS, TESTED_MAJORS, UNKNOWN};
@@ -73,7 +73,7 @@ pub struct ImportOptions<'a> {
     /// The folder every imported item goes into (After Effects names it after the file).
     pub folder_name: &'a str,
     /// Whether the caller takes over the file's project settings ([`ImportResult::settings`]).
-    /// When not, a setting EffectCraft has no counterpart for is no loss (nothing is changed), so it
+    /// When not, a setting Pulso has no counterpart for is no loss (nothing is changed), so it
     /// is not reported.
     pub settings: bool,
 }

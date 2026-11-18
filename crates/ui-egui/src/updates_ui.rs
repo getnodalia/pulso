@@ -3,7 +3,7 @@
 //! The flow and the windows are `nodalia-update`'s, shared with the other Nodalia apps; this file
 //! is what is this app's own: when an update may close it.
 
-use crate::EffectcraftApp;
+use crate::PulsoApp;
 
 #[cfg(not(target_arch = "wasm32"))]
 use nodalia_update::egui::{Action, Updater};
@@ -40,7 +40,7 @@ impl Default for Runtime {
     }
 }
 
-impl EffectcraftApp {
+impl PulsoApp {
     /// Whether the app looks for a newer release when it starts (off until the desktop app turns it on).
     #[cfg(not(target_arch = "wasm32"))]
     pub fn set_startup_update_check(&mut self, on: bool) {
@@ -48,7 +48,7 @@ impl EffectcraftApp {
     }
 }
 
-pub(crate) fn check(app: &mut EffectcraftApp) {
+pub(crate) fn check(app: &mut PulsoApp) {
     #[cfg(not(target_arch = "wasm32"))]
     {
         app.updates_rt.check_requested = true;
@@ -60,7 +60,7 @@ pub(crate) fn check(app: &mut EffectcraftApp) {
     }
 }
 
-pub(crate) fn tick(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub(crate) fn tick(app: &mut PulsoApp, ctx: &egui::Context) {
     #[cfg(not(target_arch = "wasm32"))]
     {
         let rt = &mut app.updates_rt;
@@ -95,7 +95,7 @@ fn act(ctx: &egui::Context, action: Action) {
     }
 }
 
-pub(crate) fn show(app: &mut EffectcraftApp, ctx: &egui::Context) {
+pub(crate) fn show(app: &mut PulsoApp, ctx: &egui::Context) {
     #[cfg(not(target_arch = "wasm32"))]
     {
         // An installation waits until nothing is unsaved.

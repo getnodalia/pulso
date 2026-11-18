@@ -1,12 +1,12 @@
-//! Import of documents written in code with FilmCraft's writers, and export → re-import.
+//! Import of documents written in code with Toma's writers, and export → re-import.
 
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use effectcraft_keyframe::{Keyframe, Value};
-use effectcraft_project::{Comp, Footage, FootageKind, ItemId, ItemKind, Layer, LayerSource, Project};
-use effectcraft_time::{FrameRate, Tick};
 use filmcraft_project as fp;
+use pulso_keyframe::{Keyframe, Value};
+use pulso_project::{Comp, Footage, FootageKind, ItemId, ItemKind, Layer, LayerSource, Project};
+use pulso_time::{FrameRate, Tick};
 
 use crate::*;
 
@@ -523,11 +523,11 @@ fn rejects_unknown_documents() {
 
 fn footage_item(p: &mut Project, path: &str) -> ItemId {
     let f = probe(path).unwrap();
-    p.add_item(path.rsplit('/').next().unwrap(), effectcraft_color::Label::Aqua, None, ItemKind::Footage(f))
+    p.add_item(path.rsplit('/').next().unwrap(), pulso_color::Label::Aqua, None, ItemKind::Footage(f))
 }
 
 fn comp_item(p: &mut Project, name: &str, c: Comp) -> ItemId {
-    p.add_item(name, effectcraft_color::Label::Sandstone, None, ItemKind::Comp(Arc::new(c)))
+    p.add_item(name, pulso_color::Label::Sandstone, None, ItemKind::Comp(Arc::new(c)))
 }
 
 /// A comp with a stretched, keyframed footage layer, a text layer, a precomp and an audio layer.
@@ -536,11 +536,11 @@ fn ae_project() -> (Project, ItemId) {
     let a = footage_item(&mut p, "/media/a.mov");
     let s = footage_item(&mut p, "/media/tone.wav");
     let mut inner = Comp::new(W, H, FrameRate::new(25, 1), t(4.0));
-    let li = effectcraft_project::build::layer(&mut p, &inner, "inner a", LayerSource::Footage { item: a }, (W, H), None);
+    let li = pulso_project::build::layer(&mut p, &inner, "inner a", LayerSource::Footage { item: a }, (W, H), None);
     inner.layers.push(li);
     let inner_id = comp_item(&mut p, "Inner", inner);
     let mut c = Comp::new(W, H, FrameRate::new(25, 1), t(5.0));
-    let mut la = effectcraft_project::build::layer(&mut p, &c, "clip a", LayerSource::Footage { item: a }, (W, H), None);
+    let mut la = pulso_project::build::layer(&mut p, &c, "clip a", LayerSource::Footage { item: a }, (W, H), None);
     la.stretch = 200.0; // half speed
     la.start_time = t(-1.0); // layer time 1 s at comp 3 s… source 1 s at comp 1 s
     la.in_point = t(1.0);
@@ -553,14 +553,14 @@ fn ae_project() -> (Project, ItemId) {
         tr.get_mut("rotation").unwrap().value = Value::Scalar(-15.0);
         tr.get_mut("opacity").unwrap().value = Value::Scalar(75.0);
     }
-    let mut lt = effectcraft_project::build::layer(&mut p, &c, "Title", LayerSource::Text, (W, H), None);
+    let mut lt = pulso_project::build::layer(&mut p, &c, "Title", LayerSource::Text, (W, H), None);
     lt.in_point = t(0.6);
     lt.out_point = t(2.6);
-    let mut lp = effectcraft_project::build::layer(&mut p, &c, "Inner", LayerSource::Comp { item: inner_id }, (W, H), None);
+    let mut lp = pulso_project::build::layer(&mut p, &c, "Inner", LayerSource::Comp { item: inner_id }, (W, H), None);
     lp.start_time = t(2.0);
     lp.in_point = t(2.0);
     lp.out_point = t(5.0);
-    let mut ls = effectcraft_project::build::layer(&mut p, &c, "tone", LayerSource::Footage { item: s }, (0, 0), None);
+    let mut ls = pulso_project::build::layer(&mut p, &c, "tone", LayerSource::Footage { item: s }, (0, 0), None);
     ls.out_point = t(3.0);
     ls.props.prop_mut("audio/levels").unwrap().value = Value::Vec2([-3.0, -3.0]);
     c.layers = vec![lt, lp, la, ls].into();
@@ -585,14 +585,14 @@ fn plan_prerenders_rendered_only_layers() {
 /// every style switched off) keeps a clip a clip; Fill Opacity or a style that is on pre-renders it.
 #[test]
 fn only_layer_styles_that_change_pixels_prerender() {
-    use effectcraft_project::styles::{self as st, GROUP};
+    use pulso_project::styles::{self as st, GROUP};
     let opts = ExportOptions::default();
     let reason = |edit: &dyn Fn(&mut Project, &mut Layer)| {
         let (mut p, cid) = ae_project();
         let c = p.comp(cid).unwrap();
         let gl = c.global_light.clone();
         let mut l = c.layers.iter().find(|l| l.name == "clip a").unwrap().clone();
-        st::add_blending_options(&mut l, &mut effectcraft_project::build::Ids(&mut p.next_id), &gl).unwrap();
+        st::add_blending_options(&mut l, &mut pulso_project::build::Ids(&mut p.next_id), &gl).unwrap();
         edit(&mut p, &mut l);
         let lid = l.id;
         *p.comp_mut(cid).unwrap().layers.iter_mut().find(|x| x.id == lid).unwrap() = l;
@@ -603,8 +603,8 @@ fn only_layer_styles_that_change_pixels_prerender() {
     assert_eq!(reason(&|_, l| fill(l, 40.0)).as_deref(), Some("layer styles"));
     let style = |on: bool| {
         move |p: &mut Project, l: &mut Layer| {
-            let gl = effectcraft_project::styles::GlobalLight::default();
-            st::add_style(l, &mut effectcraft_project::build::Ids(&mut p.next_id), "dropShadow", &gl, on).unwrap();
+            let gl = pulso_project::styles::GlobalLight::default();
+            st::add_style(l, &mut pulso_project::build::Ids(&mut p.next_id), "dropShadow", &gl, on).unwrap();
         }
     };
     assert_eq!(reason(&style(false)), None, "a style switched off");
@@ -658,7 +658,7 @@ fn export_then_reimport_keeps_the_timeline() {
     }
 }
 
-fn tr_orig(l: &Layer) -> &effectcraft_project::Property {
+fn tr_orig(l: &Layer) -> &pulso_project::Property {
     l.transform().unwrap().get("position").unwrap()
 }
 
@@ -669,7 +669,7 @@ fn export_skips_muted_keyframes() {
     let mut p = Project::default();
     let a = footage_item(&mut p, "/media/a.mov");
     let mut c = Comp::new(W, H, FrameRate::new(25, 1), t(4.0));
-    let mut l = effectcraft_project::build::layer(&mut p, &c, "clip", LayerSource::Footage { item: a }, (W, H), None);
+    let mut l = pulso_project::build::layer(&mut p, &c, "clip", LayerSource::Footage { item: a }, (W, H), None);
     {
         let pos = l.transform_mut().unwrap().get_mut("position").unwrap();
         pos.keys = vec![
@@ -697,7 +697,7 @@ fn muted_non_uniform_scale_does_not_force_prerendering() {
     let mut p = Project::default();
     let a = footage_item(&mut p, "/media/a.mov");
     let mut c = Comp::new(W, H, FrameRate::new(25, 1), t(2.0));
-    let mut l = effectcraft_project::build::layer(&mut p, &c, "clip", LayerSource::Footage { item: a }, (W, H), None);
+    let mut l = pulso_project::build::layer(&mut p, &c, "clip", LayerSource::Footage { item: a }, (W, H), None);
     {
         let scale = l.transform_mut().unwrap().get_mut("scale").unwrap();
         scale.keys = vec![Keyframe::new(t(0.0), Value::Vec3([100.0, 100.0, 100.0])), Keyframe::new(t(1.0), Value::Vec3([50.0, 200.0, 100.0]))];

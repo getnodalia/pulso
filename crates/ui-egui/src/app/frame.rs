@@ -2,7 +2,7 @@ use super::clipboard::copy_image;
 use super::window::fit_window;
 use super::*;
 
-impl EffectcraftApp {
+impl PulsoApp {
     /// Completed, non-discarded UI passes since launch.
     pub fn ui_passes(&self) -> u64 {
         self.ui_pass_seq
@@ -138,21 +138,21 @@ impl EffectcraftApp {
     pub(crate) fn handle_events(&mut self, ctx: &egui::Context) {
         for ev in self.session.drain_events() {
             match ev {
-                effectcraft_engine::Event::OpenComp(c) => {
+                pulso_engine::Event::OpenComp(c) => {
                     panels::viewers::on_open_comp(self, c);
                     self.ui.timeline.pps = None;
                 }
-                effectcraft_engine::Event::Toast { message, .. } => self.toast = Some((message, self.now)),
-                effectcraft_engine::Event::OpenUrl(url) => ctx.open_url(egui::OpenUrl::new_tab(url)),
+                pulso_engine::Event::Toast { message, .. } => self.toast = Some((message, self.now)),
+                pulso_engine::Event::OpenUrl(url) => ctx.open_url(egui::OpenUrl::new_tab(url)),
                 // Frames are keyed by content: an edit keeps those of comps it doesn't touch.
-                effectcraft_engine::Event::ProjectChanged { .. } => {}
-                effectcraft_engine::Event::Frontend { command, params } => {
+                pulso_engine::Event::ProjectChanged { .. } => {}
+                pulso_engine::Event::Frontend { command, params } => {
                     if let Err(e) = crate::menus::frontend(self, ctx, &command, params) {
                         self.ui.status = e;
                     }
                 }
-                effectcraft_engine::Event::PurgeCaches => self.frames.clear(),
-                effectcraft_engine::Event::CopyImage { width, height, rgba } => {
+                pulso_engine::Event::PurgeCaches => self.frames.clear(),
+                pulso_engine::Event::CopyImage { width, height, rgba } => {
                     if let Err(e) = copy_image(ctx, width, height, &rgba) {
                         self.ui.status = e;
                     }
@@ -491,17 +491,23 @@ impl EffectcraftApp {
         }
         ui.painter().rect_filled(full, 0.0, t.app_bg);
         let mut top = full.min.y;
-        if self.ui.show_menu_bar {
-            let mb = egui::Rect::from_min_size(full.min, egui::vec2(full.width(), 24.0));
-            let mut child = ui.new_child(egui::UiBuilder::new().max_rect(mb));
-            child.painter().rect_filled(mb, 0.0, t.header_bg);
+        // The in-window menu bar, in the window colour, while no desktop top bar shows the menus.
+        if self.ui.show_menu_bar && !self.hooks.global_menu_shown.as_ref().is_some_and(|shown| shown()) {
+            let mb = egui::Rect::from_min_size(full.min, egui::vec2(full.width(), 26.0));
+            let mut child = ui.new_child(egui::UiBuilder::new().max_rect(mb.shrink2(egui::vec2(crate::theme::ISLAND_GAP, 0.0))));
+            child.style_mut().visuals.widgets.inactive.weak_bg_fill = egui::Color32::TRANSPARENT;
+            child.style_mut().visuals.widgets.inactive.bg_stroke = egui::Stroke::NONE;
+            if self.custom_titlebar {
+                crate::titlebar::drag_area(&child, mb);
+            }
             menus::menu_bar(self, &mut child);
             top = mb.max.y;
         }
-        let header_h = 40.0;
-        let header = egui::Rect::from_min_size(egui::pos2(full.min.x, top), egui::vec2(full.width(), header_h));
+        let header = egui::Rect::from_min_size(egui::pos2(full.min.x, top), egui::vec2(full.width(), header::HEIGHT));
         header::show(self, ui, header);
-        let body = egui::Rect::from_min_max(egui::pos2(full.min.x + 4.0, header.max.y + 2.0), egui::pos2(full.max.x - 4.0, full.max.y - 4.0));
+        // Nodalia: the panels sit in the window colour as islands, a gap from every edge.
+        let gap = crate::theme::ISLAND_GAP;
+        let body = egui::Rect::from_min_max(egui::pos2(full.min.x + gap, header.max.y), egui::pos2(full.max.x - gap, full.max.y - gap));
         crate::color_picker::note_dialog(&ctx, self.dialog);
         // After the shortcuts, menus and header, which can replace the project (New, Open).
         self.ui.timeline.scope_links(self.session.script_ui.project_epoch);
@@ -518,6 +524,9 @@ impl EffectcraftApp {
         panels::scriptui_view::sync_panels(self);
         panels::scriptui_view::show_windows(self, &ctx);
         panels::learn::coach(self, &ctx);
+        if self.custom_titlebar {
+            crate::titlebar::resize_zones(ui);
+        }
         let lift = panels::media_panels::import_card(self, ui, full);
         self.draw_toast(ui, full, lift);
     }
@@ -603,7 +612,7 @@ impl EffectcraftApp {
     }
 }
 
-impl EffectcraftApp {
+impl PulsoApp {
     /// Scripts' `app.scheduleTask` tasks that are due (repeating ones keep a ScriptUI panel
     /// fresh): errors as a toast, the last line printed in the status bar, and a repaint when
     /// the next one is due.
@@ -612,7 +621,7 @@ impl EffectcraftApp {
             return;
         }
         let previous_comp = self.session.active_comp_id();
-        let Some(r) = effectcraft_engine::scriptui::ScriptUi::run_tasks(&mut self.session) else { return };
+        let Some(r) = pulso_engine::scriptui::ScriptUi::run_tasks(&mut self.session) else { return };
         if self.session.active_comp_id().is_some() && self.session.active_comp_id() != previous_comp {
             self.ui.start_screen = false;
         }
@@ -659,7 +668,7 @@ impl EffectcraftApp {
     /// One background worker tracks source availability and optional content reloads. It wakes
     /// the UI only for changes; availability remains enabled when automatic reload is off.
     fn tick_footage_reload(&mut self, ctx: &egui::Context) {
-        use effectcraft_engine::footage_reload;
+        use pulso_engine::footage_reload;
         if self.session.project.items.is_empty() && self.footage_watcher.is_none() {
             return;
         }

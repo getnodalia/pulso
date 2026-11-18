@@ -1,9 +1,9 @@
-//! Render Queue commands against mock exporters (real encoding is tested in `effectcraft-export`
-//! and end to end in `effectcraft-host`).
+//! Render Queue commands against mock exporters (real encoding is tested in `pulso-export`
+//! and end to end in `pulso-host`).
 
 use std::sync::{Arc, Mutex};
 
-use effectcraft_project::render_queue::{OutputFormat, RenderQuality, RenderStatus};
+use pulso_project::render_queue::{OutputFormat, RenderQuality, RenderStatus};
 use serde_json::json;
 
 use crate::render_queue::CANCELLED;
@@ -108,12 +108,12 @@ fn persists_in_project_file() {
     let (mut s, _) = rq_session();
     s.execute("renderQueue.add", json!({"format": "tiff", "output": "[compName]/[compName]_[####].tif", "quality": "draft"})).unwrap();
     let json = s.project.to_json();
-    let p = effectcraft_project::Project::from_json(&json).unwrap();
+    let p = pulso_project::Project::from_json(&json).unwrap();
     assert_eq!(p.render_queue, s.project.render_queue);
     assert_eq!(p.render_queue[0].settings.quality, RenderQuality::Draft);
     // Projects without a queue still load.
     let old = json.replace("\"render_queue\"", "\"_ignored\"");
-    assert!(effectcraft_project::Project::from_json(&old).unwrap().render_queue.is_empty());
+    assert!(pulso_project::Project::from_json(&old).unwrap().render_queue.is_empty());
 }
 
 #[test]
@@ -264,7 +264,7 @@ fn a_queue_run_keeps_its_jobs_warm() {
             let caches = job.caches.map(|c| c as *const _ as usize);
             let slot = job.renderer.map(|r| {
                 // The first module chooses; the second sees its choice.
-                r.lock().unwrap().get_or_insert(effectcraft_render::Backend::Cpu);
+                r.lock().unwrap().get_or_insert(pulso_render::Backend::Cpu);
                 r as *const _ as usize
             });
             self.0.lock().unwrap().push((caches, slot));
@@ -273,17 +273,17 @@ fn a_queue_run_keeps_its_jobs_warm() {
     }
     #[derive(Default)]
     struct Ends(AtomicUsize);
-    impl effectcraft_render::Accelerator for Ends {
+    impl pulso_render::Accelerator for Ends {
         fn name(&self) -> String {
             "ends".into()
         }
-        fn comp_frame(&self, _: &effectcraft_render::Renderer, _: effectcraft_project::ItemId, _: effectcraft_time::Tick) -> Option<effectcraft_raster::Image> {
+        fn comp_frame(&self, _: &pulso_render::Renderer, _: pulso_project::ItemId, _: pulso_time::Tick) -> Option<pulso_raster::Image> {
             None
         }
         fn supports_effect(&self, _: &str) -> bool {
             false
         }
-        fn effects(&self, _: &[effectcraft_render::FxStep], _: &effectcraft_effects::Buf, _: Option<f32>) -> Option<effectcraft_effects::Buf> {
+        fn effects(&self, _: &[pulso_render::FxStep], _: &pulso_effects::Buf, _: Option<f32>) -> Option<pulso_effects::Buf> {
             None
         }
         fn render_end(&self) {

@@ -349,7 +349,7 @@ pub const FIXTURES: &[&str] = &[
     "988-style-drop-shadow-switched-off.aep",
 ];
 
-use effectcraft_aep::{AepFile, Comp, Layer, LayerType, Project, parse};
+use pulso_aep::{AepFile, Comp, Layer, LayerType, Project, parse};
 
 /// Parses a fixture; the bytes must outlive the file, so the caller keeps them.
 pub fn open(bytes: &[u8]) -> AepFile<'_> {
@@ -389,11 +389,11 @@ pub fn layer_of_type<'f, 'a>(comp: &Comp<'f, 'a>, layer_type: LayerType) -> Laye
 
 /// A copy of a layer's `LIST Layr` with its id (`ldta` bytes 0-3) set to 0, for comparing the
 /// same layer in two cases of a combined file.
-pub fn without_layer_id(layer: &effectcraft_aep::Chunk<'_>) -> effectcraft_aep::Chunk<'static> {
+pub fn without_layer_id(layer: &pulso_aep::Chunk<'_>) -> pulso_aep::Chunk<'static> {
     let mut c = layer.clone().into_owned();
-    if let effectcraft_aep::Body::List { children, .. } = &mut c.body
+    if let pulso_aep::Body::List { children, .. } = &mut c.body
         && let Some(ldta) = children.iter_mut().find(|x| x.is(b"ldta"))
-        && let effectcraft_aep::Body::Data(d) = &mut ldta.body
+        && let pulso_aep::Body::Data(d) = &mut ldta.body
     {
         d.to_mut()[..4].fill(0);
     }

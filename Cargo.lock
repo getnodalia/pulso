@@ -1387,626 +1387,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "effectcraft"
-version = "0.23.1"
-dependencies = [
- "chrono",
- "cpal",
- "effectcraft-engine",
- "effectcraft-host",
- "effectcraft-ui-egui",
- "eframe",
- "egui",
- "fmv-macos-events",
- "log",
- "muda",
- "objc2 0.6.5",
- "objc2-app-kit 0.3.2",
- "objc2-foundation 0.3.2",
- "pollster 1.0.1",
- "rfd",
- "serde",
- "serde_json",
- "sysinfo",
- "winit",
- "winresource",
- "zbus",
-]
-
-[[package]]
-name = "effectcraft-aep"
-version = "0.23.1"
-dependencies = [
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-keyframe",
- "effectcraft-project",
- "effectcraft-time",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "effectcraft-automation"
-version = "0.23.1"
-dependencies = [
- "effectcraft-engine",
- "effectcraft-host",
- "effectcraft-model",
- "effectcraft-script",
- "image",
- "serde_json",
- "tempfile",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "effectcraft-av1enc"
-version = "0.23.1"
-dependencies = [
- "filmcraft-av1",
-]
-
-[[package]]
-name = "effectcraft-cli"
-version = "0.23.1"
-dependencies = [
- "cpu-time",
- "effectcraft-automation",
- "effectcraft-engine",
- "effectcraft-gpu",
- "effectcraft-host",
- "effectcraft-render",
- "effectcraft-sam2",
- "effectcraft-segment",
- "effectcraft-time",
- "effectcraft-track",
- "effectcraft-ui-egui",
- "image",
- "serde_json",
-]
-
-[[package]]
-name = "effectcraft-color"
-version = "0.23.1"
-dependencies = [
- "proptest",
- "serde",
-]
-
-[[package]]
-name = "effectcraft-effects"
-version = "0.23.1"
-dependencies = [
- "chrono",
- "effectcraft-color",
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-project",
- "effectcraft-raster",
- "effectcraft-segment",
- "effectcraft-track",
- "log",
- "rayon",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "effectcraft-engine"
-version = "0.23.1"
-dependencies = [
- "chrono",
- "craft-docpath",
- "effectcraft-aep",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-geom",
- "effectcraft-interchange",
- "effectcraft-keyframe",
- "effectcraft-lottie",
- "effectcraft-model",
- "effectcraft-path",
- "effectcraft-pdf",
- "effectcraft-project",
- "effectcraft-psd",
- "effectcraft-raster",
- "effectcraft-render",
- "effectcraft-sam2",
- "effectcraft-segment",
- "effectcraft-svg",
- "effectcraft-text",
- "effectcraft-time",
- "effectcraft-track",
- "exr",
- "image",
- "kurbo",
- "log",
- "rayon",
- "same-file",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.21",
- "web-time",
-]
-
-[[package]]
-name = "effectcraft-export"
-version = "0.23.1"
-dependencies = [
- "effectcraft-av1enc",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-hevcenc",
- "effectcraft-keyframe",
- "effectcraft-media",
- "effectcraft-opusenc",
- "effectcraft-project",
- "effectcraft-raster",
- "effectcraft-render",
- "effectcraft-time",
- "effectcraft-vp9enc",
- "exr",
- "filmcraft-aac",
- "filmcraft-h264enc",
- "filmcraft-isobmff",
- "filmcraft-opus",
- "filmcraft-prores",
- "filmcraft-vp9",
- "gif",
- "image",
- "log",
- "rayon",
- "thiserror 2.0.21",
- "web-time",
-]
-
-[[package]]
-name = "effectcraft-expr"
-version = "0.23.1"
-dependencies = [
- "boa_engine",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-path",
- "effectcraft-project",
- "effectcraft-render",
- "effectcraft-text",
- "effectcraft-time",
- "serde_json",
-]
-
-[[package]]
-name = "effectcraft-geom"
-version = "0.23.1"
-dependencies = [
- "proptest",
- "serde",
-]
-
-[[package]]
-name = "effectcraft-gpu"
-version = "0.23.1"
-dependencies = [
- "bytemuck",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-project",
- "effectcraft-raster",
- "effectcraft-render",
- "effectcraft-text",
- "effectcraft-time",
- "js-sys",
- "log",
- "pollster 1.0.1",
- "rayon",
- "wasm-bindgen",
- "web-time",
- "wgpu",
-]
-
-[[package]]
-name = "effectcraft-helper-host"
-version = "0.23.1"
-dependencies = [
- "bytemuck",
- "effectcraft-effects",
- "log",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "effectcraft-hevcenc"
-version = "0.23.1"
-dependencies = [
- "filmcraft-hevc",
-]
-
-[[package]]
-name = "effectcraft-host"
-version = "0.23.1"
-dependencies = [
- "effectcraft-engine",
- "effectcraft-export",
- "effectcraft-expr",
- "effectcraft-helper-host",
- "effectcraft-interchange",
- "effectcraft-media",
- "effectcraft-pdf",
- "effectcraft-plugin",
- "effectcraft-project",
- "effectcraft-psd",
- "effectcraft-raster",
- "effectcraft-script",
- "effectcraft-svg",
- "effectcraft-time",
- "exr",
- "gif",
- "image",
- "log",
- "rayon",
- "serde_json",
- "tempfile",
-]
-
-[[package]]
-name = "effectcraft-interchange"
-version = "0.23.1"
-dependencies = [
- "effectcraft-color",
- "effectcraft-keyframe",
- "effectcraft-project",
- "effectcraft-time",
- "filmcraft-color",
- "filmcraft-geom",
- "filmcraft-interchange",
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-time",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "effectcraft-keyframe"
-version = "0.23.1"
-dependencies = [
- "effectcraft-color",
- "effectcraft-geom",
- "effectcraft-time",
- "proptest",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "effectcraft-lottie"
-version = "0.23.1"
-dependencies = [
- "craft-docpath",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-keyframe",
- "effectcraft-path",
- "effectcraft-project",
- "effectcraft-render",
- "effectcraft-text",
- "effectcraft-time",
- "kurbo",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "effectcraft-media"
-version = "0.23.1"
-dependencies = [
- "craft-docpath",
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-model",
- "effectcraft-pdf",
- "effectcraft-project",
- "effectcraft-psd",
- "effectcraft-raster",
- "effectcraft-render",
- "effectcraft-svg",
- "effectcraft-time",
- "exr",
- "filmcraft-aac",
- "filmcraft-codecs",
- "filmcraft-color",
- "filmcraft-frame",
- "filmcraft-isobmff",
- "filmcraft-matroska",
- "filmcraft-media",
- "filmcraft-mpegts",
- "filmcraft-time",
- "gif",
- "image",
- "log",
- "rayon",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "effectcraft-model"
-version = "0.23.1"
-dependencies = [
- "effectcraft-geom",
- "image",
- "log",
- "miniz_oxide 0.9.1",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "effectcraft-opusenc"
-version = "0.23.1"
-dependencies = [
- "filmcraft-opus",
-]
-
-[[package]]
-name = "effectcraft-path"
-version = "0.23.1"
-dependencies = [
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-raster",
- "kurbo",
- "linesweeper",
- "tiny-skia 0.12.0",
-]
-
-[[package]]
-name = "effectcraft-pdf"
-version = "0.23.1"
-dependencies = [
- "craft-pdf",
- "effectcraft-raster",
- "effectcraft-svg",
- "effectcraft-text",
- "image",
- "kurbo",
- "miniz_oxide 0.9.1",
- "skrifa",
- "wasm-bindgen-test",
- "zune-jpeg",
-]
-
-[[package]]
-name = "effectcraft-plugin"
-version = "0.23.1"
-dependencies = [
- "effectcraft-effects",
- "effectcraft-keyframe",
- "effectcraft-project",
- "effectcraft-raster",
- "serde_json",
- "wasmi",
-]
-
-[[package]]
-name = "effectcraft-project"
-version = "0.23.1"
-dependencies = [
- "craft-ecproj-format",
- "effectcraft-color",
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-time",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "effectcraft-psd"
-version = "0.23.1"
-dependencies = [
- "miniz_oxide 0.9.1",
-]
-
-[[package]]
-name = "effectcraft-raster"
-version = "0.23.1"
-dependencies = [
- "effectcraft-color",
- "effectcraft-geom",
- "rayon",
- "tempfile",
-]
-
-[[package]]
-name = "effectcraft-render"
-version = "0.23.1"
-dependencies = [
- "effectcraft-color",
- "effectcraft-effects",
- "effectcraft-geom",
- "effectcraft-keyframe",
- "effectcraft-model",
- "effectcraft-path",
- "effectcraft-project",
- "effectcraft-raster",
- "effectcraft-text",
- "effectcraft-time",
- "kurbo",
- "log",
- "lz4_flex",
- "rayon",
- "serde",
- "tempfile",
- "web-time",
-]
-
-[[package]]
-name = "effectcraft-sam2"
-version = "0.23.1"
-dependencies = [
- "bytemuck",
- "candle-core",
- "candle-nn",
- "effectcraft-segment",
- "half",
- "log",
- "pollster 1.0.1",
- "rayon",
- "wgpu",
-]
-
-[[package]]
-name = "effectcraft-script"
-version = "0.23.1"
-dependencies = [
- "boa_engine",
- "effectcraft-engine",
- "effectcraft-expr",
- "effectcraft-keyframe",
- "effectcraft-path",
- "effectcraft-project",
- "effectcraft-psd",
- "effectcraft-render",
- "effectcraft-time",
- "serde_json",
- "socket2",
- "web-time",
-]
-
-[[package]]
-name = "effectcraft-segment"
-version = "0.23.1"
-dependencies = [
- "miniz_oxide 0.9.1",
- "ndarray",
- "rayon",
-]
-
-[[package]]
-name = "effectcraft-svg"
-version = "0.23.1"
-dependencies = [
- "effectcraft-geom",
- "effectcraft-path",
- "effectcraft-raster",
- "kurbo",
- "rayon",
- "roxmltree",
-]
-
-[[package]]
-name = "effectcraft-text"
-version = "0.23.1"
-dependencies = [
- "effectcraft-keyframe",
- "harfrust",
- "kurbo",
- "skrifa",
- "unicode-bidi",
- "unicode-linebreak",
-]
-
-[[package]]
-name = "effectcraft-time"
-version = "0.23.1"
-dependencies = [
- "proptest",
- "serde",
-]
-
-[[package]]
-name = "effectcraft-track"
-version = "0.23.1"
-dependencies = [
- "effectcraft-raster",
- "effectcraft-segment",
- "rayon",
- "serde",
- "serde_json",
- "web-time",
-]
-
-[[package]]
-name = "effectcraft-ui-egui"
-version = "0.23.1"
-dependencies = [
- "bytemuck",
- "chrono",
- "craft-quit",
- "craft-ui",
- "effectcraft-color",
- "effectcraft-engine",
- "effectcraft-geom",
- "effectcraft-gpu",
- "effectcraft-host",
- "effectcraft-keyframe",
- "effectcraft-media",
- "effectcraft-path",
- "effectcraft-project",
- "effectcraft-render",
- "effectcraft-segment",
- "effectcraft-text",
- "effectcraft-time",
- "eframe",
- "egui",
- "egui_extras",
- "egui_kittest",
- "exr",
- "half",
- "image",
- "kurbo",
- "log",
- "nodalia-update",
- "pollster 1.0.1",
- "rayon",
- "serde",
- "serde_json",
- "sys-locale",
- "tempfile",
- "toml",
- "web-time",
-]
-
-[[package]]
-name = "effectcraft-vp9enc"
-version = "0.23.1"
-
-[[package]]
-name = "effectcraft-web"
-version = "0.23.1"
-dependencies = [
- "effectcraft-engine",
- "effectcraft-export",
- "effectcraft-expr",
- "effectcraft-gpu",
- "effectcraft-host",
- "effectcraft-media",
- "effectcraft-ui-egui",
- "eframe",
- "egui",
- "js-sys",
- "log",
- "serde",
- "serde_json",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "web-time",
-]
-
-[[package]]
 name = "eframe"
 version = "0.37.0"
 source = "git+https://github.com/getnodalia/foundation?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc799681571963842f95b55a6b68431b15a"
@@ -4053,9 +3433,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "nodalia-theme"
+version = "0.1.0-alpha.1"
+source = "git+https://github.com/danielmigueltejedor/nodalia-design?rev=78c44503e877ad748fd21c4e36e65e7bfc3efc81#78c44503e877ad748fd21c4e36e65e7bfc3efc81"
+dependencies = [
+ "egui",
+]
+
+[[package]]
 name = "nodalia-update"
 version = "0.1.0-alpha.1"
-source = "git+https://github.com/danielmigueltejedor/nodalia-design?rev=d066d5d351f18f704bdfd8aad6f04b9e96a155e4#d066d5d351f18f704bdfd8aad6f04b9e96a155e4"
+source = "git+https://github.com/danielmigueltejedor/nodalia-design?rev=78c44503e877ad748fd21c4e36e65e7bfc3efc81#78c44503e877ad748fd21c4e36e65e7bfc3efc81"
 dependencies = [
  "egui",
  "serde_json",
@@ -4949,6 +4337,627 @@ name = "pulp-wasm-simd-flag"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d8f70e07b9c3962945a74e59ca1c511bba65b6419468acc217c457d93f3c740"
+
+[[package]]
+name = "pulso"
+version = "0.23.1"
+dependencies = [
+ "chrono",
+ "cpal",
+ "eframe",
+ "egui",
+ "fmv-macos-events",
+ "log",
+ "muda",
+ "objc2 0.6.5",
+ "objc2-app-kit 0.3.2",
+ "objc2-foundation 0.3.2",
+ "pollster 1.0.1",
+ "pulso-engine",
+ "pulso-host",
+ "pulso-ui-egui",
+ "rfd",
+ "serde",
+ "serde_json",
+ "sysinfo",
+ "winit",
+ "winresource",
+ "zbus",
+]
+
+[[package]]
+name = "pulso-aep"
+version = "0.23.1"
+dependencies = [
+ "pulso-color",
+ "pulso-effects",
+ "pulso-keyframe",
+ "pulso-project",
+ "pulso-time",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "pulso-automation"
+version = "0.23.1"
+dependencies = [
+ "image",
+ "pulso-engine",
+ "pulso-host",
+ "pulso-model",
+ "pulso-script",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "pulso-av1enc"
+version = "0.23.1"
+dependencies = [
+ "filmcraft-av1",
+]
+
+[[package]]
+name = "pulso-cli"
+version = "0.23.1"
+dependencies = [
+ "cpu-time",
+ "image",
+ "pulso-automation",
+ "pulso-engine",
+ "pulso-gpu",
+ "pulso-host",
+ "pulso-render",
+ "pulso-sam2",
+ "pulso-segment",
+ "pulso-time",
+ "pulso-track",
+ "pulso-ui-egui",
+ "serde_json",
+]
+
+[[package]]
+name = "pulso-color"
+version = "0.23.1"
+dependencies = [
+ "proptest",
+ "serde",
+]
+
+[[package]]
+name = "pulso-effects"
+version = "0.23.1"
+dependencies = [
+ "chrono",
+ "log",
+ "pulso-color",
+ "pulso-geom",
+ "pulso-keyframe",
+ "pulso-project",
+ "pulso-raster",
+ "pulso-segment",
+ "pulso-track",
+ "rayon",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "pulso-engine"
+version = "0.23.1"
+dependencies = [
+ "chrono",
+ "craft-docpath",
+ "exr",
+ "image",
+ "kurbo",
+ "log",
+ "pulso-aep",
+ "pulso-color",
+ "pulso-effects",
+ "pulso-geom",
+ "pulso-interchange",
+ "pulso-keyframe",
+ "pulso-lottie",
+ "pulso-model",
+ "pulso-path",
+ "pulso-pdf",
+ "pulso-project",
+ "pulso-psd",
+ "pulso-raster",
+ "pulso-render",
+ "pulso-sam2",
+ "pulso-segment",
+ "pulso-svg",
+ "pulso-text",
+ "pulso-time",
+ "pulso-track",
+ "rayon",
+ "same-file",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.21",
+ "web-time",
+]
+
+[[package]]
+name = "pulso-export"
+version = "0.23.1"
+dependencies = [
+ "exr",
+ "filmcraft-aac",
+ "filmcraft-h264enc",
+ "filmcraft-isobmff",
+ "filmcraft-opus",
+ "filmcraft-prores",
+ "filmcraft-vp9",
+ "gif",
+ "image",
+ "log",
+ "pulso-av1enc",
+ "pulso-color",
+ "pulso-effects",
+ "pulso-hevcenc",
+ "pulso-keyframe",
+ "pulso-media",
+ "pulso-opusenc",
+ "pulso-project",
+ "pulso-raster",
+ "pulso-render",
+ "pulso-time",
+ "pulso-vp9enc",
+ "rayon",
+ "thiserror 2.0.21",
+ "web-time",
+]
+
+[[package]]
+name = "pulso-expr"
+version = "0.23.1"
+dependencies = [
+ "boa_engine",
+ "pulso-color",
+ "pulso-effects",
+ "pulso-geom",
+ "pulso-keyframe",
+ "pulso-path",
+ "pulso-project",
+ "pulso-render",
+ "pulso-text",
+ "pulso-time",
+ "serde_json",
+]
+
+[[package]]
+name = "pulso-geom"
+version = "0.23.1"
+dependencies = [
+ "proptest",
+ "serde",
+]
+
+[[package]]
+name = "pulso-gpu"
+version = "0.23.1"
+dependencies = [
+ "bytemuck",
+ "js-sys",
+ "log",
+ "pollster 1.0.1",
+ "pulso-color",
+ "pulso-effects",
+ "pulso-geom",
+ "pulso-keyframe",
+ "pulso-project",
+ "pulso-raster",
+ "pulso-render",
+ "pulso-text",
+ "pulso-time",
+ "rayon",
+ "wasm-bindgen",
+ "web-time",
+ "wgpu",
+]
+
+[[package]]
+name = "pulso-helper-host"
+version = "0.23.1"
+dependencies = [
+ "bytemuck",
+ "log",
+ "pulso-effects",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "pulso-hevcenc"
+version = "0.23.1"
+dependencies = [
+ "filmcraft-hevc",
+]
+
+[[package]]
+name = "pulso-host"
+version = "0.23.1"
+dependencies = [
+ "exr",
+ "gif",
+ "image",
+ "log",
+ "pulso-engine",
+ "pulso-export",
+ "pulso-expr",
+ "pulso-helper-host",
+ "pulso-interchange",
+ "pulso-media",
+ "pulso-pdf",
+ "pulso-plugin",
+ "pulso-project",
+ "pulso-psd",
+ "pulso-raster",
+ "pulso-script",
+ "pulso-svg",
+ "pulso-time",
+ "rayon",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
+name = "pulso-interchange"
+version = "0.23.1"
+dependencies = [
+ "filmcraft-color",
+ "filmcraft-geom",
+ "filmcraft-interchange",
+ "filmcraft-media",
+ "filmcraft-project",
+ "filmcraft-time",
+ "pulso-color",
+ "pulso-keyframe",
+ "pulso-project",
+ "pulso-time",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "pulso-keyframe"
+version = "0.23.1"
+dependencies = [
+ "proptest",
+ "pulso-color",
+ "pulso-geom",
+ "pulso-time",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "pulso-lottie"
+version = "0.23.1"
+dependencies = [
+ "craft-docpath",
+ "kurbo",
+ "pulso-color",
+ "pulso-effects",
+ "pulso-keyframe",
+ "pulso-path",
+ "pulso-project",
+ "pulso-render",
+ "pulso-text",
+ "pulso-time",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "pulso-media"
+version = "0.23.1"
+dependencies = [
+ "craft-docpath",
+ "exr",
+ "filmcraft-aac",
+ "filmcraft-codecs",
+ "filmcraft-color",
+ "filmcraft-frame",
+ "filmcraft-isobmff",
+ "filmcraft-matroska",
+ "filmcraft-media",
+ "filmcraft-mpegts",
+ "filmcraft-time",
+ "gif",
+ "image",
+ "log",
+ "pulso-color",
+ "pulso-effects",
+ "pulso-model",
+ "pulso-pdf",
+ "pulso-project",
+ "pulso-psd",
+ "pulso-raster",
+ "pulso-render",
+ "pulso-svg",
+ "pulso-time",
+ "rayon",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "pulso-model"
+version = "0.23.1"
+dependencies = [
+ "image",
+ "log",
+ "miniz_oxide 0.9.1",
+ "pulso-geom",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "pulso-opusenc"
+version = "0.23.1"
+dependencies = [
+ "filmcraft-opus",
+]
+
+[[package]]
+name = "pulso-path"
+version = "0.23.1"
+dependencies = [
+ "kurbo",
+ "linesweeper",
+ "pulso-geom",
+ "pulso-keyframe",
+ "pulso-raster",
+ "tiny-skia 0.12.0",
+]
+
+[[package]]
+name = "pulso-pdf"
+version = "0.23.1"
+dependencies = [
+ "craft-pdf",
+ "image",
+ "kurbo",
+ "miniz_oxide 0.9.1",
+ "pulso-raster",
+ "pulso-svg",
+ "pulso-text",
+ "skrifa",
+ "wasm-bindgen-test",
+ "zune-jpeg",
+]
+
+[[package]]
+name = "pulso-plugin"
+version = "0.23.1"
+dependencies = [
+ "pulso-effects",
+ "pulso-keyframe",
+ "pulso-project",
+ "pulso-raster",
+ "serde_json",
+ "wasmi",
+]
+
+[[package]]
+name = "pulso-project"
+version = "0.23.1"
+dependencies = [
+ "craft-ecproj-format",
+ "pulso-color",
+ "pulso-geom",
+ "pulso-keyframe",
+ "pulso-time",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "pulso-psd"
+version = "0.23.1"
+dependencies = [
+ "miniz_oxide 0.9.1",
+]
+
+[[package]]
+name = "pulso-raster"
+version = "0.23.1"
+dependencies = [
+ "pulso-color",
+ "pulso-geom",
+ "rayon",
+ "tempfile",
+]
+
+[[package]]
+name = "pulso-render"
+version = "0.23.1"
+dependencies = [
+ "kurbo",
+ "log",
+ "lz4_flex",
+ "pulso-color",
+ "pulso-effects",
+ "pulso-geom",
+ "pulso-keyframe",
+ "pulso-model",
+ "pulso-path",
+ "pulso-project",
+ "pulso-raster",
+ "pulso-text",
+ "pulso-time",
+ "rayon",
+ "serde",
+ "tempfile",
+ "web-time",
+]
+
+[[package]]
+name = "pulso-sam2"
+version = "0.23.1"
+dependencies = [
+ "bytemuck",
+ "candle-core",
+ "candle-nn",
+ "half",
+ "log",
+ "pollster 1.0.1",
+ "pulso-segment",
+ "rayon",
+ "wgpu",
+]
+
+[[package]]
+name = "pulso-script"
+version = "0.23.1"
+dependencies = [
+ "boa_engine",
+ "pulso-engine",
+ "pulso-expr",
+ "pulso-keyframe",
+ "pulso-path",
+ "pulso-project",
+ "pulso-psd",
+ "pulso-render",
+ "pulso-time",
+ "serde_json",
+ "socket2",
+ "web-time",
+]
+
+[[package]]
+name = "pulso-segment"
+version = "0.23.1"
+dependencies = [
+ "miniz_oxide 0.9.1",
+ "ndarray",
+ "rayon",
+]
+
+[[package]]
+name = "pulso-svg"
+version = "0.23.1"
+dependencies = [
+ "kurbo",
+ "pulso-geom",
+ "pulso-path",
+ "pulso-raster",
+ "rayon",
+ "roxmltree",
+]
+
+[[package]]
+name = "pulso-text"
+version = "0.23.1"
+dependencies = [
+ "harfrust",
+ "kurbo",
+ "pulso-keyframe",
+ "skrifa",
+ "unicode-bidi",
+ "unicode-linebreak",
+]
+
+[[package]]
+name = "pulso-time"
+version = "0.23.1"
+dependencies = [
+ "proptest",
+ "serde",
+]
+
+[[package]]
+name = "pulso-track"
+version = "0.23.1"
+dependencies = [
+ "pulso-raster",
+ "pulso-segment",
+ "rayon",
+ "serde",
+ "serde_json",
+ "web-time",
+]
+
+[[package]]
+name = "pulso-ui-egui"
+version = "0.23.1"
+dependencies = [
+ "bytemuck",
+ "chrono",
+ "craft-quit",
+ "craft-ui",
+ "eframe",
+ "egui",
+ "egui_extras",
+ "egui_kittest",
+ "exr",
+ "half",
+ "image",
+ "kurbo",
+ "log",
+ "nodalia-theme",
+ "nodalia-update",
+ "pollster 1.0.1",
+ "pulso-color",
+ "pulso-engine",
+ "pulso-geom",
+ "pulso-gpu",
+ "pulso-host",
+ "pulso-keyframe",
+ "pulso-media",
+ "pulso-path",
+ "pulso-project",
+ "pulso-render",
+ "pulso-segment",
+ "pulso-text",
+ "pulso-time",
+ "rayon",
+ "serde",
+ "serde_json",
+ "sys-locale",
+ "tempfile",
+ "toml",
+ "web-time",
+]
+
+[[package]]
+name = "pulso-vp9enc"
+version = "0.23.1"
+
+[[package]]
+name = "pulso-web"
+version = "0.23.1"
+dependencies = [
+ "eframe",
+ "egui",
+ "js-sys",
+ "log",
+ "pulso-engine",
+ "pulso-export",
+ "pulso-expr",
+ "pulso-gpu",
+ "pulso-host",
+ "pulso-media",
+ "pulso-ui-egui",
+ "serde",
+ "serde_json",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "web-time",
+]
 
 [[package]]
 name = "pxfm"

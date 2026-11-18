@@ -19,4 +19,4 @@ Expressions are JavaScript with the After Effects object model, such as `wiggle`
 
 ## Status
 
-Reading `.aep` files is the largest known gap between Pulso and After Effects. It is listed in the project's [gap list](https://github.com/storytold/effectcraft/blob/main/docs/gaps.md), and the maintainers have not yet decided how to approach it.
+Reading `.aep` files is the largest known gap between Pulso and After Effects. It is listed in the project's [gap list](https://github.com/getnodalia/pulso/blob/main/docs/gaps.md), and the maintainers have not yet decided how to approach it.

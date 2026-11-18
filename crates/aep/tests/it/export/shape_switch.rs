@@ -3,9 +3,9 @@
 //! the item's `enabled`, the exporter writes it back.
 
 use crate::export::helpers::export_all;
-use effectcraft_aep::import::{ImportOptions, import};
-use effectcraft_aep::{PropGroup as AepGroup, PropNode, parse};
-use effectcraft_project::{Node, Project, PropGroup};
+use pulso_aep::import::{ImportOptions, import};
+use pulso_aep::{PropGroup as AepGroup, PropNode, parse};
+use pulso_project::{Node, Project, PropGroup};
 
 fn import_bytes(bytes: &[u8]) -> Project {
     let mut p = Project::default();
@@ -55,7 +55,7 @@ fn fill_flags(bytes: &[u8]) -> Vec<u32> {
         }
     }
     let f = parse(bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&f).expect("project");
+    let view = pulso_aep::Project::new(&f).expect("project");
     let mut out = Vec::new();
     for item in view.all_items() {
         let Some(c) = item.comp() else { continue };
@@ -99,7 +99,7 @@ fn a_switched_off_fill_stays_off() {
                 }
             }
             if let Some(it) = q.item_mut(id) {
-                it.kind = effectcraft_project::ItemKind::Comp(std::sync::Arc::new(c));
+                it.kind = pulso_project::ItemKind::Comp(std::sync::Arc::new(c));
             }
         }
     }

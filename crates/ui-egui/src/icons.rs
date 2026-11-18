@@ -241,8 +241,90 @@ const SPARKLE: Pieces = &[&[(8.0, 1.5), (9.784, 8.0), (8.0, 14.5), (6.216, 8.0)]
 const CONCAVE: [Pieces; 3] = [SELECTION_ARROW, SPEAKER, SPARKLE];
 
 /// Paint `icon` centred in `rect`.
+/// The Nodalia Design icon that draws `icon`, where NDL has one; Pulso's own drawing otherwise
+/// (After Effects' tools and switches that have no counterpart in NDL's set yet).
+fn ndl_name(icon: Icon) -> Option<&'static str> {
+    use Icon::*;
+    Some(match icon {
+        Home => "home",
+        Selection => "select",
+        Hand => "pan",
+        Zoom => "zoom",
+        Orbit => "orbit",
+        Rotate => "rotate",
+        Rectangle => "rectangle",
+        RoundedRect => "rounded-rectangle",
+        Ellipse => "ellipse",
+        Polygon => "polygon",
+        Star | StarFilled => "star",
+        Pen => "pen",
+        PenAdd => "pen-add",
+        PenDelete => "pen-remove",
+        Type => "text",
+        TypeVertical => "type-vertical",
+        Brush => "brush",
+        Clone => "stamp",
+        Eraser => "eraser",
+        Puppet => "puppet-warp",
+        Eye => "view",
+        Speaker => "volume",
+        Lock => "lock",
+        LockOpen => "unlock",
+        Fx => "effects",
+        Cube => "cube",
+        Graph => "curvature",
+        Stopwatch => "clock",
+        Keyframe => "keyframe",
+        Flowchart => "network",
+        Folder => "folder",
+        Footage => "film",
+        Image => "image",
+        Audio => "music",
+        Camera => "camera",
+        Light => "bulb",
+        Search => "search",
+        Trash => "delete",
+        NewFolder => "folder-plus",
+        Gear => "settings",
+        ChevronDown => "chevron-down",
+        ChevronRight => "chevron-right",
+        ChevronLeft => "chevron-left",
+        Play => "play",
+        Pause => "pause",
+        First => "skip-previous",
+        Last => "skip-next",
+        Loop => "repeat",
+        Snapshot => "camera",
+        Grid => "grid",
+        Region => "region",
+        Plus => "plus",
+        Minus => "minus",
+        Close => "close",
+        Link => "link",
+        MountainSmall => "mountain-small",
+        MountainLarge => "mountain",
+        Fullscreen => "fullscreen",
+        Exposure => "exposure",
+        StrokeWidth => "stroke-weight",
+        Chat => "comment",
+        Globe => "globe",
+        Code => "code",
+        Sparkle => "sparkle",
+        Monitor => "monitor",
+        Sun => "sun",
+        Moon => "moon",
+        _ => return None,
+    })
+}
+
 pub fn paint(painter: &Painter, rect: Rect, icon: Icon, color: Color32) {
-    let pen = Pen16 { painter, rect, color, width: 1.25 };
+    if let Some(glyph) = ndl_name(icon).and_then(nodalia_theme::icons::get) {
+        // NDL draws on a 24 grid with a 2 px margin, these icons on a 16 grid.
+        nodalia_theme::icons::paint(painter, rect.expand(rect.width() / 12.0), glyph, nodalia_theme::icons::Style::bold(color));
+        return;
+    }
+    // the bold stroke of NDL's icons at this size (2.25 on 24 is 1.5 on 16)
+    let pen = Pen16 { painter, rect, color, width: 1.5 };
     use Icon::*;
     match icon {
         Home => {
@@ -734,19 +816,12 @@ pub fn paint(painter: &Painter, rect: Rect, icon: Icon, color: Color32) {
 
 /// Keyframe glyph by interpolation (diamond = linear, hourglass = bezier/ease, circle = auto,
 /// square = hold), split into in/out halves.
-pub fn keyframe(
-    painter: &Painter,
-    center: Pos2,
-    size: f32,
-    left: effectcraft_engine::keyframe::KeyHalf,
-    right: effectcraft_engine::keyframe::KeyHalf,
-    fill: Color32,
-) {
+pub fn keyframe(painter: &Painter, center: Pos2, size: f32, left: pulso_engine::keyframe::KeyHalf, right: pulso_engine::keyframe::KeyHalf, fill: Color32) {
     painter.extend(keyframe_shapes(center, size, left, right, fill));
 }
 
 /// The screen rect a [`keyframe`] glyph covers, read off the shapes it draws.
-pub fn keyframe_bounds(center: Pos2, size: f32, left: effectcraft_engine::keyframe::KeyHalf, right: effectcraft_engine::keyframe::KeyHalf) -> Rect {
+pub fn keyframe_bounds(center: Pos2, size: f32, left: pulso_engine::keyframe::KeyHalf, right: pulso_engine::keyframe::KeyHalf) -> Rect {
     // Any opaque fill: a transparent shape would report no bounds.
     egui::Shape::Vec(keyframe_shapes(center, size, left, right, Color32::WHITE)).visual_bounding_rect()
 }
@@ -754,14 +829,8 @@ pub fn keyframe_bounds(center: Pos2, size: f32, left: effectcraft_engine::keyfra
 /// The halves of a [`keyframe`] glyph. Flat, without a dark outline (as in After Effects), so
 /// keys that overlap read as one shape instead of a tangle of borders (#284); the hairline in
 /// the fill colour closes the seam between the halves.
-fn keyframe_shapes(
-    center: Pos2,
-    size: f32,
-    left: effectcraft_engine::keyframe::KeyHalf,
-    right: effectcraft_engine::keyframe::KeyHalf,
-    fill: Color32,
-) -> Vec<egui::Shape> {
-    use effectcraft_engine::keyframe::KeyHalf as H;
+fn keyframe_shapes(center: Pos2, size: f32, left: pulso_engine::keyframe::KeyHalf, right: pulso_engine::keyframe::KeyHalf, fill: Color32) -> Vec<egui::Shape> {
+    use pulso_engine::keyframe::KeyHalf as H;
     let r = size / 2.0;
     let mut out = Vec::with_capacity(2);
     let mut half = |pts: Vec<Pos2>| out.push(PathShape::convex_polygon(pts, fill, Stroke::new(0.5, fill)).into());
@@ -800,7 +869,7 @@ fn keyframe_shapes(
 
 #[cfg(test)]
 mod tests {
-    use effectcraft_engine::keyframe::KeyHalf as H;
+    use pulso_engine::keyframe::KeyHalf as H;
 
     /// The Selection arrow (and the Speaker and Sparkle) are concave; filled as one polygon they
     /// rendered as a broken fan. Each is drawn as convex pieces instead.

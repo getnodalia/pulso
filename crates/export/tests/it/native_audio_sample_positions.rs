@@ -1,11 +1,11 @@
 //! Native MediaPool decoding and native WAV export preserve selected sample positions.
-use effectcraft_export::render_queue::{AudioFormat, OutputFormat, OutputModule, RenderSettings};
-use effectcraft_export::{Job, JobOptions, Sink, export};
-use effectcraft_media::{MediaPool, probe_bytes};
-use effectcraft_project::{Comp, Footage, ItemId, ItemKind, LayerSource, Project, build};
-use effectcraft_raster::Image;
-use effectcraft_render::FootageSource;
-use effectcraft_time::{FrameRate, TICKS_PER_SECOND, Tick};
+use pulso_export::render_queue::{AudioFormat, OutputFormat, OutputModule, RenderSettings};
+use pulso_export::{Job, JobOptions, Sink, export};
+use pulso_media::{MediaPool, probe_bytes};
+use pulso_project::{Comp, Footage, ItemId, ItemKind, LayerSource, Project, build};
+use pulso_raster::Image;
+use pulso_render::FootageSource;
+use pulso_time::{FrameRate, TICKS_PER_SECOND, Tick};
 use std::sync::{Arc, Mutex};
 
 struct RecordingNative {

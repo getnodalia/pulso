@@ -1,11 +1,11 @@
 //! Layer Styles pixel tests.
 
-use effectcraft_color::Label;
-use effectcraft_keyframe::{Gradient, Keyframe, ShapePath, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::styles::{self as st, GROUP};
-use effectcraft_project::{Comp, ItemId, ItemKind, Layer, LayerSource, MaskMode, Project, Solid};
-use effectcraft_time::{FrameRate, Tick};
+use pulso_color::Label;
+use pulso_keyframe::{Gradient, Keyframe, ShapePath, Value};
+use pulso_project::build::{self, Ids};
+use pulso_project::styles::{self as st, GROUP};
+use pulso_project::{Comp, ItemId, ItemKind, Layer, LayerSource, MaskMode, Project, Solid};
+use pulso_time::{FrameRate, Tick};
 
 use crate::{Image, NoFootage, RenderOpts, Renderer, render_frame};
 

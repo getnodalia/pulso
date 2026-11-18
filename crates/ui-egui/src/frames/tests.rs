@@ -1,5 +1,5 @@
 use super::*;
-use effectcraft_engine::project::LayerSource;
+use pulso_engine::project::LayerSource;
 
 #[test]
 fn render_scales_are_the_factors_the_thousandths_stand_for() {
@@ -14,7 +14,7 @@ fn render_scales_are_the_factors_the_thousandths_stand_for() {
 
 #[test]
 fn converting_a_frame_with_nan_alpha_keeps_the_viewer_alive() {
-    let image = effectcraft_engine::render::Image::filled(1, 1, [0.5, 0.25, 0.1, f32::NAN]);
+    let image = pulso_engine::render::Image::filled(1, 1, [0.5, 0.25, 0.1, f32::NAN]);
     assert_eq!(to_color_image(&image).pixels, [egui::Color32::TRANSPARENT]);
 }
 
@@ -49,7 +49,7 @@ impl RemoteFrames for ProbeDisk {
 }
 
 fn disk_fixture(stored_frames: &[i64]) -> (Frames, RenderSource, FrameKey, RenderOpts, Arc<ProbeDisk>, u128) {
-    let mut session = effectcraft_engine::Session::default();
+    let mut session = pulso_engine::Session::default();
     session.execute("comp.new", serde_json::json!({"width": 32, "height": 18, "duration": 1})).unwrap();
     let comp = session.active_comp_id().unwrap();
     let opts = RenderOpts::default();
@@ -94,7 +94,7 @@ fn disk_indicator_does_not_hash_on_ui_thread_and_coalesces_edits() {
             done(Err("test has no renderer".into()));
         }
     }
-    let mut s = effectcraft_engine::Session::default();
+    let mut s = pulso_engine::Session::default();
     s.execute("comp.new", serde_json::json!({"width":32,"height":18,"duration":1})).unwrap();
     let cid = s.active_comp_id().unwrap();
     let opts = RenderOpts::default();
@@ -234,9 +234,9 @@ fn insert(f: &Frames, k: FrameKey) {
 /// released, not left "in progress" forever, so the viewer can ask for it again (#106).
 #[test]
 fn a_frame_whose_render_panics_is_released() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{Footage, FootageKind};
-    use effectcraft_engine::render::Image;
+    use pulso_engine::Session;
+    use pulso_engine::project::{Footage, FootageKind};
+    use pulso_engine::render::Image;
     use serde_json::json;
     use std::sync::atomic::{AtomicUsize, Ordering};
     #[derive(Default)]
@@ -282,10 +282,10 @@ fn a_frame_whose_render_panics_is_released() {
 /// nest on every thread, each holding its buffers, until memory ran out.
 #[test]
 fn a_waiting_render_never_starts_another_on_its_thread() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{Footage, FootageKind};
-    use effectcraft_engine::render::Image;
-    use effectcraft_engine::time::FrameRate;
+    use pulso_engine::Session;
+    use pulso_engine::project::{Footage, FootageKind};
+    use pulso_engine::render::Image;
+    use pulso_engine::time::FrameRate;
     use serde_json::json;
     use std::cell::Cell;
     use std::sync::atomic::AtomicUsize;
@@ -357,10 +357,10 @@ fn a_waiting_render_never_starts_another_on_its_thread() {
 /// not cached (its footage may be missing).
 #[test]
 fn a_newer_viewer_frame_calls_off_the_one_rendering() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{Footage, FootageKind};
-    use effectcraft_engine::render::Image;
-    use effectcraft_engine::time::FrameRate;
+    use pulso_engine::Session;
+    use pulso_engine::project::{Footage, FootageKind};
+    use pulso_engine::render::Image;
+    use pulso_engine::time::FrameRate;
     use serde_json::json;
     use std::cell::RefCell;
     thread_local! {
@@ -456,7 +456,7 @@ fn a_newer_viewer_frame_drops_the_ones_still_waiting() {
     f.set_remote(Some(Arc::new(Idle)));
     let src = RenderSource {
         project: Arc::default(),
-        footage: Arc::new(effectcraft_engine::render::NoFootage),
+        footage: Arc::new(pulso_engine::render::NoFootage),
         expr: None,
         layer_cache: Arc::default(),
         gpu: None,
@@ -571,7 +571,7 @@ impl RemoteFrames for Idle {
 fn idle_source() -> RenderSource {
     RenderSource {
         project: Arc::default(),
-        footage: Arc::new(effectcraft_engine::render::NoFootage),
+        footage: Arc::new(pulso_engine::render::NoFootage),
         expr: None,
         layer_cache: Arc::default(),
         gpu: None,
@@ -616,25 +616,25 @@ struct ParallelClip {
 }
 
 impl FootageSource for ParallelClip {
-    fn frame(&self, _: ItemId, _: &effectcraft_engine::project::Footage, t: Tick) -> Option<Arc<effectcraft_engine::render::Image>> {
+    fn frame(&self, _: ItemId, _: &pulso_engine::project::Footage, t: Tick) -> Option<Arc<pulso_engine::render::Image>> {
         self.started.fetch_add(1, Ordering::SeqCst);
         let active = self.active.fetch_add(1, Ordering::SeqCst) + 1;
         self.most_active.fetch_max(active, Ordering::SeqCst);
         (0..16).into_par_iter().for_each(|_| (0..4).into_par_iter().for_each(|_| std::thread::sleep(std::time::Duration::from_millis(1))));
-        if effectcraft_engine::time::FrameRate::FPS_30.frame_at(t) == 1 {
+        if pulso_engine::time::FrameRate::FPS_30.frame_at(t) == 1 {
             self.started_at_first.store(self.started.load(Ordering::SeqCst), Ordering::SeqCst);
         }
         self.active.fetch_sub(1, Ordering::SeqCst);
-        Some(Arc::new(effectcraft_engine::render::Image::new(4, 4)))
+        Some(Arc::new(pulso_engine::render::Image::new(4, 4)))
     }
 }
 
 /// A 10 s comp of a [`ParallelClip`]: the frame cache, the clip, the render source, the comp
 /// and the key of its frame 0.
 fn parallel_clip() -> (Frames, Arc<ParallelClip>, RenderSource, ItemId, FrameKey) {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{Footage, FootageKind};
-    use effectcraft_engine::time::FrameRate;
+    use pulso_engine::Session;
+    use pulso_engine::project::{Footage, FootageKind};
+    use pulso_engine::time::FrameRate;
     use serde_json::json;
     let mut s = Session::default();
     let cid = ItemId(s.execute("comp.new", json!({"name": "A", "width": 8, "height": 8, "duration": 10})).unwrap()["comp"].as_u64().unwrap());
@@ -681,7 +681,7 @@ fn wait_for_renders(f: &Frames) {
 /// Cache Frames When Idle left the same gaps.
 #[test]
 fn frames_started_first_are_done_first() {
-    use effectcraft_engine::time::FrameRate;
+    use pulso_engine::time::FrameRate;
     for playing in [true, false] {
         let (f, footage, src, cid, series) = parallel_clip();
         let frames = 60;
@@ -711,7 +711,7 @@ fn frames_started_first_are_done_first() {
 /// frame, still render: they change hands between the lanes and the pool.
 #[test]
 fn queued_frames_render_when_a_preview_starts_or_stops() {
-    use effectcraft_engine::time::FrameRate;
+    use pulso_engine::time::FrameRate;
     let (f, _, src, cid, series) = parallel_clip();
     let playhead = Playhead { series, cur: 0, start: 0, end: 299, step: 1, looping: false };
     let request = |frames: std::ops::Range<i64>| {
@@ -755,8 +755,8 @@ fn wait_for_idle_lanes(f: &Frames) {
 /// project's renderer: `backend` Auto) or with `backend`, as if there were a GPU compositor
 /// (`gpu`), `retired` or with the project on Mercury Software Only (`!gpu_acceleration`), and
 /// waits for them: the frame cache and the most frames that rendered at a time.
-fn play_preview(gpu: bool, retired: bool, backend: effectcraft_engine::render::Backend, gpu_acceleration: bool) -> (Frames, usize) {
-    use effectcraft_engine::time::FrameRate;
+fn play_preview(gpu: bool, retired: bool, backend: pulso_engine::render::Backend, gpu_acceleration: bool) -> (Frames, usize) {
+    use pulso_engine::time::FrameRate;
     let (f, footage, mut src, cid, series) = parallel_clip();
     Arc::make_mut(&mut src.project).settings.gpu_acceleration = gpu_acceleration;
     f.queue.lock().unwrap().fake_gpu = gpu;
@@ -781,7 +781,7 @@ fn play_preview(gpu: bool, retired: bool, backend: effectcraft_engine::render::B
 /// ahead (#3345). A preview starts on one GPU lane (see [`Queue::ui_frame`]).
 #[test]
 fn a_preview_composites_on_a_few_lanes_at_a_time() {
-    use effectcraft_engine::render::Backend;
+    use pulso_engine::render::Backend;
     for backend in [Backend::Auto, Backend::Gpu] {
         let (_, most) = play_preview(true, false, backend, true);
         assert!(most <= 1, "{most} lanes composited on the GPU at once ({backend:?})");
@@ -792,7 +792,7 @@ fn a_preview_composites_on_a_few_lanes_at_a_time() {
 /// and with Mercury Software Only (the project's renderer, or the CPU backend).
 #[test]
 fn frames_on_the_cpu_render_on_every_lane() {
-    use effectcraft_engine::render::Backend;
+    use pulso_engine::render::Backend;
     for (gpu, retired, backend, gpu_acceleration) in
         [(false, false, Backend::Auto, true), (true, true, Backend::Auto, true), (true, false, Backend::Auto, false), (true, false, Backend::Cpu, true)]
     {
@@ -879,10 +879,10 @@ fn a_stalling_window_takes_lanes_from_the_gpu() {
 /// pool and render, the viewer's frame is not held up, and every GPU slot is given back.
 #[test]
 fn a_preview_stopping_mid_render_gives_the_gpu_slots_back() {
-    use effectcraft_engine::time::FrameRate;
+    use pulso_engine::time::FrameRate;
     let (f, _, src, cid, series) = parallel_clip();
     f.queue.lock().unwrap().fake_gpu = true;
-    let opts = RenderOpts { backend: effectcraft_engine::render::Backend::Auto, ..RenderOpts::default() };
+    let opts = RenderOpts { backend: pulso_engine::render::Backend::Auto, ..RenderOpts::default() };
     f.set_playhead(Some(Playhead { series, cur: 0, start: 0, end: 299, step: 1, looping: false }));
     for frame in 1..=24 {
         f.request(&src, FrameKey { frame, ..series }, cid, FrameRate::FPS_30.tick_of(frame), opts);
@@ -990,7 +990,7 @@ fn live_edits_do_not_substitute_other_times_views_or_render_settings() {
 
 #[test]
 fn an_edit_keeps_the_frames_of_comps_it_does_not_touch() {
-    use effectcraft_engine::Session;
+    use pulso_engine::Session;
     use serde_json::json;
     let mut s = Session::default();
     let a = ItemId(s.execute("comp.new", json!({"name": "A", "width": 8, "height": 8, "duration": 1})).unwrap()["comp"].as_u64().unwrap());
@@ -1009,7 +1009,7 @@ fn an_edit_keeps_the_frames_of_comps_it_does_not_touch() {
 
 #[test]
 fn a_long_drag_keeps_a_bounded_number_of_states() {
-    use effectcraft_engine::Session;
+    use pulso_engine::Session;
     use serde_json::json;
     let mut s = Session::default();
     let a = ItemId(s.execute("comp.new", json!({"name": "A", "width": 8, "height": 8, "duration": 1})).unwrap()["comp"].as_u64().unwrap());
@@ -1030,7 +1030,7 @@ fn a_long_drag_keeps_a_bounded_number_of_states() {
 
 #[test]
 fn an_identity_keeps_its_comps_so_an_edit_in_place_still_changes_it() {
-    use effectcraft_engine::Session;
+    use pulso_engine::Session;
     use serde_json::json;
     let mut s = Session::default();
     let a = ItemId(s.execute("comp.new", json!({"name": "A", "width": 8, "height": 8, "duration": 1})).unwrap()["comp"].as_u64().unwrap());
@@ -1049,7 +1049,7 @@ fn an_identity_keeps_its_comps_so_an_edit_in_place_still_changes_it() {
 /// or a comp it nests, keeps its frames, also when toggled back (#103).
 #[test]
 fn audio_lock_and_shy_switches_keep_the_frames() {
-    use effectcraft_engine::Session;
+    use pulso_engine::Session;
     use serde_json::json;
     let mut s = Session::default();
     let id = |v: serde_json::Value, k: &str| v[k].as_u64().unwrap();
@@ -1087,7 +1087,7 @@ fn audio_lock_and_shy_switches_keep_the_frames() {
 /// layers the change reaches (here a child of the trimmed layer).
 #[test]
 fn an_edit_keeps_the_frames_outside_the_layers_it_changed() {
-    use effectcraft_engine::Session;
+    use pulso_engine::Session;
     use serde_json::json;
     let mut s = Session::default();
     let id = |v: serde_json::Value, k: &str| v[k].as_u64().unwrap();
@@ -1129,8 +1129,8 @@ fn an_edit_keeps_the_frames_outside_the_layers_it_changed() {
 /// samples it (#1641 review).
 #[test]
 fn the_frames_an_edit_keeps_match_a_fresh_render() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::render::NoFootage;
+    use pulso_engine::Session;
+    use pulso_engine::render::NoFootage;
     use serde_json::json;
     // Cache every frame of `comp`, run `edit`, check the frames kept against fresh renders.
     fn kept(s: &mut Session, comp: ItemId, edit: serde_json::Value) -> Vec<i64> {
@@ -1163,7 +1163,7 @@ fn the_frames_an_edit_keeps_match_a_fresh_render() {
     // The work area is a preview and render range: setting it (B, N) keeps every frame, on
     // disk too.
     let n = s.project.comp(comp).map(|c| c.frame_rate.frame_at(c.duration)).unwrap();
-    let disk = |s: &Session| effectcraft_engine::render::disk_cache::comp_content_key(&s.project, comp);
+    let disk = |s: &Session| pulso_engine::render::disk_cache::comp_content_key(&s.project, comp);
     let d0 = disk(&s);
     let work_area = |start: f64, end: f64| json!({"cmd": "comp.workArea", "params": {"comp": comp.0, "start": start, "end": end}});
     assert_eq!(kept(&mut s, comp, work_area(1.0, 4.0)), (0..n).collect::<Vec<_>>());
@@ -1190,7 +1190,7 @@ fn the_frames_an_edit_keeps_match_a_fresh_render() {
 
 #[test]
 fn short_solid_additions_and_removals_keep_unaffected_frames() {
-    use effectcraft_engine::Session;
+    use pulso_engine::Session;
     use serde_json::json;
     let mut s = Session::default();
     let comp = ItemId(s.execute("comp.new", json!({"width": 8, "height": 8, "frameRate": 30, "duration": 20})).unwrap()["comp"].as_u64().unwrap());
@@ -1220,7 +1220,7 @@ fn short_solid_additions_and_removals_keep_unaffected_frames() {
 
 #[test]
 fn adding_a_source_does_not_hide_changes_to_existing_dependencies() {
-    use effectcraft_engine::Session;
+    use pulso_engine::Session;
     use serde_json::json;
     for (command, params) in [
         ("layer.settings", json!({"comp": "Outer", "layer": "Underlay", "color": "#0000ff"})),
@@ -1251,7 +1251,7 @@ fn adding_a_source_does_not_hide_changes_to_existing_dependencies() {
 /// Only expressions that read markers make them part of the pixels.
 #[test]
 fn markers_keep_the_frames_unless_an_expression_reads_them() {
-    use effectcraft_engine::Session;
+    use pulso_engine::Session;
     use serde_json::json;
     let mut s = Session::default();
     let id = |v: serde_json::Value, k: &str| v[k].as_u64().unwrap();
@@ -1282,7 +1282,7 @@ fn markers_keep_the_frames_unless_an_expression_reads_them() {
 /// markers, makes every marker count.
 #[test]
 fn timing_markers_and_expressions_still_change_the_frames() {
-    use effectcraft_engine::Session;
+    use pulso_engine::Session;
     use serde_json::json;
     let mut s = Session::default();
     let id = |v: serde_json::Value, k: &str| v[k].as_u64().unwrap();
@@ -1303,14 +1303,14 @@ fn timing_markers_and_expressions_still_change_the_frames() {
     assert_ne!(at(&s), o2, "an expression can read the marker, so the frames change");
 }
 
-const SRGB: effectcraft_engine::viewer::FrameEncoding =
-    effectcraft_engine::viewer::FrameEncoding { curve: effectcraft_engine::viewer::PassCurve::Srgb, hdr: effectcraft_engine::project::HdrMode::Clip };
+const SRGB: pulso_engine::viewer::FrameEncoding =
+    pulso_engine::viewer::FrameEncoding { curve: pulso_engine::viewer::PassCurve::Srgb, hdr: pulso_engine::project::HdrMode::Clip };
 
 /// Half floats keep over-range values (the point of #2797); NaN becomes 0 and values past the
 /// half-float range ±65504.
 #[test]
 fn half_float_frames_keep_over_range_values() {
-    let mut img = effectcraft_engine::render::Image::new(3, 1);
+    let mut img = pulso_engine::render::Image::new(3, 1);
     img.data.copy_from_slice(&[[4.0, 16.0, 1.825, 1.0], [70_000.0, f32::NAN, -f32::INFINITY, 0.5], [0.1, -0.25, 1000.0, f32::NAN]]);
     let f = F16Frame::from_image(&img, SRGB);
     assert_eq!(f.pixel(0), Some([4.0, 16.0, half::f16::from_f32(1.825).to_f32(), 1.0]));
@@ -1327,11 +1327,10 @@ fn half_float_frames_keep_over_range_values() {
 #[test]
 fn oversized_half_float_frames_convert_before_averaging() {
     use crate::display_gpu::Source;
-    use effectcraft_engine::viewer::{Channel, DisplayPass};
-    let mut img = effectcraft_engine::render::Image::new(2, 1);
+    use pulso_engine::viewer::{Channel, DisplayPass};
+    let mut img = pulso_engine::render::Image::new(2, 1);
     img.data.copy_from_slice(&[[8.0, 8.0, 8.0, 1.0], [0.0, 0.0, 0.0, 1.0]]);
-    let lin =
-        effectcraft_engine::viewer::FrameEncoding { curve: effectcraft_engine::viewer::PassCurve::Linear, hdr: effectcraft_engine::project::HdrMode::Clip };
+    let lin = pulso_engine::viewer::FrameEncoding { curve: pulso_engine::viewer::PassCurve::Linear, hdr: pulso_engine::project::HdrMode::Clip };
     let f = Arc::new(F16Frame::from_image(&img, lin));
     let pass = DisplayPass::new(Channel::Rgb, false, -2.0, lin, None);
     let src = Source::F16(f.clone());
@@ -1344,8 +1343,8 @@ fn oversized_half_float_frames_convert_before_averaging() {
 
 /// 65 536 colours spread over 0..1 (each channel on its own 16-bit grid), premultiplied by
 /// `alpha`: the 8-bit parity input.
-pub(crate) fn parity_frame(alpha: f32) -> effectcraft_engine::render::Image {
-    let mut img = effectcraft_engine::render::Image::new(256, 256);
+pub(crate) fn parity_frame(alpha: f32) -> pulso_engine::render::Image {
+    let mut img = pulso_engine::render::Image::new(256, 256);
     for (i, p) in img.data.iter_mut().enumerate() {
         let v = |k: usize| ((i * k) % 65_536) as f32 / 65_535.0;
         *p = [v(1) * alpha, v(7_919) * alpha, v(104_729) * alpha, alpha];
@@ -1358,7 +1357,7 @@ pub(crate) fn parity_frame(alpha: f32) -> effectcraft_engine::render::Image {
 /// half-float storage.
 #[test]
 fn half_float_frames_show_what_8_bit_frames_showed() {
-    use effectcraft_engine::viewer::{Channel, DisplayPass};
+    use pulso_engine::viewer::{Channel, DisplayPass};
     let pass = DisplayPass::new(Channel::Rgb, false, 0.0, SRGB, None);
     for alpha in [1.0f32, 0.5] {
         let img = parity_frame(alpha);
@@ -1385,7 +1384,7 @@ fn half_float_frames_show_what_8_bit_frames_showed() {
 /// frames, a half-float frame of the same size takes the room of two.
 #[test]
 fn half_float_frames_count_twice_the_bytes() {
-    let f16 = || FrameImage::CpuF16(Arc::new(F16Frame::from_image(&effectcraft_engine::render::Image::new(2, 2), SRGB)));
+    let f16 = || FrameImage::CpuF16(Arc::new(F16Frame::from_image(&pulso_engine::render::Image::new(2, 2), SRGB)));
     assert_eq!(f16().bytes(), 32);
     assert_eq!(img().bytes(), 16);
     let frames = Frames::default();
@@ -1404,7 +1403,7 @@ fn half_float_frames_count_twice_the_bytes() {
 /// in a new session (over-range values kept); the timeline's disk bar sees them.
 #[test]
 fn half_float_frames_survive_in_the_disk_cache() {
-    use effectcraft_engine::Session;
+    use pulso_engine::Session;
     use serde_json::json;
     // Removed on drop, a failed assertion included.
     let dir = tempfile::tempdir().unwrap();
@@ -1477,8 +1476,8 @@ fn half_float_frames_survive_in_the_disk_cache() {
 /// layers, with seeded noise, motion blur, mattes, parents and effects that read other times.
 #[test]
 fn kept_frames_render_the_same() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::render::render_frame;
+    use pulso_engine::Session;
+    use pulso_engine::render::render_frame;
     use serde_json::{Value as Json, json};
     fn run(s: &mut Session, cmd: &str, p: Json) -> Json {
         s.execute(cmd, p).unwrap_or_else(|e| panic!("{cmd}: {e}"))
@@ -1487,7 +1486,7 @@ fn kept_frames_render_the_same() {
     fn timing(s: &mut Session, cid: ItemId, l: u64, start: i64, inp: i64, out: i64) {
         let c = Arc::make_mut(&mut s.project).comp_mut(cid).unwrap();
         let fr = c.frame_rate;
-        let l = c.layer_mut(effectcraft_engine::project::LayerId(l)).unwrap();
+        let l = c.layer_mut(pulso_engine::project::LayerId(l)).unwrap();
         (l.start_time, l.in_point, l.out_point) = (fr.tick_of(start), fr.tick_of(inp), fr.tick_of(out));
     }
     /// A 10×10 solid moving across the comp.
@@ -1519,7 +1518,7 @@ fn kept_frames_render_the_same() {
     let none: Step = |_, _, _| {};
     /// An audio-only file (music) and a layer of it over the whole comp.
     fn music(s: &mut Session, cid: ItemId) -> u64 {
-        use effectcraft_engine::project::{Footage, FootageKind};
+        use pulso_engine::project::{Footage, FootageKind};
         let song = Footage { kind: FootageKind::Audio, has_video: false, has_audio: true, ..Default::default() };
         let song = Arc::make_mut(&mut s.project).add_item("song.wav", Default::default(), None, ItemKind::Footage(song));
         let l = run(s, "layer.addItem", json!({"item": song.0}))["layer"].as_u64().unwrap();
@@ -1665,8 +1664,8 @@ fn kept_frames_render_the_same() {
 /// drops the frames of that layer.
 #[test]
 fn an_edit_keeps_the_frames_it_cant_reach() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{Layer, LayerId};
+    use pulso_engine::Session;
+    use pulso_engine::project::{Layer, LayerId};
     use serde_json::json;
     type Edit = fn(&mut Comp, LayerId, &dyn Fn(i64) -> Tick);
     let nudge: Edit = |c, b, t| {
@@ -1730,7 +1729,7 @@ fn disk_keys_survive_save_and_reopen() {
     std::fs::create_dir_all(&dir).unwrap();
     let png = dir.join("still.png");
     image::RgbaImage::from_pixel(4, 4, image::Rgba([200, 100, 50, 255])).save(&png).unwrap();
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     let cid = ItemId(s.execute("comp.new", json!({"name": "Keys", "width": 16, "height": 16, "duration": 1})).unwrap()["comp"].as_u64().unwrap());
     let item = s.execute("file.import", json!({"paths": [png.to_string_lossy()]})).unwrap()["items"][0].clone();
     s.execute("layer.addItem", json!({"item": item})).unwrap();
@@ -1740,7 +1739,7 @@ fn disk_keys_survive_save_and_reopen() {
     let before = disk_cache::comp_content_key(&s.project, cid);
     let path = dir.join("keys.ecproj");
     s.execute("file.saveAs", json!({"path": path.to_string_lossy()})).unwrap();
-    let mut again = effectcraft_host::session();
+    let mut again = pulso_host::session();
     again.execute("file.open", json!({"path": path.to_string_lossy()})).unwrap();
     assert_eq!(disk_cache::comp_content_key(&again.project, cid), before);
     let _ = std::fs::remove_dir_all(&dir);
@@ -1768,8 +1767,8 @@ fn half_float_ram_frames_missing_on_disk_are_written() {
 /// and frames rendered after the drop, are written.
 #[test]
 fn ram_frames_from_before_a_drop_are_not_written() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::render::reads::{FileStamp, ReadFile};
+    use pulso_engine::Session;
+    use pulso_engine::render::reads::{FileStamp, ReadFile};
     use serde_json::json;
     let dir = tempfile::tempdir().unwrap();
     let disk = DiskCache::open(dir.path().join("cache"), 1 << 30).unwrap();
@@ -1779,7 +1778,7 @@ fn ram_frames_from_before_a_drop_are_not_written() {
     s.execute("layer.newSolid", json!({})).unwrap();
     let src = RenderSource {
         project: s.project.clone(),
-        footage: Arc::new(effectcraft_engine::render::NoFootage),
+        footage: Arc::new(pulso_engine::render::NoFootage),
         expr: None,
         layer_cache: Arc::default(),
         gpu: None,
@@ -1826,7 +1825,7 @@ fn ram_frames_from_before_a_drop_are_not_written() {
 }
 
 fn ram_frames_missing_on_disk_are_written_as(half: bool) {
-    use effectcraft_engine::Session;
+    use pulso_engine::Session;
     use serde_json::json;
     let dir = std::env::temp_dir().join(format!("ec-persist-{}-{half}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
@@ -1836,7 +1835,7 @@ fn ram_frames_missing_on_disk_are_written_as(half: bool) {
     s.execute("layer.newSolid", json!({})).unwrap();
     let src = RenderSource {
         project: s.project.clone(),
-        footage: Arc::new(effectcraft_engine::render::NoFootage),
+        footage: Arc::new(pulso_engine::render::NoFootage),
         expr: None,
         layer_cache: Arc::default(),
         gpu: None,
@@ -1847,7 +1846,7 @@ fn ram_frames_missing_on_disk_are_written_as(half: bool) {
     let series =
         FrameKey { revision: 1, content: f.content_of(&src.project, 1, cid), comp: cid.0, opts: opts_hash(&RenderOpts::default()) ^ 1, ..key(0, 0, 0) };
     for fr in 0..10 {
-        let frame = if half { FrameImage::CpuF16(Arc::new(F16Frame::from_image(&effectcraft_engine::render::Image::new(8, 8), SRGB))) } else { img() };
+        let frame = if half { FrameImage::CpuF16(Arc::new(F16Frame::from_image(&pulso_engine::render::Image::new(8, 8), SRGB))) } else { img() };
         f.cache.lock().unwrap().insert_with(FrameKey { frame: fr, ..series }, frame, Some(Arc::default()), Some(DiskSince::of(&disk, disk.drop_generation())));
     }
     let on_disk = |fr: i64| {
@@ -1904,7 +1903,7 @@ fn ram_frames_missing_on_disk_are_written_as(half: bool) {
 /// passes don't keep converting the RAM frames; with room again they are written.
 #[test]
 fn no_frame_is_encoded_while_the_disk_has_no_room() {
-    use effectcraft_engine::Session;
+    use pulso_engine::Session;
     use serde_json::json;
     const GB: u64 = 1 << 30;
     let dir = std::env::temp_dir().join(format!("ec-persist-full-{}", std::process::id()));
@@ -1920,7 +1919,7 @@ fn no_frame_is_encoded_while_the_disk_has_no_room() {
     s.execute("layer.newSolid", json!({})).unwrap();
     let src = RenderSource {
         project: s.project.clone(),
-        footage: Arc::new(effectcraft_engine::render::NoFootage),
+        footage: Arc::new(pulso_engine::render::NoFootage),
         expr: None,
         layer_cache: Arc::default(),
         gpu: None,
@@ -1969,16 +1968,15 @@ fn no_frame_is_encoded_while_the_disk_has_no_room() {
 /// layer, on itself, or through a precomp of it); then the frames of the reader render again.
 #[test]
 fn audio_edits_keep_the_frames_until_something_draws_the_audio() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{Footage, GroupKind, LayerId, Value, build};
-    use effectcraft_engine::render::disk_cache::comp_content_key;
+    use pulso_engine::Session;
+    use pulso_engine::project::{Footage, GroupKind, LayerId, Value, build};
+    use pulso_engine::render::disk_cache::comp_content_key;
     use serde_json::json;
     let mut s = Session::default();
     let cid = ItemId(s.execute("comp.new", json!({"name": "A", "width": 8, "height": 8, "duration": 4, "frameRate": 30})).unwrap()["comp"].as_u64().unwrap());
     s.execute("layer.newSolid", json!({})).unwrap();
     let mut p = (*s.project).clone();
-    let clip =
-        p.add_item("clip.mov", effectcraft_color::Label::None, None, ItemKind::Footage(Footage { has_video: true, has_audio: true, ..Default::default() }));
+    let clip = p.add_item("clip.mov", pulso_color::Label::None, None, ItemKind::Footage(Footage { has_video: true, has_audio: true, ..Default::default() }));
     let comp = p.comp(cid).unwrap().clone();
     let fr = comp.frame_rate;
     let t = move |f: i64| fr.tick_of(f);
@@ -1990,7 +1988,7 @@ fn audio_edits_keep_the_frames_until_something_draws_the_audio() {
         (l.start_time, l.in_point, l.out_point) = (t(a), t(a), t(b));
     }
     // The outer comp shows the whole of A.
-    let outer = p.add_item("Outer", effectcraft_color::Label::None, None, ItemKind::Comp(Arc::new(Comp { layers: Default::default(), ..comp.clone() })));
+    let outer = p.add_item("Outer", pulso_color::Label::None, None, ItemKind::Comp(Arc::new(Comp { layers: Default::default(), ..comp.clone() })));
     let oc = p.comp(outer).unwrap().clone();
     let mut pre = build::layer(&mut p, &oc, "Pre", LayerSource::Comp { item: cid }, (8, 8), None);
     (pre.start_time, pre.in_point, pre.out_point) = (t(0), t(0), t(120));
@@ -2049,7 +2047,7 @@ fn audio_edits_keep_the_frames_until_something_draws_the_audio() {
         let mut q = p.clone();
         let r = q.comp(cid).unwrap().layers[0].clone();
         let reader = LayerId(r.id.0 + 500_000);
-        q.comp_mut(outer).unwrap().layers.insert(0, effectcraft_engine::project::Layer { id: reader, ..r });
+        q.comp_mut(outer).unwrap().layers.insert(0, pulso_engine::project::Layer { id: reader, ..r });
         pick(&mut q, outer, reader, pre_layer);
         let (frames, disk) = kept(&q, outer, edit);
         assert!(
@@ -2065,10 +2063,10 @@ fn audio_edits_keep_the_frames_until_something_draws_the_audio() {
 /// also when the expression reads the edited layer.
 #[test]
 fn an_expression_reaches_only_the_frames_of_its_layer() {
-    use effectcraft_engine::project::{LayerId, Marker};
-    use effectcraft_engine::render::NoFootage;
+    use pulso_engine::project::{LayerId, Marker};
+    use pulso_engine::render::NoFootage;
     use serde_json::json;
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     let cid = ItemId(s.execute("comp.new", json!({"name": "A", "width": 16, "height": 16, "duration": 1.5})).unwrap()["comp"].as_u64().unwrap());
     let other = ItemId(s.execute("comp.new", json!({"name": "Other", "width": 8, "height": 8, "duration": 1})).unwrap()["comp"].as_u64().unwrap());
     s.execute("comp.open", json!({"comp": cid.0})).ok();
@@ -2129,9 +2127,9 @@ fn an_expression_reaches_only_the_frames_of_its_layer() {
 /// remap. Every frame kept renders as before.
 #[test]
 fn an_edit_in_a_precomp_reaches_only_where_it_shows() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{LayerId, Value, build};
-    use effectcraft_engine::render::render_frame;
+    use pulso_engine::Session;
+    use pulso_engine::project::{LayerId, Value, build};
+    use pulso_engine::render::render_frame;
     use serde_json::json;
     let mut s = Session::default();
     let id = |v: serde_json::Value, k: &str| v[k].as_u64().unwrap();
@@ -2194,8 +2192,8 @@ fn an_edit_in_a_precomp_reaches_only_where_it_shows() {
 /// all, a trim all but the frames it cut, and undo finds the earlier ones again.
 #[test]
 fn disk_frames_outlive_an_edit_that_cant_change_them() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::LayerId;
+    use pulso_engine::Session;
+    use pulso_engine::project::LayerId;
     use serde_json::json;
     let dir = std::env::temp_dir().join(format!("ec-disk-carry-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
@@ -2215,7 +2213,7 @@ fn disk_frames_outlive_an_edit_that_cant_change_them() {
     let oh = opts_hash(&opts);
     let src = |p: &Arc<Project>| RenderSource {
         project: p.clone(),
-        footage: Arc::new(effectcraft_engine::render::NoFootage),
+        footage: Arc::new(pulso_engine::render::NoFootage),
         expr: None,
         layer_cache: Arc::default(),
         gpu: None,
@@ -2278,8 +2276,8 @@ fn disk_frames_outlive_an_edit_that_cant_change_them() {
 /// it (the dirty spans of #2795).
 #[test]
 fn disk_frames_outlive_edits_their_expressions_cant_read() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{Expression, LayerId, Value};
+    use pulso_engine::Session;
+    use pulso_engine::project::{Expression, LayerId, Value};
     use serde_json::json;
     let dir = std::env::temp_dir().join(format!("ec-disk-carry-expr-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
@@ -2308,7 +2306,7 @@ fn disk_frames_outlive_edits_their_expressions_cant_read() {
     let oh = opts_hash(&opts);
     let src = |p: &Arc<Project>| RenderSource {
         project: p.clone(),
-        footage: Arc::new(effectcraft_engine::render::NoFootage),
+        footage: Arc::new(pulso_engine::render::NoFootage),
         expr: None,
         layer_cache: Arc::default(),
         gpu: None,
@@ -2352,10 +2350,10 @@ fn disk_frames_outlive_edits_their_expressions_cant_read() {
 /// frame kept renders as before.
 #[test]
 fn a_keyframe_edit_reaches_only_the_keys_around_it() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{LayerId, Value};
-    use effectcraft_engine::render::render_frame;
-    use effectcraft_keyframe::Interp;
+    use pulso_engine::Session;
+    use pulso_engine::project::{LayerId, Value};
+    use pulso_engine::render::render_frame;
+    use pulso_keyframe::Interp;
     use serde_json::json;
     let mut s = Session::default();
     let cid = ItemId(s.execute("comp.new", json!({"name": "A", "width": 16, "height": 16, "duration": 4, "frameRate": 30})).unwrap()["comp"].as_u64().unwrap());
@@ -2373,13 +2371,13 @@ fn a_keyframe_edit_reaches_only_the_keys_around_it() {
     }
     let p0 = Arc::new(p0);
     let n = 120;
-    type Edit = fn(&mut effectcraft_engine::project::Property);
+    type Edit = fn(&mut pulso_engine::project::Property);
     let edits: [(&str, Edit, Vec<i64>, Vec<i64>); 5] = [
         ("middle value", |p| p.keys[3].value = Value::Vec3([8.0, 8.0, 0.0]), vec![0, 17, 103, 119], vec![22, 60, 98]),
         ("middle interpolation", |p| p.keys[3].out_interp = Interp::Hold, vec![0, 17, 103, 119], vec![22, 60, 98]),
         ("first value", |p| p.keys[0].value = Value::Vec3([1.0, 1.0, 0.0]), vec![43, 119], vec![0, 20, 39]),
         ("static", |p| p.keys.clear(), vec![], vec![0, 60, 119]),
-        ("expression", |p| p.expr = Some(effectcraft_engine::project::Expression { text: "value".into(), enabled: true }), vec![], vec![0, 60, 119]),
+        ("expression", |p| p.expr = Some(pulso_engine::project::Expression { text: "value".into(), enabled: true }), vec![], vec![0, 60, 119]),
     ];
     for (name, edit, kept_frames, dirty_frames) in edits {
         let f = Frames::default();
@@ -2403,9 +2401,9 @@ fn a_keyframe_edit_reaches_only_the_keys_around_it() {
 /// can't read audio (a wiggle); an expression naming the music's Audio Levels re-renders its layer.
 #[test]
 fn music_volume_keeps_the_frames_with_expressions_that_dont_read_audio() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{Expression, Footage, FootageKind, LayerId, Value, build};
-    use effectcraft_engine::render::disk_cache::comp_content_key;
+    use pulso_engine::Session;
+    use pulso_engine::project::{Expression, Footage, FootageKind, LayerId, Value, build};
+    use pulso_engine::render::disk_cache::comp_content_key;
     use serde_json::json;
     let mut s = Session::default();
     let cid = ItemId(s.execute("comp.new", json!({"name": "A", "width": 8, "height": 8, "duration": 4, "frameRate": 30})).unwrap()["comp"].as_u64().unwrap());
@@ -2413,7 +2411,7 @@ fn music_volume_keeps_the_frames_with_expressions_that_dont_read_audio() {
     let mut p = (*s.project).clone();
     let song = p.add_item(
         "song.wav",
-        effectcraft_color::Label::None,
+        pulso_color::Label::None,
         None,
         ItemKind::Footage(Footage { kind: FootageKind::Audio, has_video: false, has_audio: true, ..Default::default() }),
     );
@@ -2445,10 +2443,10 @@ fn music_volume_keeps_the_frames_with_expressions_that_dont_read_audio() {
 /// keeps its frames. Every frame kept renders as before.
 #[test]
 fn a_two_key_edit_beside_a_wiggle_keeps_the_other_frames() {
-    use effectcraft_engine::project::{Expression, LayerId, Value};
-    use effectcraft_engine::render::NoFootage;
+    use pulso_engine::project::{Expression, LayerId, Value};
+    use pulso_engine::render::NoFootage;
     use serde_json::json;
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     let cid = ItemId(s.execute("comp.new", json!({"name": "A", "width": 16, "height": 16, "duration": 4, "frameRate": 30})).unwrap()["comp"].as_u64().unwrap());
     let wig = LayerId(s.execute("layer.newSolid", json!({"color": "#0000ff", "width": 4, "height": 4})).unwrap()["layer"].as_u64().unwrap());
     let l = LayerId(s.execute("layer.newSolid", json!({"color": "#ff0000", "width": 4, "height": 4})).unwrap()["layer"].as_u64().unwrap());
@@ -2487,9 +2485,9 @@ fn a_two_key_edit_beside_a_wiggle_keeps_the_other_frames() {
 /// that layer when one of its markers changes. Every frame kept renders as before.
 #[test]
 fn a_marker_read_by_its_own_layer_re_renders_it() {
-    use effectcraft_engine::render::NoFootage;
+    use pulso_engine::render::NoFootage;
     use serde_json::json;
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     let cid = ItemId(s.execute("comp.new", json!({"name": "A", "width": 16, "height": 16, "duration": 4, "frameRate": 30})).unwrap()["comp"].as_u64().unwrap());
     let l = s.execute("layer.newSolid", json!({"color": "#ff0000", "width": 4, "height": 4})).unwrap()["layer"].as_u64().unwrap();
     s.execute("prop.setExpression", json!({"layer": l, "path": "transform/opacity", "expression": "marker.numKeys > 0 ? 0 : 100"})).unwrap();
@@ -2518,15 +2516,15 @@ fn a_marker_read_by_its_own_layer_re_renders_it() {
 /// changes.
 #[test]
 fn a_volume_read_by_its_own_layer_re_renders_it() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{Expression, Footage, FootageKind, Value, build};
+    use pulso_engine::Session;
+    use pulso_engine::project::{Expression, Footage, FootageKind, Value, build};
     use serde_json::json;
     let mut s = Session::default();
     let cid = ItemId(s.execute("comp.new", json!({"name": "A", "width": 8, "height": 8, "duration": 4, "frameRate": 30})).unwrap()["comp"].as_u64().unwrap());
     let mut p = (*s.project).clone();
     let clip = p.add_item(
         "clip.mp4",
-        effectcraft_color::Label::None,
+        pulso_color::Label::None,
         None,
         ItemKind::Footage(Footage { kind: FootageKind::Video, has_video: true, has_audio: true, width: 8, height: 8, ..Default::default() }),
     );
@@ -2552,10 +2550,10 @@ fn a_volume_read_by_its_own_layer_re_renders_it() {
 /// frame kept renders as before.
 #[test]
 fn a_keyframe_edit_read_at_other_times_by_its_layer_re_renders_it() {
-    use effectcraft_engine::project::{LayerId, Value};
-    use effectcraft_engine::render::NoFootage;
+    use pulso_engine::project::{LayerId, Value};
+    use pulso_engine::render::NoFootage;
     use serde_json::json;
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     let cid = ItemId(s.execute("comp.new", json!({"name": "A", "width": 16, "height": 16, "duration": 4, "frameRate": 30})).unwrap()["comp"].as_u64().unwrap());
     let l = LayerId(s.execute("layer.newSolid", json!({"color": "#ff0000", "width": 4, "height": 4})).unwrap()["layer"].as_u64().unwrap());
     let fr = s.project.comp(cid).unwrap().frame_rate;
@@ -2589,9 +2587,9 @@ fn a_keyframe_edit_read_at_other_times_by_its_layer_re_renders_it() {
 /// Mid's own comp didn't change. Every frame kept renders as before.
 #[test]
 fn an_edit_two_precomps_down_reaches_the_outer_comp() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::LayerId;
-    use effectcraft_engine::render::render_frame;
+    use pulso_engine::Session;
+    use pulso_engine::project::LayerId;
+    use pulso_engine::render::render_frame;
     use serde_json::json;
     let mut s = Session::default();
     let id = |v: serde_json::Value, k: &str| v[k].as_u64().unwrap();
@@ -2633,9 +2631,9 @@ fn an_edit_two_precomps_down_reaches_the_outer_comp() {
 /// above it. Every frame kept renders as before.
 #[test]
 fn expressions_reading_their_own_layer_re_render_on_a_trim_or_a_layer_above() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::LayerId;
-    use effectcraft_engine::render::NoFootage;
+    use pulso_engine::Session;
+    use pulso_engine::project::LayerId;
+    use pulso_engine::render::NoFootage;
     use serde_json::json;
     /// Trim the layer to start at frame 10.
     fn trim(s: &mut Session, cid: ItemId, l: LayerId) {
@@ -2653,7 +2651,7 @@ fn expressions_reading_their_own_layer_re_render_on_a_trim_or_a_layer_above() {
     let edits: [(&str, &str, &str, Edit); 2] =
         [("trim", "transform/opacity", "linear(time, inPoint, inPoint + 2, 20, 100)", trim), ("layer above", "transform/rotation", "index * 20", layer_above)];
     for (name, path, expression, edit) in edits {
-        let mut s = effectcraft_host::session();
+        let mut s = pulso_host::session();
         let new = json!({"name": "A", "width": 16, "height": 16, "duration": 4, "frameRate": 30});
         let cid = ItemId(s.execute("comp.new", new).unwrap()["comp"].as_u64().unwrap());
         let l = LayerId(s.execute("layer.newSolid", json!({"comp": cid.0, "color": "#ff0000", "width": 6, "height": 6})).unwrap()["layer"].as_u64().unwrap());
@@ -2686,12 +2684,12 @@ fn expressions_reading_their_own_layer_re_render_on_a_trim_or_a_layer_above() {
 /// layer changes. Every frame kept renders as before.
 #[test]
 fn an_edit_read_by_a_precomp_expression_reaches_the_precomp() {
-    use effectcraft_engine::project::LayerId;
-    use effectcraft_engine::render::NoFootage;
+    use pulso_engine::project::LayerId;
+    use pulso_engine::render::NoFootage;
     use serde_json::json;
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     let id = |v: serde_json::Value, k: &str| v[k].as_u64().unwrap();
-    let new_comp = |s: &mut effectcraft_engine::Session, name: &str| {
+    let new_comp = |s: &mut pulso_engine::Session, name: &str| {
         ItemId(id(s.execute("comp.new", json!({"name": name, "width": 16, "height": 16, "duration": 4, "frameRate": 30})).unwrap(), "comp"))
     };
     let inner = new_comp(&mut s, "Inner");
@@ -2735,9 +2733,9 @@ fn an_edit_read_by_a_precomp_expression_reaches_the_precomp() {
 /// frame kept renders as before.
 #[test]
 fn an_edit_in_a_precomp_under_a_time_effect_reaches_its_whole_layer() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::LayerId;
-    use effectcraft_engine::render::render_frame;
+    use pulso_engine::Session;
+    use pulso_engine::project::LayerId;
+    use pulso_engine::render::render_frame;
     use serde_json::json;
     let mut s = Session::default();
     let id = |v: serde_json::Value, k: &str| v[k].as_u64().unwrap();
@@ -2779,9 +2777,9 @@ fn an_edit_in_a_precomp_under_a_time_effect_reaches_its_whole_layer() {
 /// Every frame kept renders as before.
 #[test]
 fn a_keyframe_edit_beside_muted_keys_reaches_the_keys_that_play() {
-    use effectcraft_engine::Session;
-    use effectcraft_engine::project::{LayerId, Value};
-    use effectcraft_engine::render::render_frame;
+    use pulso_engine::Session;
+    use pulso_engine::project::{LayerId, Value};
+    use pulso_engine::render::render_frame;
     use serde_json::json;
     let mut s = Session::default();
     let new = json!({"name": "A", "width": 16, "height": 16, "duration": 4, "frameRate": 30});
@@ -2818,8 +2816,8 @@ fn a_keyframe_edit_beside_muted_keys_reaches_the_keys_that_play() {
 /// comp in a folder of its own, with a large unused sequence in the project.
 mod frame_files {
     use super::*;
-    use effectcraft_engine::project::{Footage, FootageKind, build};
-    use effectcraft_engine::time::FrameRate;
+    use pulso_engine::project::{Footage, FootageKind, build};
+    use pulso_engine::time::FrameRate;
     use std::path::{Path, PathBuf};
     use std::sync::atomic::AtomicUsize;
 
@@ -2851,7 +2849,7 @@ mod frame_files {
         let seq_dir = dir.join("seq");
         std::fs::create_dir_all(&seq_dir).unwrap();
         let files: Vec<String> = (0..FRAMES).map(|i| png(&seq_dir.join(format!("f_{i:04}.png")), level(i))).collect();
-        let mut seq = Footage { kind: FootageKind::Sequence, sequence: files.clone(), frame_rate: RATE, ..effectcraft_media::probe(&files[0]).unwrap() };
+        let mut seq = Footage { kind: FootageKind::Sequence, sequence: files.clone(), frame_rate: RATE, ..pulso_media::probe(&files[0]).unwrap() };
         seq.sync_sequence_duration();
         let unused = Footage {
             kind: FootageKind::Sequence,
@@ -2863,11 +2861,11 @@ mod frame_files {
             ..Default::default()
         };
         let mut p = Project::default();
-        p.add_item("Unused", effectcraft_engine::color::Label::Aqua, None, ItemKind::Footage(unused));
-        let item = p.add_item("Seq", effectcraft_engine::color::Label::Aqua, None, ItemKind::Footage(seq));
+        p.add_item("Unused", pulso_engine::color::Label::Aqua, None, ItemKind::Footage(unused));
+        let item = p.add_item("Seq", pulso_engine::color::Label::Aqua, None, ItemKind::Footage(seq));
         let mut comp = Comp::new(16, 8, RATE, RATE.tick_of(FRAMES));
         comp.layers = vec![build::layer(&mut p, &comp, "Seq", LayerSource::Footage { item }, (16, 8), Some(comp.duration))].into();
-        let cid = p.add_item("C", effectcraft_engine::color::Label::None, None, ItemKind::Comp(comp.into()));
+        let cid = p.add_item("C", pulso_engine::color::Label::None, None, ItemKind::Comp(comp.into()));
         (Arc::new(p), cid, files)
     }
 
@@ -2880,7 +2878,7 @@ mod frame_files {
         disk: Arc<DiskCache>,
         hook_calls: Arc<AtomicUsize>,
         /// The session's media pool (`src.footage`): what it decoded and opened.
-        pool: Arc<effectcraft_media::MediaPool>,
+        pool: Arc<pulso_media::MediaPool>,
     }
 
     fn session(p: &Arc<Project>, dir: &Path) -> Session {
@@ -2892,7 +2890,7 @@ mod frame_files {
             calls.fetch_add(1, Ordering::Relaxed);
             None
         }));
-        let pool = Arc::new(effectcraft_media::MediaPool::new());
+        let pool = Arc::new(pulso_media::MediaPool::new());
         let src = RenderSource {
             project: p.clone(),
             footage: pool.clone(),
@@ -3015,7 +3013,7 @@ mod frame_files {
         assert!(close(shown[0], level(1)), "{shown:?}");
         assert_eq!(again.hits(), (1, 0), "served from disk");
         assert_eq!(again.disk.file_checks(), 1, "its one file checked");
-        assert_eq!(again.pool.stats(), effectcraft_media::PoolStats::default(), "no source file opened or decoded");
+        assert_eq!(again.pool.stats(), pulso_media::PoolStats::default(), "no source file opened or decoded");
     }
 
     /// No scan: opening a comp of a project that also holds a large sequence, and showing a
@@ -3151,13 +3149,13 @@ fn gpu_renders_in_flight_stay_within_the_cap() {
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn gpu_worker_routes_admit_display_readback_and_auto_effects() {
-    use effectcraft_engine::render::{Accelerator, Backend};
+    use pulso_engine::render::{Accelerator, Backend};
     let Some(gpu) = Gpu::headless() else {
         eprintln!("GPU worker route test skipped: no adapter");
         return;
     };
     let (frames, mut src, key, _, _, _) = disk_fixture(&[]);
-    let mut session = effectcraft_engine::Session::default();
+    let mut session = pulso_engine::Session::default();
     session.execute("comp.new", serde_json::json!({"width": 16, "height": 16, "duration": 1})).unwrap();
     let comp = session.active_comp_id().unwrap();
     let solid = session.execute("layer.newSolid", serde_json::json!({"color": "#ff0000"})).unwrap()["layer"].clone();

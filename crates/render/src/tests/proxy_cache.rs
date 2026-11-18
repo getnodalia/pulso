@@ -1,9 +1,9 @@
 use super::setup;
 use crate::eval::EvalCtx;
 use crate::{FootageSource, Image, LayerCache, RenderOpts, Renderer};
-use effectcraft_color::Label;
-use effectcraft_project::{Footage, FootageKind, ItemId, ItemKind, LayerSource, Proxy, build, render_queue::ProxyUse};
-use effectcraft_time::Tick;
+use pulso_color::Label;
+use pulso_project::{Footage, FootageKind, ItemId, ItemKind, LayerSource, Proxy, build, render_queue::ProxyUse};
+use pulso_time::Tick;
 use std::sync::Arc;
 
 /// A source and its proxy deliberately have different pixels.

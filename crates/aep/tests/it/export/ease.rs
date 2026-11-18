@@ -4,10 +4,10 @@
 //! Effects' in time, interpolation and ease.
 
 use crate::export::helpers::*;
-use effectcraft_aep::export::LossCategory;
-use effectcraft_aep::import::{ImportOptions, import};
-use effectcraft_aep::{Body, Chunk, parse};
-use effectcraft_project::Project;
+use pulso_aep::export::LossCategory;
+use pulso_aep::import::{ImportOptions, import};
+use pulso_aep::{Body, Chunk, parse};
+use pulso_project::Project;
 
 /// The key records (`ldat`) of the first property named `name` below a layer, split into records.
 fn key_records(bytes: &[u8], name: &str) -> Vec<Vec<u8>> {

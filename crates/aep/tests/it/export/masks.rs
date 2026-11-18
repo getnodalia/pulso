@@ -1,13 +1,13 @@
-//! Masks: projects built in code are exported, parsed back with `effectcraft-aep` (every written
+//! Masks: projects built in code are exported, parsed back with `pulso-aep` (every written
 //! field compared) and imported again; the mask fixtures go through import -> export -> import.
 
 use crate::export::helpers::{add_comp, add_layer, add_solid, export_all, key, with_layer};
-use effectcraft_aep::export::{ExportOptions, LossCategory, export};
-use effectcraft_aep::import::{ImportOptions, import};
-use effectcraft_aep::{Interpolation, KeyframeKind, MaskMode as AepMode, PropNode, ValueSource, parse, write};
-use effectcraft_keyframe::{Ease, Interp, ShapePath, Value};
-use effectcraft_project::{Expression, FeatherFalloff, GroupKind, Layer, LayerSource, MaskMode, Project, PropGroup, build};
-use effectcraft_time::FrameRate;
+use pulso_aep::export::{ExportOptions, LossCategory, export};
+use pulso_aep::import::{ImportOptions, import};
+use pulso_aep::{Interpolation, KeyframeKind, MaskMode as AepMode, PropNode, ValueSource, parse, write};
+use pulso_keyframe::{Ease, Interp, ShapePath, Value};
+use pulso_project::{Expression, FeatherFalloff, GroupKind, Layer, LayerSource, MaskMode, Project, PropGroup, build};
+use pulso_time::FrameRate;
 
 fn add_mask(l: &mut Layer, next: &mut u64, name: &str, path: ShapePath, mode: MaskMode, f: impl FnOnce(&mut PropGroup)) {
     let i = l.masks().map_or(0, |m| m.children.len());
@@ -100,7 +100,7 @@ fn animated() -> Project {
 
 fn masks_of(p: &Project) -> Vec<PropGroup> {
     let c = p.items.values().find_map(|i| match &i.kind {
-        effectcraft_project::ItemKind::Comp(c) if i.name == "C" => Some(c.clone()),
+        pulso_project::ItemKind::Comp(c) if i.name == "C" => Some(c.clone()),
         _ => None,
     });
     let c = c.expect("comp C");
@@ -181,7 +181,7 @@ fn every_written_field_parses_back() {
     // The container is consistent: it writes back byte for byte.
     let file = parse(&res.bytes).expect("parse");
     assert_eq!(write(&file).expect("write"), res.bytes);
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let comp = view.all_items().into_iter().find_map(|i| i.comp()).expect("comp");
     let layer = comp.layers().next().expect("layer");
     let masks = layer.masks();
@@ -224,7 +224,7 @@ fn path_and_feather_keys_parse_back() {
     assert!(res.report.is_lossless(), "{:?}", res.report.losses);
     let file = parse(&res.bytes).expect("parse");
     assert_eq!(write(&file).expect("write"), res.bytes);
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let comp = view.all_items().into_iter().find_map(|i| i.comp()).expect("comp");
     let layer = comp.layers().next().expect("layer");
     let atoms = layer.mask_atoms();
@@ -256,7 +256,7 @@ fn a_mask_on_a_small_solid_is_normalised_to_the_layer_size() {
     p.next_id = next;
     let res = export_all(&p);
     let file = parse(&res.bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let comp = view.all_items().into_iter().find_map(|i| i.comp()).expect("comp");
     let layer = comp.layers().next().expect("layer");
     let m = &layer.masks()[0];
@@ -360,7 +360,7 @@ fn mask_fixtures_round_trip() {
         let all = |p: &Project| -> Vec<Vec<PropGroup>> {
             let mut v: Vec<(String, Vec<PropGroup>)> = Vec::new();
             for item in p.items.values() {
-                if let effectcraft_project::ItemKind::Comp(c) = &item.kind {
+                if let pulso_project::ItemKind::Comp(c) = &item.kind {
                     for l in &c.layers {
                         if let Some(m) = l.masks().filter(|m| !m.children.is_empty()) {
                             v.push((format!("{}/{}", item.name, l.name), m.groups().cloned().collect()));

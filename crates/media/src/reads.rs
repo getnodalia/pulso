@@ -1,5 +1,5 @@
 //! Which files the [`MediaPool`](crate::MediaPool) reads for a render
-//! ([`FootageSource::recording`](effectcraft_render::FootageSource::recording)).
+//! ([`FootageSource::recording`](pulso_render::FootageSource::recording)).
 //!
 //! Every read of a file notes it, with the identity it had when read, in the innermost scope open
 //! on this thread. The pool's caches (decoded frames, opened movies, GIFs, models, EXR channels)
@@ -13,7 +13,7 @@
 
 use std::cell::RefCell;
 
-use effectcraft_render::reads::{ReadFile, ReadFiles, ReadLog};
+use pulso_render::reads::{ReadFile, ReadFiles, ReadLog};
 
 /// Scopes nested deeper than this are not opened (a thread that keeps taking jobs while it waits
 /// cannot pile them up without bound): their reads go to the scope below, and they come back
@@ -98,7 +98,7 @@ impl Drop for Scope<'_> {
 }
 
 /// Run `f` with the files it reads on this thread noted in `log`
-/// ([`FootageSource::recording`](effectcraft_render::FootageSource::recording)).
+/// ([`FootageSource::recording`](pulso_render::FootageSource::recording)).
 pub(crate) fn recording(log: &ReadLog, f: &mut dyn FnMut()) {
     let _scope = Scope::open(Out::Log(log));
     f();

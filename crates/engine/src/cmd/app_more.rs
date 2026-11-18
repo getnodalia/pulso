@@ -3,10 +3,10 @@
 //! (Create VR Environment, Extract Cubemap), the "Assign Shortcut to …" submenus, Help ▸ Enable
 //! Logging / Reveal Logging File / System Compatibility Report, and `File.execute()` for scripts.
 
-use effectcraft_color::Label;
-use effectcraft_geom::{Mat4, Vec3, vec3};
-use effectcraft_project::{Comp, FootageKind, ItemId, ItemKind, LayerSource};
-use effectcraft_time::{FrameRate, Tick};
+use pulso_color::Label;
+use pulso_geom::{Mat4, Vec3, vec3};
+use pulso_project::{Comp, FootageKind, ItemId, ItemKind, LayerSource};
+use pulso_time::{FrameRate, Tick};
 use serde_json::{Value, json};
 
 use super::{CommandSpec, always, b_p, bad, comp_id, has_comp, has_layers, has_project_selection, str_p};
@@ -215,9 +215,8 @@ fn replace_with_precomp(s: &mut Session, p: &Value) -> Result<Value> {
         _ => return Err(bad(CMD, "the item is not visual footage or a solid")),
     };
     // Adjustment layers only borrow a solid for their size; they keep it.
-    let is_user = |l: &effectcraft_project::Layer| {
-        !l.switches.adjustment && matches!(l.source, LayerSource::Footage { item: i } | LayerSource::Solid { item: i } if i == item)
-    };
+    let is_user =
+        |l: &pulso_project::Layer| !l.switches.adjustment && matches!(l.source, LayerSource::Footage { item: i } | LayerSource::Solid { item: i } if i == item);
     // The longest stretch of the item's own time any layer shows, and the first comp's rate.
     let mut used = Tick::ZERO;
     let mut used_rate = None;
@@ -330,8 +329,8 @@ fn reassign(s: &mut Session, key: &str, slot: &str, cmd: &str) -> Result<Value> 
 }
 
 /// The command id of a 3D view.
-pub(crate) fn view_command(v: effectcraft_render::three_d::View3D) -> &'static str {
-    use effectcraft_render::three_d::View3D::*;
+pub(crate) fn view_command(v: pulso_render::three_d::View3D) -> &'static str {
+    use pulso_render::three_d::View3D::*;
     match v {
         ActiveCamera => "view.3d.activeCamera",
         Default => "view.3d.default",
@@ -439,7 +438,7 @@ pub fn system_report(s: &Session) -> Value {
         issues.push("Export is not available in this build.".to_string());
     }
     json!({
-        "app": format!("EffectCraft {}", env!("CARGO_PKG_VERSION")),
+        "app": format!("Pulso {}", env!("CARGO_PKG_VERSION")),
         "os": crate::sysinfo::os_version(),
         "arch": std::env::consts::ARCH,
         "cpu": crate::sysinfo::cpu_name(),
@@ -584,7 +583,7 @@ fn create_vr_environment(s: &mut Session, p: &Value) -> Result<Value> {
             s.execute("layer.setSwitch", json!({"comp": fc, "layers": [pre], "switch": "collapse", "value": true}))?;
             s.execute("prop.set", json!({"comp": fc, "layer": pre, "path": "transform/anchor", "value": mid}))?;
             s.execute("prop.set", json!({"comp": fc, "layer": pre, "path": "transform/position", "value": mid}))?;
-            let lights: Vec<effectcraft_project::Layer> = src.layers.iter().filter(|l| l.is_light()).cloned().collect();
+            let lights: Vec<pulso_project::Layer> = src.layers.iter().filter(|l| l.is_light()).cloned().collect();
             if !lights.is_empty() {
                 s.edit("Create VR Environment", None, |proj, _| {
                     let mut next = proj.next_id;
@@ -751,7 +750,7 @@ mod tests {
         });
         assert!(r.is_err());
         assert_eq!(s.active_comp_id(), Some(original_comp), "the pre-group comp is restored");
-        assert_eq!(super::super::text_edit::layer_doc(&s, effectcraft_project::LayerId(lid)).unwrap().text, "abcdef", "the document is restored");
+        assert_eq!(super::super::text_edit::layer_doc(&s, pulso_project::LayerId(lid)).unwrap().text, "abcdef", "the document is restored");
         assert_eq!(s.history.undo.len(), undo, "the partial grouped steps are not left in history");
         assert_ne!(s.state.text_edit.as_ref().unwrap().session, owner, "a transient replacement does not revive the old IME token");
         assert!(

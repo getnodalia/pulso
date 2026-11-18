@@ -11,7 +11,7 @@
 //! stereo is untouched.
 //!
 //! A decoded channel's gains come from where it plays. WAVE / SMPTE order by channel count is what
-//! FilmCraft's AC-3, PCM, FLAC and Opus readers deliver: 3 = L R C, 4 = quad L R Ls Rs,
+//! Toma's AC-3, PCM, FLAC and Opus readers deliver: 3 = L R C, 4 = quad L R Ls Rs,
 //! 5 = L R C Ls Rs, 6 = L R C LFE Ls Rs, 7 = L R C LFE Cs Ls Rs, 8 = L R C LFE Lb Rb Ls Rs. AAC
 //! arrives in an order its configuration decides ([`aac_order`]). More than 8 channels in WAVE
 //! order carry no known layout: only the first two (front L/R) are used.
@@ -32,9 +32,9 @@ const SL: Pair = [FRAC_1_SQRT_2, 0.0];
 const SR: Pair = [0.0, FRAC_1_SQRT_2];
 const CS: Pair = [0.5, 0.5];
 
-/// AAC channel configuration 7 as FilmCraft decodes it (element order, not reordered).
+/// AAC channel configuration 7 as Toma decodes it (element order, not reordered).
 const CONFIG_7: [Pair; 8] = [FC, FL, FR, SL, SR, SL, SR, LFE];
-/// AAC channel configuration 4 (C L R Cs), which FilmCraft reorders to L R C Cs.
+/// AAC channel configuration 4 (C L R Cs), which Toma reorders to L R C Cs.
 const CONFIG_4: [Pair; 4] = [FL, FR, FC, CS];
 
 /// `raw` scaled by the reciprocal of its larger row sum when that exceeds 1 (more than two
@@ -80,14 +80,14 @@ pub enum Order {
     #[default]
     Wav,
     /// AAC whose configuration wasn't read: by channel count as the configurations 1 to 7 decode
-    /// (exact for ADTS, which can signal no other configuration FilmCraft decodes), 7 channels as
+    /// (exact for ADTS, which can signal no other configuration Toma decodes), 7 channels as
     /// configuration 11.
     Aac,
     /// Each decoded channel's gains, before normalisation.
     Speakers(Arc<[Pair]>),
 }
 
-/// How FilmCraft's decoder hands over AAC with the configuration `asc`: it reorders channel
+/// How Toma's decoder hands over AAC with the configuration `asc`: it reorders channel
 /// configurations 3 to 6, 11 and 12 to WAVE / SMPTE and leaves 7 and PCE layouts in element order.
 pub fn aac_order(asc: &AudioSpecificConfig) -> Order {
     match (asc.channel_config, &asc.pce) {
@@ -138,7 +138,7 @@ fn pce_speakers(pce: &ProgramConfig) -> Vec<Pair> {
     out
 }
 
-/// The gains for `count` channels arriving in `order`. FilmCraft decodes as many channels as the
+/// The gains for `count` channels arriving in `order`. Toma decodes as many channels as the
 /// container names, the first ones of the layout where that is fewer (MPEG-TS LATM names 7 of
 /// configuration 7's 8, ffmpeg 4.2 MP4s 2 of a PCE's); more go by count.
 pub fn decoded_gains(count: usize, order: &Order) -> Vec<Pair> {
@@ -185,7 +185,7 @@ mod tests {
         }
     }
 
-    /// AudioSpecificConfigs as ffmpeg 8.1 and FilmCraft's encoder write them (48 kHz AAC-LC).
+    /// AudioSpecificConfigs as ffmpeg 8.1 and Toma's encoder write them (48 kHz AAC-LC).
     const PCE_FFMPEG_61: &str = "118004c848002000c4400d4c61766336322e32382e31303256e500";
     const PCE_FILMCRAFT_61: &str = "118004c845000108840000";
 

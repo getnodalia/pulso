@@ -1,6 +1,6 @@
 // The viewer's display pass (#2797): a rendered frame (premultiplied, encoded in the output
 // space; Rgba16Float for 32 bpc frames, Rgba8Unorm otherwise) → the premultiplied RGBA8 texture
-// the viewer draws. Line by line the same operations as `effectcraft_engine::viewer::DisplayPass`
+// the viewer draws. Line by line the same operations as `pulso_engine::viewer::DisplayPass`
 // (its `pixel` is this shader's CPU reference and fallback):
 // unpremultiply → decode, × 2^stops, Compand / Tone Map, encode → clamp → display colour →
 // Show Channel, premultiply → floor(v · 255 + 0.5).
@@ -38,7 +38,7 @@ fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4<f32> {
 }
 
 // The curves take the gamma to decode with, or 1 / gamma to encode with.
-// SMPTE ST 2084 and BT.2100 HLG (effectcraft_color::space), linear 1.0 = reference white.
+// SMPTE ST 2084 and BT.2100 HLG (pulso_color::space), linear 1.0 = reference white.
 const PQ_M1: f32 = 0.1593017578125;
 const PQ_M2: f32 = 78.84375;
 const PQ_C1: f32 = 0.8359375;
@@ -143,7 +143,7 @@ fn mat_mul(m: array<vec4<f32>, 3>, l: vec3<f32>) -> vec3<f32> {
     );
 }
 
-// effectcraft_render::color::compand
+// pulso_render::color::compand
 fn compand(v: f32) -> f32 {
     let k = 0.8;
     if (v <= k) {
@@ -152,7 +152,7 @@ fn compand(v: f32) -> f32 {
     return k + (1.0 - k) * (1.0 - exp(-(v - k) / (1.0 - k)));
 }
 
-// effectcraft_render::color::tone_map (extended Reinhard of Rec. 709 luminance, white 4.0)
+// pulso_render::color::tone_map (extended Reinhard of Rec. 709 luminance, white 4.0)
 fn tone_map(c: vec3<f32>) -> vec3<f32> {
     let w = 4.0;
     let l = 0.2126 * c.x + 0.7152 * c.y + 0.0722 * c.z;
@@ -168,7 +168,7 @@ fn lut_at(n: u32, r: u32, g: u32, b: u32) -> vec3<f32> {
     return textureLoad(lut, vec3<u32>(b, g, r), 0).xyz;
 }
 
-// effectcraft_engine::viewer::lut_eval: trilinear in the same order.
+// pulso_engine::viewer::lut_eval: trilinear in the same order.
 fn lut_eval(c: vec3<f32>) -> vec3<f32> {
     let n = P.ids1.w;
     let x = clamp(c, vec3<f32>(0.0), vec3<f32>(1.0)) * f32(n - 1u);

@@ -9,8 +9,8 @@
 //! both through the Transform writer. Options records are cloned from the one-change cases.
 
 use crate::Chunk;
-use effectcraft_keyframe::Value;
-use effectcraft_project::{Layer, LightKind};
+use pulso_keyframe::Value;
+use pulso_project::{Layer, LightKind};
 
 use crate::export::report::{Collector, LossCategory};
 use crate::export::tree::{R, child_data, kids_mut, list_mut, put_f64, tpl};
@@ -57,7 +57,7 @@ fn has_keys_or_expr(layer: &Layer, path: &str) -> bool {
 /// The camera's options; keys and expressions on them are reported (the static value is written).
 pub(crate) fn plan_camera(layer: &Layer, comp_width: u32, what: &str, col: &mut Collector) -> CameraPlan {
     let default_zoom = f64::from(comp_width) * 50.0 / 36.0;
-    if matches!(layer.auto_orient, effectcraft_project::AutoOrient::AlongPath | effectcraft_project::AutoOrient::TowardsCamera) {
+    if matches!(layer.auto_orient, pulso_project::AutoOrient::AlongPath | pulso_project::AutoOrient::TowardsCamera) {
         col.lose(LossCategory::Cameras, format!("{what}: the camera's Auto-Orient {:?} is not written (written as a one-node camera)", layer.auto_orient));
     }
     for id in ["zoom", "dof", "focusDistance", "aperture", "blurLevel"] {
@@ -87,7 +87,7 @@ pub(crate) fn plan_camera(layer: &Layer, comp_width: u32, what: &str, col: &mut 
     }
     let dof = matches!(layer.props.prop("cameraOptions/dof").map(|p| &p.value), Some(Value::Bool(true)));
     CameraPlan {
-        two_node: layer.auto_orient == effectcraft_project::AutoOrient::TowardsPointOfInterest,
+        two_node: layer.auto_orient == pulso_project::AutoOrient::TowardsPointOfInterest,
         zoom: scalar(layer, "cameraOptions/zoom", what, col).unwrap_or(default_zoom),
         dof,
         focus: scalar(layer, "cameraOptions/focusDistance", what, col).unwrap_or(default_zoom),
@@ -108,7 +108,7 @@ pub(crate) fn plan_light(layer: &Layer, kind: LightKind, what: &str, col: &mut C
     };
     // A spot light is written oriented towards its point of interest (a point light has no
     // orientation that shows).
-    if code == 1 && layer.auto_orient != effectcraft_project::AutoOrient::TowardsPointOfInterest {
+    if code == 1 && layer.auto_orient != pulso_project::AutoOrient::TowardsPointOfInterest {
         col.lose(LossCategory::Lights, format!("{what}: the light's Auto-Orient {:?} is written as towards the point of interest", layer.auto_orient));
     }
     for id in ["intensity", "color", "coneAngle", "coneFeather"] {

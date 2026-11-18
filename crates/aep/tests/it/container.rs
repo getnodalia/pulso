@@ -1,4 +1,4 @@
-//! container tests of effectcraft-aep.
+//! container tests of pulso-aep.
 
 #[macro_use]
 mod helpers;

@@ -1,13 +1,13 @@
-//! After Effects' Puppet (`ADBE FreePin3`, #3093) arrives as EffectCraft's Puppet
+//! After Effects' Puppet (`ADBE FreePin3`, #3093) arrives as Pulso's Puppet
 //! (`ec.distort.puppet`) in its place in the stack, and what its meshes and pins hold is reported
 //! mesh by mesh instead of the one line "has the effect 'Puppet'". The effect is built into the
 //! committed `synthetic.aep` in place of its Glow (`fx_inject`, in memory), in the tree
 //! docs/aep-format.md 3.7 gives for Puppet. That tree comes from an external scripting listing,
 //! not a byte sample: these tests prove the reader's walk and its report, not the format.
 
-use effectcraft_aep::Chunk;
-use effectcraft_aep::import::{ImportOptions, LossCategory, import};
-use effectcraft_project::Project;
+use pulso_aep::Chunk;
+use pulso_aep::import::{ImportOptions, LossCategory, import};
+use pulso_project::Project;
 
 use crate::import::fx_inject::{bytes_with_effect, import_bytes, keyed_record, losses, nested, record, tdmn, utf8};
 
@@ -107,15 +107,15 @@ fn puppet_arrives_and_its_pins_are_reported_mesh_by_mesh() {
         let arap = group(vec![("ADBE FreePin3 Outlines", group(vec![])), ("ADBE FreePin3 Mesh Group", group(vec![("ADBE FreePin3 Mesh Atom", full_mesh(t))]))]);
         sspc(1, Some(arap), vec![("ADBE FreePin3 On Transparent", record(t, 1.0))])
     });
-    let (g, r) = import_bytes(&bytes, effectcraft_effects::puppet::ID);
-    let g = g.expect("an EffectCraft Puppet in the Glow's place");
+    let (g, r) = import_bytes(&bytes, pulso_effects::puppet::ID);
+    let g = g.expect("a Pulso Puppet in the Glow's place");
     assert!(g.enabled);
     assert_eq!(g.name, "Puppet");
     // No pin is made up: the rest places are not decoded.
-    assert_eq!(effectcraft_effects::puppet::pin_count(&g), 0);
+    assert_eq!(pulso_effects::puppet::pin_count(&g), 0);
     // In the Glow's place in its layer's stack (the second of two effects there).
     assert!(stack_place(SYNTHETIC, "ec.stylize.glow").is_some_and(|(_, at, n)| at > 0 && n > 1));
-    assert_eq!(stack_place(&bytes, effectcraft_effects::puppet::ID), stack_place(SYNTHETIC, "ec.stylize.glow"));
+    assert_eq!(stack_place(&bytes, pulso_effects::puppet::ID), stack_place(SYNTHETIC, "ec.stylize.glow"));
     let l = losses(&r, LossCategory::Effects, PUPPET);
     assert_eq!(l.len(), 2, "{l:#?}");
     assert!(!l.iter().any(|d| d.contains("has the effect")), "not the old one-line report: {l:#?}");
@@ -138,7 +138,7 @@ fn many_meshes_are_listed_up_to_ten_and_names_once() {
         let meshes = (0..12).map(|_| ("ADBE FreePin3 Mesh Atom", mesh())).collect();
         sspc(1, Some(group(vec![("ADBE FreePin3 Mesh Group", group(meshes))])), vec![])
     });
-    let (_, r) = import_bytes(&bytes, effectcraft_effects::puppet::ID);
+    let (_, r) = import_bytes(&bytes, pulso_effects::puppet::ID);
     let l = losses(&r, LossCategory::Effects, PUPPET);
     assert_eq!(l.len(), 1, "{l:#?}");
     assert!(l[0].ends_with("Mesh 9: no pin groups; Mesh 10: no pin groups; and 2 more; not recognised: ADBE FreePin3 Test Group"), "{}", l[0]);
@@ -147,8 +147,8 @@ fn many_meshes_are_listed_up_to_ten_and_names_once() {
 #[test]
 fn a_puppet_without_a_mesh_loses_nothing_and_keeps_its_fx_switch() {
     let bytes = bytes_with_effect(PUPPET, |_| sspc(0, Some(group(vec![("ADBE FreePin3 Mesh Group", group(vec![]))])), vec![]));
-    let (g, r) = import_bytes(&bytes, effectcraft_effects::puppet::ID);
-    let g = g.expect("an EffectCraft Puppet");
+    let (g, r) = import_bytes(&bytes, pulso_effects::puppet::ID);
+    let g = g.expect("a Pulso Puppet");
     assert!(!g.enabled, "switched off in the Effect Controls");
     assert_eq!(losses(&r, LossCategory::Effects, PUPPET), Vec::<String>::new());
 }
@@ -156,7 +156,7 @@ fn a_puppet_without_a_mesh_loses_nothing_and_keeps_its_fx_switch() {
 #[test]
 fn a_puppet_whose_mesh_tree_is_not_found_is_reported() {
     let bytes = bytes_with_effect(PUPPET, |t| sspc(1, None, vec![("ADBE FreePin3 Other Group", group(vec![("x", record(t, 1.0))]))]));
-    let (g, r) = import_bytes(&bytes, effectcraft_effects::puppet::ID);
+    let (g, r) = import_bytes(&bytes, pulso_effects::puppet::ID);
     assert!(g.is_some(), "the effect still arrives");
     let l = losses(&r, LossCategory::Effects, PUPPET);
     assert_eq!(l.len(), 1, "{l:#?}");

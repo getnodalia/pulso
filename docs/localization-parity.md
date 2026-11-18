@@ -48,7 +48,7 @@ interface; Arabic and Hebrew text *in layers* is supported through its Middle Ea
   (`crates/ui-egui/src/i18n.rs`) prints, per language, the fixed menu entries, panel strings, effect
   names and effect categories that have no row. It always passes; `cargo xtask ci` runs it with
   `--nocapture`, so the list is in the gate log. Locally:
-  `cargo test -p effectcraft-ui-egui --lib missing_translations_report -- --nocapture`.
+  `cargo test -p pulso-ui-egui --lib missing_translations_report -- --nocapture`.
 - **Not translated anywhere yet:** effect *parameter* names (≈ 1,650, `crates/effects`),
   engine-generated text (property names, errors, undo labels), the Home screen's unwrapped
   literals (#574), Learn tutorials and documentation.

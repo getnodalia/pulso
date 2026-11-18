@@ -4,9 +4,9 @@
 
 use std::sync::Arc;
 
-use effectcraft_engine::Session;
-use effectcraft_engine::effects::plugin::{EffectPlugin, PluginFrame, PluginManifest, PluginParam, PluginParamKind, PluginParams, register_plugin};
-use effectcraft_engine::time::Tick;
+use pulso_engine::Session;
+use pulso_engine::effects::plugin::{EffectPlugin, PluginFrame, PluginManifest, PluginParam, PluginParamKind, PluginParams, register_plugin};
+use pulso_engine::time::Tick;
 use serde_json::json;
 
 struct Swap {
@@ -28,7 +28,7 @@ impl EffectPlugin for Swap {
 }
 
 fn setup() -> (Session, u64) {
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     s.execute("comp.new", json!({"name": "P", "width": 40, "height": 20, "duration": 1})).unwrap();
     let l = s.execute("layer.newSolid", json!({"color": [1.0, 0.5, 0.0], "width": 40, "height": 20})).unwrap()["layer"].as_u64().unwrap();
     (s, l)
@@ -91,8 +91,8 @@ fn build_example() -> Option<std::path::PathBuf> {
 /// A host session whose settings and Plug-ins folder are both in `config`: installs must never
 /// reach the real settings folder the host session points its Plug-ins folder at.
 fn install_session(config: &std::path::Path) -> Session {
-    let mut s = effectcraft_host::session();
-    s.config = Some(Arc::new(effectcraft_engine::config::DirConfig::new(config)));
+    let mut s = pulso_host::session();
+    s.config = Some(Arc::new(pulso_engine::config::DirConfig::new(config)));
     s.plugins_dir = Some(config.join("Plug-ins"));
     s
 }
@@ -276,7 +276,7 @@ pub(super) fn wat_plugin(id: &str, api: i32, render: &str) -> String {
 
 #[test]
 fn plugin_loading_reports_bad_modules_and_survives_failing_renders() {
-    let dir = std::env::temp_dir().join(format!("effectcraft-host-plugins-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("pulso-host-plugins-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let files = [
         ("a-good.wasm", wat_plugin("org.test.host.good", 1, "i32.const 0").into_bytes()),
@@ -409,14 +409,14 @@ fn wat_neighbour_plugin(id: &str) -> String {
 /// 0.25 s and 0.75 s, so red (the current frame) was 0.5 and |next − prev| is 0.5.
 #[test]
 fn abi_v2_plugins_render_with_real_neighbour_frames() {
-    let mut s = effectcraft_host::session();
+    let mut s = pulso_host::session();
     let inner = s.execute("comp.new", json!({"name": "Inner", "width": 40, "height": 20, "frameRate": 4, "duration": 1})).unwrap()["comp"].as_u64().unwrap();
     let solid = s.execute("layer.newSolid", json!({"color": [1.0, 0.0, 0.0], "width": 40, "height": 20})).unwrap()["layer"].as_u64().unwrap();
     s.execute("prop.addKey", json!({"layer": solid, "path": "transform/opacity", "time": 0.0, "value": 0})).unwrap();
     s.execute("prop.addKey", json!({"layer": solid, "path": "transform/opacity", "time": 1.0, "value": 100})).unwrap();
     let outer = s.execute("comp.new", json!({"name": "Outer", "width": 40, "height": 20, "frameRate": 4, "duration": 1})).unwrap()["comp"].as_u64().unwrap();
     let layer = s.execute("layer.addItem", json!({"comp": outer, "item": inner, "time": 0})).unwrap()["layer"].as_u64().unwrap();
-    let outer = effectcraft_engine::project::ItemId(outer);
+    let outer = pulso_engine::project::ItemId(outer);
 
     let dir = tempfile::TempDir::new().unwrap();
     let wasm = dir.path().join("neighbours.wasm");

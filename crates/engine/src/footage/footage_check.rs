@@ -13,8 +13,8 @@
 //! with `wait: true`.
 
 #[cfg(test)]
-use effectcraft_project::ItemKind;
-use effectcraft_project::{Footage, FootageKind, ItemId};
+use pulso_project::ItemKind;
+use pulso_project::{Footage, FootageKind, ItemId};
 use serde_json::{Value, json};
 
 use crate::Session;

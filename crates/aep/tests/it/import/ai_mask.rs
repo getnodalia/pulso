@@ -2,7 +2,7 @@
 //! 2026's own read-back of the committed project `tests/fixtures/ai-mask-3099.aep` (generator:
 //! `tests/fixtures/tools/ai-mask-3099.py` and `ai-mask-3099.jsx`). Most of these guard After
 //! Effects' values the importer already read so (the drawing of the page is tested in
-//! `effectcraft-media` and the host's `vector_import` tests); the Anchor Point of the null left
+//! `pulso-media` and the host's `vector_import` tests); the Anchor Point of the null left
 //! at its default (`[0, 0]`, not the centre) was wrong before #3099.
 //!
 //! The four `.ai` files are hand-written one-page PDFs with distinct page boxes. After Effects
@@ -11,16 +11,16 @@
 //! Continuously Rasterize) are children of Null `N2`, itself a child of Null `N1`; both carry two
 //! rectangular masks; `artC` (c) is on its own.
 
-use effectcraft_aep::import::{ImportOptions, import};
-use effectcraft_keyframe::Value;
-use effectcraft_project::{ItemKind, Layer, Project};
+use pulso_aep::import::{ImportOptions, import};
+use pulso_keyframe::Value;
+use pulso_project::{ItemKind, Layer, Project};
 
 use crate::import::helpers::comp;
 
 const AI_MASK: &[u8] = include_bytes!("../../fixtures/ai-mask-3099.aep");
 
 /// The fixture imported into an empty project (losses allowed, no footage file present).
-fn load() -> (Project, effectcraft_aep::import::ImportResult) {
+fn load() -> (Project, pulso_aep::import::ImportResult) {
     let mut project = Project::default();
     let none = |_: &str| false;
     let r = import(&mut project, AI_MASK, &ImportOptions { allow_losses: true, ..ImportOptions::new(&none) }).unwrap();

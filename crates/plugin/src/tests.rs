@@ -1,11 +1,11 @@
 //! WebAssembly plug-ins: load, register, render through the effect registry, sandbox limits.
 
-use effectcraft_effects::{Buf, EffectCtx, EffectEnv, Image};
-use effectcraft_project::build::Ids;
+use pulso_effects::{Buf, EffectCtx, EffectEnv, Image};
+use pulso_project::build::Ids;
 
 use crate::load_wasm;
 
-fn load_err(r: Result<&'static effectcraft_effects::EffectSpec, String>) -> String {
+fn load_err(r: Result<&'static pulso_effects::EffectSpec, String>) -> String {
     match r {
         Err(e) => e,
         Ok(s) => panic!("unexpectedly loaded {}", s.id),
@@ -114,12 +114,12 @@ fn module_with(manifest: &str, render_body: &str) -> String {
     )
 }
 
-fn render(spec: &effectcraft_effects::EffectSpec, gain: f64, on: bool) -> Image {
+fn render(spec: &pulso_effects::EffectSpec, gain: f64, on: bool) -> Image {
     let mut next = 1;
-    let g = effectcraft_effects::instantiate(spec, &mut Ids(&mut next), spec.name, [4.0, 2.0]);
-    let mut params = effectcraft_effects::flatten_params(&g, &mut |p| p.value.clone());
-    params.values.insert("gain".into(), effectcraft_keyframe::Value::Scalar(gain));
-    params.values.insert("on".into(), effectcraft_keyframe::Value::Bool(on));
+    let g = pulso_effects::instantiate(spec, &mut Ids(&mut next), spec.name, [4.0, 2.0]);
+    let mut params = pulso_effects::flatten_params(&g, &mut |p| p.value.clone());
+    params.values.insert("gain".into(), pulso_keyframe::Value::Scalar(gain));
+    params.values.insert("on".into(), pulso_keyframe::Value::Bool(on));
     let ctx = EffectCtx { params: &params, time: 0.0, layer_size: [4.0, 2.0], seed: 1, adjustment: false, env: EffectEnv::default() };
     let buf = Buf { img: Image::filled(4, 2, [0.8, 0.6, 0.2, 1.0]), offset: [0.0; 2], scale: 1.0 };
     (spec.render)(&ctx, buf).img
@@ -132,10 +132,10 @@ fn wasm_plugin_registers_and_renders() {
     assert_eq!(spec.category, "Test Plug-ins");
     assert_eq!(spec.params.len(), 3);
     // Found like a built-in, listed under its own category.
-    assert!(effectcraft_effects::find("org.test.gain").is_some());
-    assert!(effectcraft_effects::lookup("Gain org.test.gain").is_some());
-    assert!(effectcraft_effects::all().iter().any(|e| e.id == "org.test.gain"));
-    assert!(effectcraft_effects::categories().contains(&"Test Plug-ins"));
+    assert!(pulso_effects::find("org.test.gain").is_some());
+    assert!(pulso_effects::lookup("Gain org.test.gain").is_some());
+    assert!(pulso_effects::all().iter().any(|e| e.id == "org.test.gain"));
+    assert!(pulso_effects::categories().contains(&"Test Plug-ins"));
     let img = render(spec, 0.5, false);
     assert_eq!(img.get(1, 1), [0.4, 0.3, 0.1, 1.0]);
     // The checkbox and colour parameters arrive flattened (tint blue = 1 → +1 on blue).
@@ -278,8 +278,8 @@ fn render_failures_leave_the_frame_and_recover() {
     // out of bounds: the frame passes through unchanged, and the plug-in keeps working.
     let trap = load_wasm(gain_module("org.test.trap", "local.get $t f64.const 0.5 f64.gt if unreachable end").as_bytes(), "trap.wat").unwrap();
     let mut next = 1;
-    let g = effectcraft_effects::instantiate(trap, &mut Ids(&mut next), trap.name, [4.0, 2.0]);
-    let params = effectcraft_effects::flatten_params(&g, &mut |p| p.value.clone());
+    let g = pulso_effects::instantiate(trap, &mut Ids(&mut next), trap.name, [4.0, 2.0]);
+    let params = pulso_effects::flatten_params(&g, &mut |p| p.value.clone());
     let at = |time: f64| {
         let ctx = EffectCtx { params: &params, time, layer_size: [4.0, 2.0], seed: 1, adjustment: false, env: EffectEnv::default() };
         let buf = Buf { img: Image::filled(4, 2, orig), offset: [0.0; 2], scale: 1.0 };
@@ -408,20 +408,20 @@ fn neighbour_module(id: &str) -> String {
     )
 }
 
-fn neighbour_image(red: f32) -> effectcraft_effects::plugin::PluginImage {
-    effectcraft_effects::plugin::PluginImage { width: 2, height: 1, pixels: vec![[red, 0.0, 0.0, 1.0]; 2], origin: [0.0; 2], scale: 1.0 }
+fn neighbour_image(red: f32) -> pulso_effects::plugin::PluginImage {
+    pulso_effects::plugin::PluginImage { width: 2, height: 1, pixels: vec![[red, 0.0, 0.0, 1.0]; 2], origin: [0.0; 2], scale: 1.0 }
 }
 
 /// A host with frames at two layer times.
 struct Host {
     time: f64,
     fps: f64,
-    prev: Option<(f64, effectcraft_effects::plugin::PluginImage)>,
-    next: Option<(f64, effectcraft_effects::plugin::PluginImage)>,
+    prev: Option<(f64, pulso_effects::plugin::PluginImage)>,
+    next: Option<(f64, pulso_effects::plugin::PluginImage)>,
 }
 
-impl effectcraft_effects::plugin::PluginHost for Host {
-    fn input_at(&self, layer_time: f64) -> Option<effectcraft_effects::plugin::PluginImage> {
+impl pulso_effects::plugin::PluginHost for Host {
+    fn input_at(&self, layer_time: f64) -> Option<pulso_effects::plugin::PluginImage> {
         if let Some((t, img)) = &self.prev
             && (t - layer_time).abs() < 1e-9
         {
@@ -435,7 +435,7 @@ impl effectcraft_effects::plugin::PluginHost for Host {
         None
     }
 
-    fn layer_input(&self, _param_id: &str, _layer_time: f64) -> Option<effectcraft_effects::plugin::PluginImage> {
+    fn layer_input(&self, _param_id: &str, _layer_time: f64) -> Option<pulso_effects::plugin::PluginImage> {
         None
     }
 
@@ -455,14 +455,14 @@ impl effectcraft_effects::plugin::PluginHost for Host {
 #[test]
 fn abi_v2_receives_neighbour_frames_and_times() {
     load_wasm(neighbour_module("org.test.neighbours").as_bytes(), "neighbours.wat").unwrap();
-    let p = effectcraft_effects::plugin::plugin("org.test.neighbours").unwrap();
-    assert!(effectcraft_effects::plugin::reads_other_times("org.test.neighbours"));
-    assert!(effectcraft_effects::is_time_dependent("org.test.neighbours"));
+    let p = pulso_effects::plugin::plugin("org.test.neighbours").unwrap();
+    assert!(pulso_effects::plugin::reads_other_times("org.test.neighbours"));
+    assert!(pulso_effects::is_time_dependent("org.test.neighbours"));
     // The module has no parameters, so the flattened vector is empty.
-    let params = effectcraft_effects::plugin::PluginParams { manifest: p.manifest(), flat: &[], texts: &[] };
+    let params = pulso_effects::plugin::PluginParams { manifest: p.manifest(), flat: &[], texts: &[] };
     let mut px = vec![[0.0f32; 4]; 2];
     let host = Host { time: 0.5, fps: 4.0, prev: Some((0.25, neighbour_image(0.1))), next: Some((0.75, neighbour_image(0.6))) };
-    let mut frame = effectcraft_effects::plugin::PluginFrame { width: 2, height: 1, pixels: &mut px, scale: 1.0, origin: [0.0; 2], layer_size: [2.0, 1.0] };
+    let mut frame = pulso_effects::plugin::PluginFrame { width: 2, height: 1, pixels: &mut px, scale: 1.0, origin: [0.0; 2], layer_size: [2.0, 1.0] };
     p.render_v2(&mut frame, &params, 0.5, &host).unwrap();
     assert!((px[0][0] - 0.5).abs() < 1e-6, "|next − prev|: {px:?}");
     assert!((px[0][1] - 3.0 / 8.0).abs() < 1e-6, "both flags: {px:?}");
@@ -474,15 +474,15 @@ fn abi_v2_receives_neighbour_frames_and_times() {
 fn abi_v2_without_a_host_gets_zeroed_neighbours() {
     let spec = load_wasm(neighbour_module("org.test.neighbours.empty").as_bytes(), "empty.wat").unwrap();
     let mut next_id = 1;
-    let g = effectcraft_effects::instantiate(spec, &mut Ids(&mut next_id), spec.name, [2.0, 1.0]);
-    let params = effectcraft_effects::flatten_params(&g, &mut |p| p.value.clone());
+    let g = pulso_effects::instantiate(spec, &mut Ids(&mut next_id), spec.name, [2.0, 1.0]);
+    let params = pulso_effects::flatten_params(&g, &mut |p| p.value.clone());
     let ctx = EffectCtx { params: &params, time: 0.5, layer_size: [2.0, 1.0], seed: 1, adjustment: false, env: EffectEnv::default() };
     let buf = Buf { img: Image::filled(2, 1, [0.5, 0.5, 0.5, 1.0]), offset: [0.0; 2], scale: 1.0 };
     // No host: both neighbour buffers are zeroed and no flag is set.
     assert_eq!((spec.render)(&ctx, buf).img.get(0, 0), [0.0, 0.0, 0.0, 1.0]);
     // ABI 1 plug-ins keep the time-independent behaviour.
     let gain = load_wasm(gain_module("org.test.neighbours.v1", "").as_bytes(), "v1.wat").unwrap();
-    assert!(!effectcraft_effects::plugin::reads_other_times("org.test.neighbours.v1"));
-    assert!(!effectcraft_effects::is_time_dependent("org.test.neighbours.v1"));
+    assert!(!pulso_effects::plugin::reads_other_times("org.test.neighbours.v1"));
+    assert!(!pulso_effects::is_time_dependent("org.test.neighbours.v1"));
     assert!(gain.id.starts_with("org.test."));
 }

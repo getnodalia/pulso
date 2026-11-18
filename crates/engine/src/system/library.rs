@@ -3,7 +3,7 @@
 //! repository, see `docs/plugins.md#plug-in-library`), installed, updated and removed without
 //! bundling them into the app.
 //!
-//! * The catalog names, per package, its releases: version, plug-in API, oldest EffectCraft it
+//! * The catalog names, per package, its releases: version, plug-in API, oldest Pulso it
 //!   needs, the `.wasm` file's URL (a GitHub release asset) and its SHA-256. Nothing is compiled
 //!   here: the published file is downloaded, checked against the catalog's SHA-256 and loaded by
 //!   the host's [`PluginLoader`](crate::PluginLoader), so it runs in the same sandbox as any
@@ -15,7 +15,7 @@
 //! * Effects can't be unregistered: removing or updating a package that is loaded takes effect
 //!   at the next start, and the list says so (`restartNeeded`).
 //! * Downloads use the system's `curl`, as trained models do ([`crate::models`]), so no
-//!   networking code is linked into EffectCraft. Only `https://` URLs on GitHub's hosts are
+//!   networking code is linked into Pulso. Only `https://` URLs on GitHub's hosts are
 //!   fetched, and a download whose redirects end anywhere else is refused; a local catalog (`file://`, for plug-in authors testing their entry) may also name
 //!   local files.
 
@@ -23,7 +23,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, PoisonError};
 
-use effectcraft_segment::sha256;
+use pulso_segment::sha256;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -103,7 +103,7 @@ pub struct Release {
     pub version: String,
     /// The plug-in API it implements.
     pub api: u32,
-    /// The oldest EffectCraft version it runs in.
+    /// The oldest Pulso version it runs in.
     #[serde(default, rename = "minApp", skip_serializing_if = "Option::is_none")]
     pub min_app: Option<String>,
     pub url: String,
@@ -263,7 +263,7 @@ pub fn parse_catalog(bytes: &[u8]) -> std::result::Result<(Catalog, Vec<String>)
     }
     let raw: Catalog = serde_json::from_slice(bytes).map_err(|e| format!("the catalog isn't valid: {e}"))?;
     if raw.schema != CATALOG_SCHEMA {
-        return Err(format!("the catalog uses format {} and this EffectCraft reads format {CATALOG_SCHEMA}: update EffectCraft", raw.schema));
+        return Err(format!("the catalog uses format {} and this Pulso reads format {CATALOG_SCHEMA}: update Pulso", raw.schema));
     }
     let mut warnings = vec![];
     let mut seen = BTreeSet::new();
@@ -553,11 +553,7 @@ fn install_job(
             s.restart.remove(&pkg.id);
         }
     });
-    Ok(if restart {
-        format!("{} {} installed: restart EffectCraft to use it", pkg.name, rel.version)
-    } else {
-        format!("{} {} installed", pkg.name, rel.version)
-    })
+    Ok(if restart { format!("{} {} installed: restart Pulso to use it", pkg.name, rel.version) } else { format!("{} {} installed", pkg.name, rel.version) })
 }
 
 /// Run `job` on a worker thread (`wait`: right here), reporting through `status`.
@@ -696,7 +692,7 @@ fn package_json(p: &Package, inst: Option<&InstalledPackage>, st: &Status) -> Va
         "latest": latest.map(|r| r.version.clone()),
         "size": latest.and_then(|r| r.size),
         "effects": latest.map(|r| r.effects.clone()).unwrap_or_default(),
-        // A newer release this build can't run (it needs a newer EffectCraft or plug-in API).
+        // A newer release this build can't run (it needs a newer Pulso or plug-in API).
         "needsNewerApp": newest_any.is_some_and(|v| latest.is_none_or(|l| newer(v, &l.version))),
         "installed": inst.map(|i| i.version.clone()),
         "updateAvailable": matches!((inst, latest), (Some(i), Some(l)) if newer(&l.version, &i.version)),
@@ -782,15 +778,13 @@ fn pick(s: &Session, c: &str, p: &Value) -> Result<(String, Package, Release)> {
     let pkg = cat.packages.iter().find(|x| x.id == id).cloned().ok_or_else(|| bad(c, format!("the catalog has no package `{id}`")))?;
     let rel = match str_p(p, "version") {
         Some(v) => pkg.versions.iter().find(|r| r.version == v).cloned().ok_or_else(|| bad(c, format!("{} has no version {v}", pkg.name)))?,
-        None => {
-            latest_compatible(&pkg).cloned().ok_or_else(|| bad(c, format!("{} has no release for this EffectCraft (plug-in API or app version)", pkg.name)))?
-        }
+        None => latest_compatible(&pkg).cloned().ok_or_else(|| bad(c, format!("{} has no release for this Pulso (plug-in API or app version)", pkg.name)))?,
     };
     if !runs_here(&rel) {
         return Err(bad(
             c,
             format!(
-                "{} {} needs WebAssembly ABI {} and EffectCraft {} or later; this is EffectCraft {} with WebAssembly ABI {} to {}",
+                "{} {} needs WebAssembly ABI {} and Pulso {} or later; this is Pulso {} with WebAssembly ABI {} to {}",
                 pkg.name,
                 rel.version,
                 rel.api,
@@ -979,7 +973,7 @@ fn uninstall(s: &mut Session, p: &Value) -> Result<Value> {
             st.restart.insert(id.to_string());
         }
     });
-    s.toast(if restart { format!("Removed {id}: its effects stay until you restart EffectCraft") } else { format!("Removed {id}") });
+    s.toast(if restart { format!("Removed {id}: its effects stay until you restart Pulso") } else { format!("Removed {id}") });
     Ok(json!({"removed": true, "restartNeeded": restart}))
 }
 
@@ -989,7 +983,7 @@ fn missing(s: &mut Session, _: &Value) -> Result<Value> {
     for (_, comp) in s.project.comps() {
         for l in &comp.layers {
             for g in l.effects().into_iter().flat_map(|fx| fx.groups()) {
-                if let effectcraft_project::GroupKind::Effect { effect } = &g.kind
+                if let pulso_project::GroupKind::Effect { effect } = &g.kind
                     && crate::effects::find(effect).is_none()
                 {
                     effects.insert(effect.clone());
@@ -1155,7 +1149,7 @@ mod tests {
         assert_eq!(c.packages[0].versions.len(), 1);
         assert_eq!(c.packages[0].versions[0].sha256, good, "checksums are kept in lower case");
         assert_eq!(warnings.len(), 5, "{warnings:?}");
-        assert!(parse_catalog(br#"{"schema": 2, "packages": []}"#).unwrap_err().contains("update EffectCraft"));
+        assert!(parse_catalog(br#"{"schema": 2, "packages": []}"#).unwrap_err().contains("update Pulso"));
         assert!(parse_catalog(b"not json").is_err());
         assert!(parse_catalog(&vec![b' '; (MAX_CATALOG + 1) as usize]).unwrap_err().contains("larger"));
     }

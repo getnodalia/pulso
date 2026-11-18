@@ -4,7 +4,7 @@
 //! in 0, out 5, stretch 100), then one change per file.
 
 use crate::container::helpers::{base_layer, first_comp, open};
-use effectcraft_aep::{BlendMode, LayerHeader, LayerType, Project, Quality, Rational};
+use pulso_aep::{BlendMode, LayerHeader, LayerType, Project, Quality, Rational};
 
 const L: u32 = 0x1b;
 
@@ -206,7 +206,7 @@ fn rational_is_exact() {
 
 // ----------------------------------------------------------------------------------- composition
 
-use effectcraft_aep::CompHeader;
+use pulso_aep::CompHeader;
 
 fn comp_header(name: &str) -> Option<(CompHeader, Option<String>, Option<(String, String)>)> {
     Some({

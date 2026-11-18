@@ -112,16 +112,16 @@ impl<'a> Renderer<'a> {
         StyledLayer { passes, body, content, ..st }
     }
 
-    pub(crate) fn sampling(&self, layer: &Layer) -> effectcraft_raster::Sampling {
+    pub(crate) fn sampling(&self, layer: &Layer) -> pulso_raster::Sampling {
         if self.quality(layer) == Quality::Draft {
             // Draft quality: no interpolation (nearest neighbour), as After Effects' Draft.
-            effectcraft_raster::Sampling::Nearest
+            pulso_raster::Sampling::Nearest
         } else if self.opts.draft {
-            effectcraft_raster::Sampling::Bilinear
+            pulso_raster::Sampling::Bilinear
         } else if layer.switches.sampling == Sampling::Bicubic {
-            effectcraft_raster::Sampling::Bicubic
+            pulso_raster::Sampling::Bicubic
         } else {
-            effectcraft_raster::Sampling::Bilinear
+            pulso_raster::Sampling::Bilinear
         }
     }
 
@@ -258,7 +258,7 @@ impl<'a> Renderer<'a> {
         let k = 1.0 / bufs.len() as f32;
         for b in &bufs {
             let m = Mat3::translate(vec2(off[0] - b.offset[0], off[1] - b.offset[1]));
-            effectcraft_raster::accumulate_warp(&mut acc, &b.img, &m, effectcraft_raster::Sampling::Bilinear, k);
+            pulso_raster::accumulate_warp(&mut acc, &b.img, &m, pulso_raster::Sampling::Bilinear, k);
         }
         Some(Buf { img: acc, offset: off, scale })
     }
@@ -299,10 +299,10 @@ impl<'a> Renderer<'a> {
         // proxy switch alone does not describe the source a renderer actually reads.
         let k = key?;
         let k = match self.opts.proxy {
-            effectcraft_project::render_queue::ProxyUse::CurrentSettings => k,
-            effectcraft_project::render_queue::ProxyUse::UseAll => cache::derive(k, 0x7072_6f78_7901),
-            effectcraft_project::render_queue::ProxyUse::UseCompOnly => cache::derive(k, 0x7072_6f78_7902),
-            effectcraft_project::render_queue::ProxyUse::UseNone => cache::derive(k, 0x7072_6f78_7903),
+            pulso_project::render_queue::ProxyUse::CurrentSettings => k,
+            pulso_project::render_queue::ProxyUse::UseAll => cache::derive(k, 0x7072_6f78_7901),
+            pulso_project::render_queue::ProxyUse::UseCompOnly => cache::derive(k, 0x7072_6f78_7902),
+            pulso_project::render_queue::ProxyUse::UseNone => cache::derive(k, 0x7072_6f78_7903),
         };
         let masked = layer.masks().is_some_and(|m| !m.children.is_empty());
         Some(if masked && !self.mask_blur(ctx, layer).allowed { cache::derive(k, 0x6d62_6f66) } else { k })
@@ -334,7 +334,7 @@ impl<'a> Renderer<'a> {
         let (w, h) = (buf.img.width as f64, buf.img.height as f64);
         let corners = [(0.0, 0.0), (w, 0.0), (0.0, h), (w, h), (w * 0.5, h * 0.5)];
         const PROBES: usize = 8;
-        let mut prev: Option<Vec<effectcraft_geom::Vec2>> = None;
+        let mut prev: Option<Vec<pulso_geom::Vec2>> = None;
         let mut travel = vec![0.0f64; corners.len()];
         for i in 0..PROBES {
             let m = self.buf_matrix_at(ctx, layer, buf, sh.offset(i, PROBES));
@@ -419,7 +419,7 @@ impl<'a> Renderer<'a> {
         let mut acc = Image::new(target.width, target.height);
         let k = 1.0 / pl.matrices.len() as f32;
         for m in &pl.matrices {
-            effectcraft_raster::accumulate_warp(&mut acc, &buf.img, m, opts.sampling, k);
+            pulso_raster::accumulate_warp(&mut acc, &buf.img, m, opts.sampling, k);
         }
         target.blend_from(&acc, mode, opacity, pl.seed);
         None
@@ -561,8 +561,8 @@ impl<'a> Renderer<'a> {
                 let k = match kind {
                     MatteKind::Alpha => q[3],
                     MatteKind::AlphaInverted => 1.0 - q[3],
-                    MatteKind::Luma => effectcraft_color::luminance(q[0], q[1], q[2]),
-                    MatteKind::LumaInverted => 1.0 - effectcraft_color::luminance(q[0], q[1], q[2]),
+                    MatteKind::Luma => pulso_color::luminance(q[0], q[1], q[2]),
+                    MatteKind::LumaInverted => 1.0 - pulso_color::luminance(q[0], q[1], q[2]),
                 }
                 .clamp(0.0, 1.0);
                 for c in p.iter_mut() {
@@ -588,9 +588,7 @@ impl<'a> Renderer<'a> {
         }
         let mut adjusted = self.apply_effects(ctx, layer, below, true);
         // An effect that changed the frame (Motion Tile's Output size): back onto the canvas.
-        if let Some((dx, dy)) =
-            effectcraft_effects::adjustment_crop(adjusted.offset, o, (adjusted.img.width, adjusted.img.height), (canvas.width, canvas.height))
-        {
+        if let Some((dx, dy)) = pulso_effects::adjustment_crop(adjusted.offset, o, (adjusted.img.width, adjusted.img.height), (canvas.width, canvas.height)) {
             adjusted.img = adjusted.img.crop(dx, dy, canvas.width, canvas.height);
         }
         if let Some(c) = self.pipe.to_blend() {
@@ -642,7 +640,7 @@ pub struct StyledLayer {
 pub struct Placement {
     /// Buffer pixel → output pixel; several = motion-blur sub-samples (equal weights).
     pub matrices: Vec<Mat3>,
-    pub sampling: effectcraft_raster::Sampling,
+    pub sampling: pulso_raster::Sampling,
     /// Dissolve noise seed.
     pub seed: u32,
 }

@@ -2,7 +2,7 @@
 //! type codes (701, 702).
 
 use crate::container::helpers::{first_comp, layer_shown_as, open};
-use effectcraft_aep::{KeyframeKind, Project};
+use pulso_aep::{KeyframeKind, Project};
 
 #[test]
 fn mask_path_keys_keep_their_ease_at_byte_24() {
@@ -32,8 +32,8 @@ fn a_spatial_speed_is_divided_by_the_layer_height() {
         let project = Project::new(&file).unwrap();
         let comp = first_comp(&project);
         let props = layer_shown_as(&project, &comp, layer).properties().unwrap();
-        let Some(effectcraft_aep::PropNode::Group(t)) = props.get("ADBE Transform Group") else { panic!() };
-        let Some(effectcraft_aep::PropNode::Property(a)) = t.get("ADBE Anchor Point") else { panic!() };
+        let Some(pulso_aep::PropNode::Group(t)) = props.get("ADBE Transform Group") else { panic!() };
+        let Some(pulso_aep::PropNode::Property(a)) = t.get("ADBE Anchor Point") else { panic!() };
         let keys: Vec<_> = a.keys().unwrap().keyframes().collect();
         let (e0, e1) = (keys[0].ease().unwrap(), keys[1].ease().unwrap());
         assert!((e0.out_speed * h - 50.0).abs() < 1e-9 && (e1.in_speed * h - 30.0).abs() < 1e-9, "{name}: {e0:?} {e1:?}");
@@ -43,7 +43,7 @@ fn a_spatial_speed_is_divided_by_the_layer_height() {
 
 #[test]
 fn parallel_and_ambient_lights_have_codes_0_and_3() {
-    use effectcraft_aep::{LayerType, LightType};
+    use pulso_aep::{LayerType, LightType};
     for (name, want) in [("701-light-parallel-int80-color.aep", LightType::Parallel), ("702-light-ambient-int50-color.aep", LightType::Ambient)] {
         let bytes = fixture!(name);
         let file = open(&bytes);
@@ -56,7 +56,7 @@ fn parallel_and_ambient_lights_have_codes_0_and_3() {
 
 #[test]
 fn keyed_orientation_pairs_records_and_values() {
-    use effectcraft_aep::Interpolation;
+    use pulso_aep::Interpolation;
     let bytes = fixture!("703-key-orientation-0-to-10-20-30-linear.aep");
     let file = open(&bytes);
     let project = Project::new(&file).unwrap();

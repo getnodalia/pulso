@@ -1,7 +1,7 @@
-//! EffectCraft's side of a helper: the child process, its pipes and frame exchange file, and
+//! Pulso's side of a helper: the child process, its pipes and frame exchange file, and
 //! the [`EffectPlugin`] each remote effect is registered as.
 //!
-//! Nothing a helper does can take EffectCraft down: a helper that exits, hangs past its
+//! Nothing a helper does can take Pulso down: a helper that exits, hangs past its
 //! timeout or answers nonsense is stopped, the render that hit it fails with a message (shown on
 //! the effect, the frame is left as it was), and the next render starts the helper again. An
 //! effect that took its helper down [`crate::blocklist::CRASH_LIMIT`] times is blocked.
@@ -14,7 +14,7 @@ use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError, TryLockError};
 use std::thread::ThreadId;
 use std::time::{Duration, Instant};
 
-use effectcraft_effects::plugin::{EffectPlugin, PluginFrame, PluginHost, PluginImage, PluginManifest, PluginParams};
+use pulso_effects::plugin::{EffectPlugin, PluginFrame, PluginHost, PluginImage, PluginManifest, PluginParams};
 
 use crate::blocklist;
 use crate::frames::Exchange;
@@ -34,15 +34,15 @@ const MAX_LOG_LINE: u64 = 64 << 10;
 /// [`set_render_timeout`] (milliseconds; 0 = not set).
 static RENDER_TIMEOUT_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
-/// Override the render timeout (tests; `EFFECTCRAFT_HELPER_TIMEOUT` still wins).
+/// Override the render timeout (tests; `PULSO_HELPER_TIMEOUT` still wins).
 pub fn set_render_timeout(t: Duration) {
     RENDER_TIMEOUT_MS.store(u64::try_from(t.as_millis()).unwrap_or(u64::MAX), std::sync::atomic::Ordering::Relaxed);
 }
 
-/// Timeout for one render step, `EFFECTCRAFT_HELPER_TIMEOUT` seconds (default 120: heavy
+/// Timeout for one render step, `PULSO_HELPER_TIMEOUT` seconds (default 120: heavy
 /// plug-ins take a while on their first frame).
 fn render_timeout() -> Duration {
-    if let Some(s) = env_secs("EFFECTCRAFT_HELPER_TIMEOUT") {
+    if let Some(s) = env_secs("PULSO_HELPER_TIMEOUT") {
         return Duration::from_secs(s);
     }
     match RENDER_TIMEOUT_MS.load(std::sync::atomic::Ordering::Relaxed) {
@@ -51,10 +51,10 @@ fn render_timeout() -> Duration {
     }
 }
 
-/// Timeout for start-up, `describe` and `load`, `EFFECTCRAFT_HELPER_LOAD_TIMEOUT` seconds
+/// Timeout for start-up, `describe` and `load`, `PULSO_HELPER_LOAD_TIMEOUT` seconds
 /// (default 600: scanning large plug-in suites is slow).
 fn load_timeout() -> Duration {
-    Duration::from_secs(env_secs("EFFECTCRAFT_HELPER_LOAD_TIMEOUT").unwrap_or(600))
+    Duration::from_secs(env_secs("PULSO_HELPER_LOAD_TIMEOUT").unwrap_or(600))
 }
 
 fn env_secs(k: &str) -> Option<u64> {
@@ -390,7 +390,7 @@ impl Helper {
         let mut cmd = Command::new(&self.program);
         cmd.arg(HELPER_ARG).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped());
         if let Some(dir) = blocklist::state_dir() {
-            cmd.env("EFFECTCRAFT_HELPER_STATE_DIR", dir);
+            cmd.env("PULSO_HELPER_STATE_DIR", dir);
         }
         #[cfg(windows)]
         {
@@ -481,7 +481,7 @@ impl Helper {
             }
             Ok(Reply::Hello { version, .. }) => {
                 c.stop();
-                return Err(format!("the helper speaks protocol {version}; this EffectCraft speaks {PROTOCOL_VERSION}"));
+                return Err(format!("the helper speaks protocol {version}; this Pulso speaks {PROTOCOL_VERSION}"));
             }
             Ok(Reply::Error { message }) => {
                 c.stop();

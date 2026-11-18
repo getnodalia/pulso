@@ -1,6 +1,6 @@
 use super::*;
 use crate::{Expression, LayerSource, Solid, build};
-use effectcraft_time::{FrameRate, Tick};
+use pulso_time::{FrameRate, Tick};
 
 fn names(comps: &[&str], footage: &[&str]) -> ExprReach {
     ExprReach::Names { comps: comps.iter().map(|s| s.to_string()).collect(), footage: footage.iter().map(|s| s.to_string()).collect() }
@@ -98,11 +98,11 @@ fn fixture() -> Fixture {
     let mut p = Project::default();
     let comp = Comp::new(64, 64, FrameRate::FPS_30, Tick::from_seconds_f64(2.0));
     let solid =
-        p.add_item("Solid", effectcraft_color::Label::None, None, ItemKind::Solid(Solid { color: [1.0, 0.0, 0.0], width: 64, height: 64, pixel_aspect: 1.0 }));
-    let main = p.add_item("Main", effectcraft_color::Label::None, None, ItemKind::Comp(comp.clone().into()));
-    let other = p.add_item("Other", effectcraft_color::Label::None, None, ItemKind::Comp(comp.clone().into()));
-    let third = p.add_item("Third", effectcraft_color::Label::None, None, ItemKind::Comp(comp.clone().into()));
-    let unused = p.add_item("unused.png", effectcraft_color::Label::None, None, ItemKind::Footage(crate::Footage { has_video: true, ..Default::default() }));
+        p.add_item("Solid", pulso_color::Label::None, None, ItemKind::Solid(Solid { color: [1.0, 0.0, 0.0], width: 64, height: 64, pixel_aspect: 1.0 }));
+    let main = p.add_item("Main", pulso_color::Label::None, None, ItemKind::Comp(comp.clone().into()));
+    let other = p.add_item("Other", pulso_color::Label::None, None, ItemKind::Comp(comp.clone().into()));
+    let third = p.add_item("Third", pulso_color::Label::None, None, ItemKind::Comp(comp.clone().into()));
+    let unused = p.add_item("unused.png", pulso_color::Label::None, None, ItemKind::Footage(crate::Footage { has_video: true, ..Default::default() }));
     for c in [main, other] {
         let l = build::layer(&mut p, &comp, "S", LayerSource::Solid { item: solid }, (64, 64), None);
         p.comp_mut(c).unwrap().layers.push(l);
@@ -153,7 +153,7 @@ fn pixel_reach_is_what_the_comp_draws_and_what_its_expressions_name() {
     let comp = f.p.comp(f.main).unwrap().clone();
     let l = build::layer(&mut f.p, &comp, "U", LayerSource::Footage { item: f.unused }, (64, 64), None);
     f.p.comp_mut(f.main).unwrap().layers.push(l);
-    let twin = f.p.add_item("unused.png", effectcraft_color::Label::None, None, ItemKind::Footage(crate::Footage::default()));
+    let twin = f.p.add_item("unused.png", pulso_color::Label::None, None, ItemKind::Footage(crate::Footage::default()));
     set_expr(&mut f.p, f.main, "value");
     let r = reach(&f.p, f.main).items.unwrap();
     assert!(r.contains(&f.unused) && r.contains(&twin), "{r:?}");
@@ -182,12 +182,8 @@ fn nested_comps_bring_their_expressions_reach() {
 #[test]
 fn model_sources_are_reached() {
     let mut f = fixture();
-    let model = f.p.add_item(
-        "chair.glb",
-        effectcraft_color::Label::None,
-        None,
-        ItemKind::Footage(crate::Footage { kind: crate::FootageKind::Model, ..Default::default() }),
-    );
+    let model =
+        f.p.add_item("chair.glb", pulso_color::Label::None, None, ItemKind::Footage(crate::Footage { kind: crate::FootageKind::Model, ..Default::default() }));
     let comp = f.p.comp(f.main).unwrap().clone();
     let l = build::layer(&mut f.p, &comp, "Model", LayerSource::Model { item: model }, (64, 64), None);
     f.p.comp_mut(f.main).unwrap().layers.push(l);

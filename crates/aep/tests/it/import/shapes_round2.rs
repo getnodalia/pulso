@@ -2,10 +2,10 @@
 //! Repeater (707-710, 731).
 
 use crate::import::helpers::comp;
-use effectcraft_keyframe::Value;
-use effectcraft_project::{Layer, Project, PropGroup};
+use pulso_keyframe::Value;
+use pulso_project::{Layer, Project, PropGroup};
 
-fn layer<'p>(p: &'p Project, r: &effectcraft_aep::import::ImportResult, name: &str) -> &'p Layer {
+fn layer<'p>(p: &'p Project, r: &pulso_aep::import::ImportResult, name: &str) -> &'p Layer {
     let (_, c) = comp(p, r, "C");
     c.layers.iter().find(|l| l.name == name).unwrap_or_else(|| panic!("no {name}"))
 }
@@ -65,7 +65,7 @@ fn shape_operators_arrive() {
 }
 
 /// After Effects offsets copy i by Amount x (i + Copy Offset) (826-828): 828 (Amount 20, Copies 3,
-/// Copy Offset 1.5) draws rings at 30, 50, 70 px; EffectCraft's copy i is Amount x (i + 1 +
+/// Copy Offset 1.5) draws rings at 30, 50, 70 px; Pulso's copy i is Amount x (i + 1 +
 /// copyOffset), so copyOffset is 0.5.
 #[test]
 fn offset_paths_copy_offset_is_after_effects_minus_one() {
@@ -88,7 +88,7 @@ fn shape_operator_defaults_are_after_effects_ones() {
 
 #[test]
 fn parallel_and_ambient_lights_arrive() {
-    use effectcraft_project::{LayerSource, LightKind};
+    use pulso_project::{LayerSource, LightKind};
     for (name, l, kind, intensity, colour) in [
         ("701-light-parallel-int80-color.aep", "P", LightKind::Parallel, 80.0, [1.0, 0.5, 0.25]),
         ("702-light-ambient-int50-color.aep", "A", LightKind::Ambient, 50.0, [0.25, 0.5, 1.0]),
@@ -110,5 +110,5 @@ fn keyed_orientation_arrives() {
     assert!(r.report.is_lossless(), "{:?}", r.report.losses);
     let o = layer(&p, &r, "L").props.prop("transform/orientation").unwrap();
     assert_eq!(o.keys.iter().map(|k| k.value.clone()).collect::<Vec<_>>(), [Value::Vec3([0.0; 3]), Value::Vec3([10.0, 20.0, 30.0])]);
-    assert_eq!(o.keys[1].time, effectcraft_time::Tick(2 * effectcraft_time::TICKS_PER_SECOND));
+    assert_eq!(o.keys[1].time, pulso_time::Tick(2 * pulso_time::TICKS_PER_SECOND));
 }

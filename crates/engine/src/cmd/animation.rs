@@ -1,13 +1,13 @@
-//! Animation menu: animation presets (EffectCraft's own JSON format), Add Keyframe, Keyframe
+//! Animation menu: animation presets (Pulso's own JSON format), Add Keyframe, Keyframe
 //! Assistant (Exponential Scale), text animators/selectors, and the
 //! Reveal Properties commands.
 
 use std::collections::BTreeMap;
 
-use effectcraft_keyframe::{Interp, Keyframe, Value as KV};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{GroupKind, Layer, LayerId, LayerSource, Node, Project, PropGroup, Property, Uid};
-use effectcraft_time::Tick;
+use pulso_keyframe::{Interp, Keyframe, Value as KV};
+use pulso_project::build::{self, Ids};
+use pulso_project::{GroupKind, Layer, LayerId, LayerSource, Node, Project, PropGroup, Property, Uid};
+use pulso_time::Tick;
 use serde_json::{Value, json};
 
 use super::effect::{effect_time_error, retime_effect};
@@ -120,7 +120,7 @@ fn upgrade_effect_path(path: &str) -> String {
         Some((m, n)) if !m.is_empty() && n.parse::<usize>().is_ok() => m,
         _ => seg,
     };
-    match effectcraft_effects::find(effect).and_then(|spec| effectcraft_effects::migrate::current_param_id(spec, tail)) {
+    match pulso_effects::find(effect).and_then(|spec| pulso_effects::migrate::current_param_id(spec, tail)) {
         Some(id) if id != tail => format!("effects/{seg}/{id}"),
         _ => path.to_string(),
     }
@@ -136,7 +136,7 @@ fn apply_preset(s: &mut Session, p: &Value) -> Result<Value> {
         _ => return Err(bad("anim.applyPreset", "missing `path` (or inline `preset`)")),
     };
     if doc.get(PRESET_TAG).is_none() {
-        return Err(bad("anim.applyPreset", "not an EffectCraft animation preset"));
+        return Err(bad("anim.applyPreset", "not a Pulso animation preset"));
     }
     let (cid, ids) = layers_p(s, p)?;
     if ids.is_empty() {
@@ -179,7 +179,7 @@ fn apply_preset(s: &mut Session, p: &Value) -> Result<Value> {
     // Effect bounds per layer size the point defaults of parameters added since the preset was saved.
     let comp = s.project.comp(cid).ok_or(EngineError::NoComp)?;
     let sizes: BTreeMap<LayerId, [f64; 2]> =
-        ids.iter().filter_map(|lid| comp.layer(*lid).map(|l| (*lid, effectcraft_render::effect_bounds(&s.project, comp, l).0))).collect();
+        ids.iter().filter_map(|lid| comp.layer(*lid).map(|l| (*lid, pulso_render::effect_bounds(&s.project, comp, l).0))).collect();
     let mut applied = 0;
     let mut skipped = vec![];
     s.edit("Apply Animation Preset", None, |proj, _| {
@@ -193,11 +193,11 @@ fn apply_preset(s: &mut Session, p: &Value) -> Result<Value> {
                     let mut g = g.clone();
                     // Effects saved by an earlier version get the upgrade a project gets on open.
                     let spec = match &g.kind {
-                        GroupKind::Effect { effect } => effectcraft_effects::find(effect),
+                        GroupKind::Effect { effect } => pulso_effects::find(effect),
                         _ => None,
                     };
                     if let Some(spec) = spec {
-                        effectcraft_effects::migrate::upgrade_instance(spec, &mut g, &mut Ids(&mut next), size);
+                        pulso_effects::migrate::upgrade_instance(spec, &mut g, &mut Ids(&mut next), size);
                     }
                     retime_effect(&mut g, 1.0, "anim.applyPreset", |t| Ok(Tick(t.0.checked_add(lt.0).ok_or_else(|| effect_time_error("anim.applyPreset"))?)))?;
                     g.reassign_uids(&mut next);
@@ -314,7 +314,7 @@ fn exponential_scale(s: &mut Session, _: &Value) -> Result<Value> {
                 let mut k = Keyframe::new(t, KV::Vec3(v));
                 k.in_interp = Interp::Linear;
                 k.out_interp = Interp::Linear;
-                effectcraft_keyframe::set_key(&mut pr.keys, k);
+                pulso_keyframe::set_key(&mut pr.keys, k);
                 st.selected_keys.push(KeyRef { layer: *lid, prop: *uid, time: t });
             }
             done += 1;
@@ -441,7 +441,7 @@ fn reveal(s: &mut Session, p: &Value) -> Result<Value> {
     let mut out = vec![];
     for lid in &layers {
         let Some(l) = comp.layer(*lid) else { continue };
-        let (w, h) = effectcraft_render::source_size(&s.project, l);
+        let (w, h) = pulso_render::source_size(&s.project, l);
         let anchor = [w as f64 / 2.0, h as f64 / 2.0];
         let center = [comp.width as f64 / 2.0, comp.height as f64 / 2.0];
         // Properties at the top of the layer's tree (Time Remap): enabled time remapping is a
@@ -481,10 +481,10 @@ fn reveal(s: &mut Session, p: &Value) -> Result<Value> {
             }
             // Modified: an effect's parameters that differ from a new instance's.
             if kind == "modified" && top.match_id == "effects" {
-                let size = effectcraft_render::effect_bounds(&s.project, comp, l).0;
+                let size = pulso_render::effect_bounds(&s.project, comp, l).0;
                 for g in top.groups() {
                     let spec = match &g.kind {
-                        GroupKind::Effect { effect } => effectcraft_effects::find(effect),
+                        GroupKind::Effect { effect } => pulso_effects::find(effect),
                         _ => None,
                     };
                     // A missing plug-in's defaults aren't known: the effect shows in full.
@@ -493,7 +493,7 @@ fn reveal(s: &mut Session, p: &Value) -> Result<Value> {
                         continue;
                     };
                     let mut next = 0;
-                    let new = effectcraft_effects::instantiate(spec, &mut Ids(&mut next), "", size);
+                    let new = pulso_effects::instantiate(spec, &mut Ids(&mut next), "", size);
                     effect_changes(g, &new, &mut found);
                 }
             }
@@ -508,8 +508,8 @@ fn reveal(s: &mut Session, p: &Value) -> Result<Value> {
                 }
                 // Every layer style counts in full, like an effect; so does each overridden
                 // Essential Property.
-                if top.match_id == effectcraft_project::styles::GROUP {
-                    found.extend(top.groups().filter(|g| g.match_id != effectcraft_project::styles::BLENDING).map(|g| g.uid));
+                if top.match_id == pulso_project::styles::GROUP {
+                    found.extend(top.groups().filter(|g| g.match_id != pulso_project::styles::BLENDING).map(|g| g.uid));
                 }
                 if let GroupKind::Essential { overridden } = &top.kind {
                     for u in overridden {

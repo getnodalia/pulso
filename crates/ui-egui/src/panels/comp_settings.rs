@@ -4,10 +4,10 @@
 
 use crate::i18n::{tr, tr_args};
 use crate::icons::Icon;
-use effectcraft_engine::prefs::CompPreset;
-use effectcraft_engine::project::Resolution;
-use effectcraft_engine::time::{FrameRate, format_timecode_frames, parse_timecode};
 use egui::{Color32, vec2};
+use pulso_engine::prefs::CompPreset;
+use pulso_engine::project::Resolution;
+use pulso_engine::time::{FrameRate, format_timecode_frames, parse_timecode};
 use serde_json::json;
 
 use crate::automation::Registry;
@@ -222,7 +222,7 @@ pub fn choose_name(
     let mut save = r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
     let mut cancel = ui.input(|i| i.key_pressed(egui::Key::Escape));
     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-        let b = ui.add_enabled(ok, egui::Button::new(egui::RichText::new(tr("   OK   ")).color(Color32::WHITE)).fill(t.accent));
+        let b = ui.add_enabled(ok, egui::Button::new(egui::RichText::new(tr("   OK   ")).color(t.on_accent())).fill(t.accent));
         auto.add("dialog.comp.presetNameSave", b.rect, "OK");
         save |= b.clicked();
         let c = ui.button(tr("Cancel"));
@@ -548,7 +548,7 @@ pub fn show(
     ui.add_space(14.0);
     ui.horizontal(|ui| {
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            let r = ui.add(egui::Button::new(egui::RichText::new(tr("   OK   ")).color(Color32::WHITE)).fill(t.accent));
+            let r = ui.add(egui::Button::new(egui::RichText::new(tr("   OK   ")).color(t.on_accent())).fill(t.accent));
             auto.add("dialog.comp.ok", r.rect, "OK");
             if r.clicked() {
                 out = Some(params(d));
@@ -580,7 +580,7 @@ pub fn params(d: &CompDraft) -> serde_json::Value {
 /// The frame size the comp renders at `res` (Auto follows the magnification, so the dialog shows
 /// the full frame for it).
 pub fn frame_at(w: u32, h: u32, res: Resolution) -> (u32, u32) {
-    effectcraft_render::frame_size(w, h, 1.0 / f64::from(res.factor().unwrap_or(1).max(1)))
+    pulso_render::frame_size(w, h, 1.0 / f64::from(res.factor().unwrap_or(1).max(1)))
 }
 
 #[cfg(test)]

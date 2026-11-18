@@ -1,19 +1,19 @@
 //! The key marquee in the Timeline (#2857): a box selects a key as soon as it touches any part of
 //! the key's glyph, not when it reaches the key's center.
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::LayerId;
-use effectcraft_engine::time::Tick;
-use effectcraft_ui_egui::EffectcraftApp;
 use egui::{Event, Modifiers, Pos2, Vec2, pos2, vec2};
 use egui_kittest::Harness;
+use pulso_engine::Session;
+use pulso_engine::project::LayerId;
+use pulso_engine::time::Tick;
+use pulso_ui_egui::PulsoApp;
 use serde_json::json;
 
 /// How far a linear key's diamond reaches from its center, without its hairline (0.25 pt).
 const REACH: f32 = 5.5;
 
 /// A comp with one solid, its Opacity keys at 1 s and 2 s (linear) revealed.
-fn harness_for(duration: f64) -> (Harness<'static, EffectcraftApp>, u64) {
+fn harness_for(duration: f64) -> (Harness<'static, PulsoApp>, u64) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Box", "width": 320, "height": 180, "frameRate": 30, "duration": duration})).unwrap();
     let id = s.execute("layer.newSolid", json!({"name": "L", "color": "#e04020", "width": 80, "height": 80})).unwrap()["layer"].as_u64().unwrap();
@@ -21,20 +21,20 @@ fn harness_for(duration: f64) -> (Harness<'static, EffectcraftApp>, u64) {
         s.execute("prop.addKey", json!({"layer": id, "path": "transform/opacity", "time": t, "value": v})).unwrap();
     }
     s.execute("layer.select", json!({"layers": [id]})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| PulsoApp::new(s));
     h.run_steps(3);
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "timeline.reveal.opacity", json!({})).unwrap();
+    pulso_ui_egui::menus::invoke(h.state_mut(), &ctx, "timeline.reveal.opacity", json!({})).unwrap();
     h.run_steps(4);
     (h, id)
 }
 
-fn harness() -> (Harness<'static, EffectcraftApp>, u64) {
+fn harness() -> (Harness<'static, PulsoApp>, u64) {
     harness_for(4.0)
 }
 
 /// The center of the key at `secs`: the middle of its hit rect, which is centered on the glyph.
-fn key_center(h: &Harness<'_, EffectcraftApp>, id: u64, secs: f64) -> Pos2 {
+fn key_center(h: &Harness<'_, PulsoApp>, id: u64, secs: f64) -> Pos2 {
     let comp = h.state().session.active_comp().unwrap();
     let uid = comp.layer(LayerId(id)).unwrap().props.prop("transform/opacity").unwrap().uid;
     let key = format!("timeline.keyAt.{uid}.{}", Tick::from_seconds_f64(secs).0);
@@ -43,7 +43,7 @@ fn key_center(h: &Harness<'_, EffectcraftApp>, id: u64, secs: f64) -> Pos2 {
 }
 
 /// Draw a marquee from `from` to `to`, then report the selected keys' times in seconds.
-fn marquee(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) -> Vec<f64> {
+fn marquee(h: &mut Harness<'_, PulsoApp>, from: Pos2, to: Pos2) -> Vec<f64> {
     let modifiers = Modifiers::default();
     h.input_mut().events.push(Event::PointerMoved(from));
     h.step();
@@ -93,10 +93,10 @@ fn a_box_dragged_across_the_outline_and_the_graph_selects_rows_and_keys() {
         ids.push(id);
     }
     s.execute("layer.select", json!({"layers": ids})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| PulsoApp::new(s));
     h.run_steps(3);
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "timeline.reveal.opacity", json!({})).unwrap();
+    pulso_ui_egui::menus::invoke(h.state_mut(), &ctx, "timeline.reveal.opacity", json!({})).unwrap();
     h.run_steps(4);
     h.state_mut().session.execute("edit.deselectAll", json!({})).unwrap();
     h.run_steps(2);
@@ -105,7 +105,7 @@ fn a_box_dragged_across_the_outline_and_the_graph_selects_rows_and_keys() {
     let outline = h.state().auto.find("timeline.layerMarquee").expect("the outline's empty area").rect;
     let below = pos2(outline[0] + 60.0, bottom.y + 40.0);
     assert!(below.x < top.x && below.y < outline[1] + outline[3], "the start is in the outline, below the rows");
-    let selected = |h: &Harness<'_, EffectcraftApp>| {
+    let selected = |h: &Harness<'_, PulsoApp>| {
         let st = &h.state().session.state;
         let mut layers: Vec<u64> = st.selected_layers.iter().map(|l| l.0).collect();
         let mut keyed: Vec<u64> = st.selected_keys.iter().map(|k| k.layer.0).collect();
@@ -128,7 +128,7 @@ fn a_box_dragged_across_the_outline_and_the_graph_selects_rows_and_keys() {
 }
 
 /// Thirty expanded layers force row virtualization and leave room for wheel and edge scrolling.
-fn rows_harness() -> (Harness<'static, EffectcraftApp>, Vec<u64>) {
+fn rows_harness() -> (Harness<'static, PulsoApp>, Vec<u64>) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "Rows", "width": 320, "height": 180, "frameRate": 30, "duration": 4})).unwrap();
     let mut ids = vec![];
@@ -138,10 +138,10 @@ fn rows_harness() -> (Harness<'static, EffectcraftApp>, Vec<u64>) {
         ids.push(id);
     }
     s.execute("layer.select", json!({"layers": ids})).unwrap();
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_eframe(|_| PulsoApp::new(s));
     h.run_steps(3);
     let ctx = h.ctx.clone();
-    effectcraft_ui_egui::menus::invoke(h.state_mut(), &ctx, "timeline.reveal.opacity", json!({})).unwrap();
+    pulso_ui_egui::menus::invoke(h.state_mut(), &ctx, "timeline.reveal.opacity", json!({})).unwrap();
     h.run_steps(4);
     (h, ids)
 }
@@ -175,7 +175,7 @@ fn scrolling_rows_during_a_marquee_keeps_offscreen_keys_in_the_box() {
     assert!(selected.contains(&top), "the key on layer {top} scrolled offscreen but remains inside the content-anchored marquee; actual layers {selected:?}");
 }
 
-fn press(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
+fn press(h: &mut Harness<'_, PulsoApp>, from: Pos2, to: Pos2) {
     h.event(Event::PointerMoved(from));
     h.step();
     h.event(Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
@@ -184,12 +184,12 @@ fn press(h: &mut Harness<'_, EffectcraftApp>, from: Pos2, to: Pos2) {
     h.run_steps(2);
 }
 
-fn release(h: &mut Harness<'_, EffectcraftApp>, to: Pos2) {
+fn release(h: &mut Harness<'_, PulsoApp>, to: Pos2) {
     h.event(Event::PointerButton { pos: to, button: egui::PointerButton::Primary, pressed: false, modifiers: Modifiers::NONE });
     h.run_steps(2);
 }
 
-fn wheel(h: &mut Harness<'_, EffectcraftApp>, delta: Vec2) {
+fn wheel(h: &mut Harness<'_, PulsoApp>, delta: Vec2) {
     h.event(Event::MouseWheel {
         unit: egui::MouseWheelUnit::Point,
         delta,
@@ -200,7 +200,7 @@ fn wheel(h: &mut Harness<'_, EffectcraftApp>, delta: Vec2) {
     h.run_steps(20);
 }
 
-fn times(h: &Harness<'_, EffectcraftApp>) -> Vec<f64> {
+fn times(h: &Harness<'_, PulsoApp>) -> Vec<f64> {
     h.state().session.state.selected_keys.iter().map(|k| k.time.seconds()).collect()
 }
 

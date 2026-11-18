@@ -1,8 +1,8 @@
 //! Cameras, lights and the 3D rotations (251-256, 341-345, 485-488, 535-537).
 
 use crate::import::helpers::comp;
-use effectcraft_keyframe::Value;
-use effectcraft_project::{AutoOrient, Layer, LayerSource, LightKind, Project};
+use pulso_keyframe::Value;
+use pulso_project::{AutoOrient, Layer, LayerSource, LightKind, Project};
 
 /// Imports without losses and returns layer `name` of comp C.
 fn layer(file: &str, name: &str) -> Option<Layer> {

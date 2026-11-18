@@ -1,8 +1,8 @@
 //! Effect menu and Effect Controls gestures.
 
-use effectcraft_project::build::Ids;
-use effectcraft_project::{GroupKind, Layer, LayerId, PropGroup, Uid};
-use effectcraft_time::Tick;
+use pulso_project::build::Ids;
+use pulso_project::{GroupKind, Layer, LayerId, PropGroup, Uid};
+use pulso_time::Tick;
 use serde_json::{Value, json};
 
 use super::{CommandSpec, b_p, bad, f_p, has_layers, layer_mut, layers_p, str_p};
@@ -10,7 +10,7 @@ use crate::{EngineError, Result, Session, cmd};
 
 /// `effect.plugins.list`: the registered plug-in effects (WebAssembly or Rust).
 fn plugins_list(s: &mut Session, _: &Value) -> Result<Value> {
-    use effectcraft_effects::plugin;
+    use pulso_effects::plugin;
     let list: Vec<Value> = plugin::plugins()
         .into_iter()
         .map(|spec| {
@@ -72,7 +72,7 @@ fn plugins_load(s: &mut Session, p: &Value) -> Result<Value> {
 }
 
 /// The settings-folder name the desktop app scans for WebAssembly effect plug-ins on start.
-/// The scan uses this constant ([`apps/effectcraft/src/main.rs`]), so the two cannot drift.
+/// The scan uses this constant ([`apps/pulso/src/main.rs`]), so the two cannot drift.
 pub const PLUGINS_DIR: &str = "Plug-ins";
 
 /// The most one installed file may be: a plug-in is a compiled effect, a panel is script text.
@@ -272,14 +272,14 @@ fn helpers_load(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn apply(s: &mut Session, p: &Value) -> Result<Value> {
     let name = str_p(p, "effect").ok_or_else(|| bad("effect.apply", "missing `effect` (id or name)"))?;
-    let spec = effectcraft_effects::lookup(name).ok_or_else(|| bad("effect.apply", format!("unknown effect `{name}`")))?;
+    let spec = pulso_effects::lookup(name).ok_or_else(|| bad("effect.apply", format!("unknown effect `{name}`")))?;
     let (cid, ids) = layers_p(s, p)?;
     if ids.is_empty() {
         return Err(bad("effect.apply", "no layer"));
     }
     let sizes: Vec<_> = {
         let comp = s.project.comp(cid).ok_or(EngineError::NoComp)?;
-        ids.iter().filter_map(|id| comp.layer(*id)).map(|l| (l.id, effectcraft_render::effect_bounds(&s.project, comp, l).0)).collect()
+        ids.iter().filter_map(|id| comp.layer(*id)).map(|l| (l.id, pulso_render::effect_bounds(&s.project, comp, l).0)).collect()
     };
     let uids = s.edit(&format!("Apply {}", spec.name), None, |proj, st| {
         let mut out = vec![];
@@ -289,7 +289,7 @@ fn apply(s: &mut Session, p: &Value) -> Result<Value> {
             let fx = l.props.sub_mut("effects").ok_or_else(|| bad("effect.apply", "this layer type has no effects"))?;
             let same = fx.groups().filter(|g| g.match_id == spec.id).count();
             let name = if same == 0 { spec.name.to_string() } else { format!("{} {}", spec.name, same + 1) };
-            let g = effectcraft_effects::instantiate(spec, &mut Ids(&mut next), &name, *size);
+            let g = pulso_effects::instantiate(spec, &mut Ids(&mut next), &name, *size);
             out.push(g.uid);
             fx.children.push(g.into());
             proj.next_id = next;
@@ -311,7 +311,7 @@ fn apply(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"effects": uids, "paths": paths, "effect": spec.id}))
 }
 
-fn find_fx(s: &Session, p: &Value, cmd: &str) -> Result<(effectcraft_project::ItemId, effectcraft_project::LayerId, Uid)> {
+fn find_fx(s: &Session, p: &Value, cmd: &str) -> Result<(pulso_project::ItemId, pulso_project::LayerId, Uid)> {
     let (cid, lid) = super::layer_p(s, p, cmd)?;
     let layer = s.project.comp(cid).and_then(|c| c.layer(lid)).ok_or(EngineError::NoComp)?;
     let fx = layer.effects().ok_or_else(|| bad(cmd, "no effects"))?;
@@ -336,7 +336,7 @@ fn warning(s: &mut Session, p: &Value) -> Result<Value> {
     let layer = comp.layer(lid).ok_or(EngineError::NoComp)?;
     let g = layer.effects().and_then(|fx| fx.groups().find(|g| g.uid == uid)).ok_or_else(|| bad(cmd, "no such effect"))?;
     let t = super::time_p(s, p, Some(comp));
-    let ctx = effectcraft_render::EvalCtx {
+    let ctx = pulso_render::EvalCtx {
         project: &s.project,
         comp_id: cid,
         comp,
@@ -347,7 +347,7 @@ fn warning(s: &mut Session, p: &Value) -> Result<Value> {
         media_overrides: &[],
         reads: None,
     };
-    Ok(json!({"effect": uid, "warning": effectcraft_effects::warning(g, &mut |pr| ctx.value(layer, pr))}))
+    Ok(json!({"effect": uid, "warning": pulso_effects::warning(g, &mut |pr| ctx.value(layer, pr))}))
 }
 
 /// A colour parameter's eyedropper on a keyer (Effect Controls): the colour of the effect's input
@@ -367,10 +367,10 @@ fn pick_color(s: &mut Session, p: &Value) -> Result<Value> {
         (None, Some(path)) => g.prop(path),
         _ => return Err(bad(cmd, "missing `param` (e.g. `screenColour`) or `prop` (uid)")),
     }
-    .filter(|pr| pr.ui == effectcraft_project::ParamUi::Color)
+    .filter(|pr| pr.ui == pulso_project::ParamUi::Color)
     .ok_or_else(|| bad(cmd, "not a colour parameter of this effect"))?;
     let t = super::time_p(s, p, Some(comp));
-    let ctx = effectcraft_render::EvalCtx {
+    let ctx = pulso_render::EvalCtx {
         project: &s.project,
         comp_id: cid,
         comp,
@@ -381,7 +381,7 @@ fn pick_color(s: &mut Session, p: &Value) -> Result<Value> {
         media_overrides: &[],
         reads: None,
     };
-    let mut r = effectcraft_render::Renderer::new(&s.project, &*s.footage, effectcraft_render::RenderOpts::default());
+    let mut r = pulso_render::Renderer::new(&s.project, &*s.footage, pulso_render::RenderOpts::default());
     r.expr = s.expr.as_deref();
     r.cache = Some(&s.layer_cache);
     let buf = r.layer_input(&ctx, layer, index).ok_or_else(|| bad(cmd, "this layer has no pixels"))?;
@@ -409,9 +409,9 @@ fn pick_color(s: &mut Session, p: &Value) -> Result<Value> {
 /// What a Cryptomatte effect has at a layer-space point: the ID with the most coverage in its
 /// Cryptomatte layer, with the aux channels (for the manifest) and the effect's Selection.
 struct CryptoHit {
-    at: (effectcraft_project::ItemId, LayerId, Tick),
+    at: (pulso_project::ItemId, LayerId, Tick),
     probe: std::sync::Arc<CryptoProbe>,
-    aux: std::sync::Arc<effectcraft_raster::AuxChannels>,
+    aux: std::sync::Arc<pulso_raster::AuxChannels>,
     layer: String,
     hash: u32,
     selection: String,
@@ -425,7 +425,7 @@ impl CryptoHit {
         self.aux.manifests.iter().find(|(l, _)| *l == self.layer).map(|(_, m)| m.as_slice())
     }
     fn reply(&self, sel: &str) -> Value {
-        let selected = effectcraft_effects::selection_hashes(sel, self.manifest()).contains(&self.hash);
+        let selected = pulso_effects::selection_hashes(sel, self.manifest()).contains(&self.hash);
         let name = self.aux.manifest_name(&self.layer, self.hash);
         json!({"name": name, "hash": format!("{:08x}", self.hash), "layer": self.layer, "selected": selected})
     }
@@ -442,7 +442,7 @@ pub struct CryptoProbe {
 
 #[derive(Clone)]
 struct ProbeGrid {
-    aux: std::sync::Arc<effectcraft_raster::AuxChannels>,
+    aux: std::sync::Arc<pulso_raster::AuxChannels>,
     layer: String,
     scale: f64,
     offset: [f64; 2],
@@ -453,7 +453,7 @@ struct ProbeGrid {
 #[derive(Clone, Copy, PartialEq, Debug)]
 struct ProbeKey {
     revision: u64,
-    at: (effectcraft_project::ItemId, LayerId, Uid, usize),
+    at: (pulso_project::ItemId, LayerId, Uid, usize),
     frame: ProbeFrame,
     scale: f64,
     prefs: (bool, bool),
@@ -502,13 +502,13 @@ const NO_CRYPTO: &str = "this layer has no Cryptomatte channels (a multi-layer O
 impl CryptoProbe {
     /// `None` when `live` turns false between its stages (a newer request or an edit since):
     /// a cancelled build stops early and lets go of what it read.
-    fn build(r: &effectcraft_render::Renderer, key: ProbeKey, time: Tick, live: &dyn Fn() -> bool) -> Option<CryptoProbe> {
+    fn build(r: &pulso_render::Renderer, key: ProbeKey, time: Tick, live: &dyn Fn() -> bool) -> Option<CryptoProbe> {
         let (cid, lid, _, pos) = key.at;
         let build = || -> std::result::Result<Option<ProbeGrid>, String> {
             let comp = r.project.comp(cid).ok_or("no composition")?;
             let layer = comp.layer(lid).ok_or("no such layer")?;
             let g = layer.effects().and_then(|fx| fx.groups().nth(pos)).ok_or("no such effect")?;
-            let ctx = effectcraft_render::EvalCtx {
+            let ctx = pulso_render::EvalCtx {
                 project: r.project,
                 comp_id: cid,
                 comp,
@@ -519,12 +519,12 @@ impl CryptoProbe {
                 media_overrides: &[],
                 reads: None,
             };
-            let params = effectcraft_effects::flatten_params(g, &mut |pr| ctx.value(layer, pr));
+            let params = pulso_effects::flatten_params(g, &mut |pr| ctx.value(layer, pr));
             let aux = r.layer_aux(&ctx, layer).ok_or(NO_CRYPTO)?;
             if !live() {
                 return Ok(None);
             }
-            let layer_name = effectcraft_effects::crypto_layer_named(&aux, params.s("layerName"), params.e("layer") as usize).ok_or(NO_CRYPTO)?;
+            let layer_name = pulso_effects::crypto_layer_named(&aux, params.s("layerName"), params.e("layer") as usize).ok_or(NO_CRYPTO)?;
             // The grid of the effect's input buffer (footage keeps native pixels from 3/4 scale
             // up, proxies have their own size, earlier effects can pad it), rendered and cached.
             if !live() {
@@ -542,32 +542,32 @@ impl CryptoProbe {
 /// Whether a property in `g` other than `skip` changes over time (keyframes or an expression).
 fn moves(g: &PropGroup, skip: Option<Uid>) -> bool {
     g.children.iter().any(|c| match c {
-        effectcraft_project::Node::Prop(p) => Some(p.uid) != skip && (p.is_animated() || p.has_expression()),
-        effectcraft_project::Node::Group(g) => moves(g, skip),
+        pulso_project::Node::Prop(p) => Some(p.uid) != skip && (p.is_animated() || p.has_expression()),
+        pulso_project::Node::Group(g) => moves(g, skip),
     })
 }
 
 /// [`ProbeFrame`] of the effect at index `pos` of `layer`.
-fn probe_frame(ctx: &effectcraft_render::EvalCtx, layer: &Layer, pos: usize) -> ProbeFrame {
+fn probe_frame(ctx: &pulso_render::EvalCtx, layer: &Layer, pos: usize) -> ProbeFrame {
     let comp = ProbeFrame::Comp(ctx.time);
-    let effectcraft_project::LayerSource::Footage { item } = layer.source else { return comp };
-    let Some(effectcraft_project::ItemKind::Footage(f)) = ctx.project.item(item).map(|i| &i.kind) else { return comp };
+    let pulso_project::LayerSource::Footage { item } = layer.source else { return comp };
+    let Some(pulso_project::ItemKind::Footage(f)) = ctx.project.item(item).map(|i| &i.kind) else { return comp };
     let fx = layer.effects().into_iter().flat_map(|fx| fx.groups().take(pos + 1));
     let time_fx = |g: &PropGroup| matches!(&g.kind, GroupKind::Effect { effect } if effect.starts_with("ec.time."));
-    let still = f.kind == effectcraft_project::FootageKind::Still;
-    let blend = !still && ctx.comp.enable_frame_blending && layer.switches.frame_blend != effectcraft_project::FrameBlend::Off;
+    let still = f.kind == pulso_project::FootageKind::Still;
+    let blend = !still && ctx.comp.enable_frame_blending && layer.switches.frame_blend != pulso_project::FrameBlend::Off;
     // The Cryptomatte effect's own Selection isn't read by the probe: animated, it keeps it.
     let own = |i: usize, g: &PropGroup| if i == pos { g.prop("selection").map(|p| p.uid) } else { None };
     if blend || layer.masks().is_some_and(|m| moves(m, None)) || fx.enumerate().any(|(i, g)| moves(g, own(i, g)) || time_fx(g)) {
         return comp;
     }
-    ProbeFrame::Source(if still { 0 } else { effectcraft_render::frame_position(ctx.source_time(layer), f.frame_rate).0 })
+    ProbeFrame::Source(if still { 0 } else { pulso_render::frame_position(ctx.source_time(layer), f.frame_rate).0 })
 }
 
 /// The Cryptomatte effect `{layer?, effect?, scale?, time?}` names: its probe key, the comp
 /// time, its layer, group and Selection property.
 #[allow(clippy::type_complexity)]
-fn probe_key<'a>(s: &'a Session, p: &Value, cmd: &str) -> Result<(ProbeKey, Tick, &'a Layer, &'a PropGroup, &'a effectcraft_project::Property)> {
+fn probe_key<'a>(s: &'a Session, p: &Value, cmd: &str) -> Result<(ProbeKey, Tick, &'a Layer, &'a PropGroup, &'a pulso_project::Property)> {
     let (cid, lid, fx_uid) = find_fx(s, p, cmd)?;
     let scale = f_p(p, "scale").unwrap_or(1.0);
     if !(scale.is_finite() && scale > 0.0 && scale <= 1.0) {
@@ -580,7 +580,7 @@ fn probe_key<'a>(s: &'a Session, p: &Value, cmd: &str) -> Result<(ProbeKey, Tick
     let g = fx.groups().nth(pos).ok_or_else(|| bad(cmd, "no such effect"))?;
     let prop = g.prop("selection").filter(|_| g.match_id == "ec.3d.cryptomatte").ok_or_else(|| bad(cmd, "not a Cryptomatte effect"))?;
     let time = super::time_p(s, p, Some(comp));
-    let ctx = effectcraft_render::EvalCtx {
+    let ctx = pulso_render::EvalCtx {
         project: &s.project,
         comp_id: cid,
         comp,
@@ -606,7 +606,7 @@ pub(crate) fn kept_crypto_probe(s: &Session) -> Option<std::sync::Arc<CryptoProb
 /// After an undo, redo or history jump from `before` (which dropped the probe): `kept`, the
 /// probe from before, still answers when only Cryptomatte Selections changed, which the probe
 /// doesn't read (undoing a pick, as the pick itself keeps it).
-pub(crate) fn keep_crypto_probe(s: &Session, kept: Option<std::sync::Arc<CryptoProbe>>, before: &effectcraft_project::Project) {
+pub(crate) fn keep_crypto_probe(s: &Session, kept: Option<std::sync::Arc<CryptoProbe>>, before: &pulso_project::Project) {
     let Some(p) = kept else { return };
     if !only_crypto_selections_differ(before, &s.project) {
         return;
@@ -619,10 +619,10 @@ pub(crate) fn keep_crypto_probe(s: &Session, kept: Option<std::sync::Arc<CryptoP
 }
 
 /// Whether projects `a` and `b` differ at most in the Selections of Cryptomatte effects.
-fn only_crypto_selections_differ(a: &effectcraft_project::Project, b: &effectcraft_project::Project) -> bool {
+fn only_crypto_selections_differ(a: &pulso_project::Project, b: &pulso_project::Project) -> bool {
     let mut x = a.clone();
     for (cid, it) in x.items.iter_mut() {
-        let effectcraft_project::ItemKind::Comp(c) = &mut it.kind else { continue };
+        let pulso_project::ItemKind::Comp(c) = &mut it.kind else { continue };
         let sels: Vec<(LayerId, Uid)> = c
             .layers
             .iter()
@@ -676,7 +676,7 @@ pub(crate) fn crypto_probe_job(s: &Session, p: &Value) -> Result<Option<CryptoPr
     };
     let (project, footage, expr, cache, accel, slot) =
         (s.project.clone(), s.footage.clone(), s.expr.clone(), s.layer_cache.clone(), s.accel.clone(), s.crypto_probe.clone());
-    let opts = s.render_opts(effectcraft_render::RenderOpts { scale: key.scale, ..Default::default() });
+    let opts = s.render_opts(pulso_render::RenderOpts { scale: key.scale, ..Default::default() });
     // The slot while this is still the newest request.
     fn current(slot: &std::sync::Mutex<CryptoProbeSlot>, generation: u64) -> Option<std::sync::MutexGuard<'_, CryptoProbeSlot>> {
         slot.lock().ok().filter(|s| s.generation == generation)
@@ -687,7 +687,7 @@ pub(crate) fn crypto_probe_job(s: &Session, p: &Value) -> Result<Option<CryptoPr
             Ok(mut s) => return s.jobs += 1,
             Err(_) => return,
         }
-        let mut r = effectcraft_render::Renderer::new(&project, footage.as_ref(), opts);
+        let mut r = pulso_render::Renderer::new(&project, footage.as_ref(), opts);
         r.expr = expr.as_deref();
         r.cache = Some(&cache);
         r.accel = accel.as_deref();
@@ -755,7 +755,7 @@ fn crypto_hit(s: &Session, p: &Value, cmd: &str) -> Result<Hit> {
         Some(probe) => probe,
         None if b_p(p, "probeOnly").unwrap_or(false) => return Ok(Hit::Pending),
         None => {
-            let r = s.renderer(effectcraft_render::RenderOpts { scale: key.scale, ..Default::default() });
+            let r = s.renderer(pulso_render::RenderOpts { scale: key.scale, ..Default::default() });
             if let Ok(mut slot) = s.crypto_probe.lock() {
                 slot.clear();
                 slot.builds += 1;
@@ -771,11 +771,11 @@ fn crypto_hit(s: &Session, p: &Value, cmd: &str) -> Result<Hit> {
     let b = probe.grid.as_ref().map_err(|e| bad(cmd, e.clone()))?;
     let (bs, o) = (b.scale, b.offset);
     // The centre of its pixel under the point, at the aux point the effect reads there.
-    let [ax, ay] = effectcraft_effects::aux_point(bs, o, [(x * bs + o[0]).floor() + 0.5, (y * bs + o[1]).floor() + 0.5]);
+    let [ax, ay] = pulso_effects::aux_point(bs, o, [(x * bs + o[0]).floor() + 0.5, (y * bs + o[1]).floor() + 0.5]);
     let Some(hash) = b.aux.index_at(ax, ay).and_then(|i| b.aux.crypto_id_at(&b.layer, i)) else { return Ok(Hit::Nothing) };
     let (cid, lid, ..) = key.at;
     let comp = s.project.comp(cid).ok_or(EngineError::NoComp)?;
-    let ctx = effectcraft_render::EvalCtx {
+    let ctx = pulso_render::EvalCtx {
         project: &s.project,
         comp_id: cid,
         comp,
@@ -786,7 +786,7 @@ fn crypto_hit(s: &Session, p: &Value, cmd: &str) -> Result<Hit> {
         media_overrides: &[],
         reads: None,
     };
-    let selection = effectcraft_effects::flatten_params(g, &mut |pr| ctx.value(layer, pr)).s("selection").to_string();
+    let selection = pulso_effects::flatten_params(g, &mut |pr| ctx.value(layer, pr)).s("selection").to_string();
     let driven = prop.expr.as_ref().is_some_and(|e| e.enabled);
     let (aux, layer_name) = (b.aux.clone(), b.layer.clone());
     Ok(Hit::Id(CryptoHit { at: (cid, lid, time), probe: probe.clone(), aux, layer: layer_name, hash, selection, prop: prop.uid, driven }))
@@ -806,7 +806,7 @@ fn crypto_at(s: &mut Session, p: &Value) -> Result<Value> {
 /// The Cryptomatte eyedropper: replace the effect's Selection with the ID under a point, add it
 /// or remove it, in one undo step at the time it was read (none when its meaning stays).
 fn pick_crypto(s: &mut Session, p: &Value) -> Result<Value> {
-    use effectcraft_effects::crypto_select::{PickMode, edit_selection, token_for};
+    use pulso_effects::crypto_select::{PickMode, edit_selection, token_for};
     let cmd = "effect.pickCryptomatte";
     let mode = match str_p(p, "mode").unwrap_or("replace") {
         "replace" => PickMode::Replace,
@@ -895,7 +895,7 @@ fn set_label(s: &mut Session, p: &Value) -> Result<Value> {
     let c = "effect.setLabel";
     let (cid, lid, uid) = find_fx(s, p, c)?;
     let lab = match p.get("label") {
-        Some(Value::Number(n)) => n.as_u64().and_then(|i| effectcraft_color::Label::ALL.get(usize::try_from(i).ok()?).copied()),
+        Some(Value::Number(n)) => n.as_u64().and_then(|i| pulso_color::Label::ALL.get(usize::try_from(i).ok()?).copied()),
         Some(Value::String(name)) => s.prefs.label_from_name(name),
         _ => None,
     }
@@ -903,7 +903,7 @@ fn set_label(s: &mut Session, p: &Value) -> Result<Value> {
     s.edit("Effect Label", None, |proj, _| {
         let l = layer_mut(proj, cid, lid)?;
         let g = l.props.find_group_mut(uid).ok_or_else(|| bad(c, "gone"))?;
-        g.label = (lab != effectcraft_color::Label::None).then_some(lab);
+        g.label = (lab != pulso_color::Label::None).then_some(lab);
         Ok(())
     })?;
     Ok(Value::Null)
@@ -1164,11 +1164,11 @@ fn reset(s: &mut Session, p: &Value) -> Result<Value> {
     let (cid, lid, uid) = find_fx(s, p, "effect.reset")?;
     let comp = s.project.comp(cid).ok_or(EngineError::NoComp)?;
     let layer = comp.layer(lid).ok_or(EngineError::NoComp)?;
-    let size = effectcraft_render::effect_bounds(&s.project, comp, layer).0;
+    let size = pulso_render::effect_bounds(&s.project, comp, layer).0;
     let lt = layer.layer_time(s.time());
     let g = layer.effects().and_then(|fx| fx.groups().find(|g| g.uid == uid)).ok_or_else(|| bad("effect.reset", "gone"))?;
     let spec = match &g.kind {
-        GroupKind::Effect { effect } => effectcraft_effects::find(effect),
+        GroupKind::Effect { effect } => pulso_effects::find(effect),
         _ => None,
     }
     .ok_or_else(|| bad("effect.reset", "unknown effect"))?;
@@ -1178,7 +1178,7 @@ fn reset(s: &mut Session, p: &Value) -> Result<Value> {
         for ps in &spec.params {
             // (`group/param` ids live in twirl-down groups.)
             if let Some(pr) = g.prop_mut(ps.id) {
-                pr.set_value_at(lt, effectcraft_effects::default_value(ps, size));
+                pr.set_value_at(lt, pulso_effects::default_value(ps, size));
             }
         }
         Ok(())
@@ -1201,7 +1201,7 @@ fn swap_tint_colors(s: &mut Session, p: &Value) -> Result<Value> {
     let color = |id| {
         g.prop(id)
             .map(|pr| pr.value_at(lt))
-            .filter(|v| matches!(v, effectcraft_keyframe::Value::Color(_)))
+            .filter(|v| matches!(v, pulso_keyframe::Value::Color(_)))
             .ok_or_else(|| bad(cmd, "Tint is missing a colour parameter"))
     };
     let (black, white) = (color("black")?, color("white")?);
@@ -1228,19 +1228,19 @@ fn last(s: &mut Session, p: &Value) -> Result<Value> {
 
 fn list(_: &mut Session, p: &Value) -> Result<Value> {
     let filter = str_p(p, "filter").map(str::to_lowercase);
-    let v: Vec<Value> = effectcraft_effects::all()
+    let v: Vec<Value> = pulso_effects::all()
         .into_iter()
         .filter(|e| {
-            filter.as_ref().is_none_or(|f| effectcraft_effects::name_matches(e, f) || e.id.contains(f.as_str()) || e.category.to_ascii_lowercase().contains(f))
+            filter.as_ref().is_none_or(|f| pulso_effects::name_matches(e, f) || e.id.contains(f.as_str()) || e.category.to_ascii_lowercase().contains(f))
         })
         .map(|e| {
             json!({"id": e.id, "name": e.name, "category": e.category, "gpu": e.gpu, "float": e.float, "params": e.params.iter().map(|p| {
                 let mut out = json!({"id": p.id, "name": p.name, "type": p.default.kind_name(), "default": p.default.to_json()});
                 match &p.ui {
-                    effectcraft_project::ParamUi::Popup { options } => {
+                    pulso_project::ParamUi::Popup { options } => {
                         out["options"] = super::popup_options(options);
                     }
-                    effectcraft_project::ParamUi::Slider { min, max, slider_min, slider_max, decimals } => {
+                    pulso_project::ParamUi::Slider { min, max, slider_min, slider_max, decimals } => {
                         out["min"] = json!(min);
                         out["max"] = json!(max);
                         out["sliderMin"] = json!(slider_min);
@@ -1260,10 +1260,10 @@ impl Session {
     /// The named channels of layer `lid` in the active comp at the current time: its
     /// multi-layer OpenEXR footage's layers and channels (`diffuse.R`, `depth.Z`, …), which
     /// EXtractoR and the 3D Channel effects read. `None` for other layers.
-    pub fn layer_channels(&self, lid: LayerId) -> Option<std::sync::Arc<effectcraft_raster::AuxChannels>> {
+    pub fn layer_channels(&self, lid: LayerId) -> Option<std::sync::Arc<pulso_raster::AuxChannels>> {
         let layer = self.active_comp()?.layer(lid)?;
-        let effectcraft_project::LayerSource::Footage { item } = layer.source else { return None };
-        let effectcraft_project::ItemKind::Footage(f) = &self.project.item(item)?.kind else { return None };
+        let pulso_project::LayerSource::Footage { item } = layer.source else { return None };
+        let pulso_project::ItemKind::Footage(f) = &self.project.item(item)?.kind else { return None };
         self.footage.aux(item, f, layer.layer_time(self.time()))
     }
 }
@@ -1376,7 +1376,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Scan for Effect Helpers",
             [],
             None,
-            "{retry?} → {paths, helpers, loaded, errors}: starts the effect helpers installed in helpers/ next to the app, helpers/ in the settings folder and EFFECTCRAFT_HELPER_PATH, and adds their effects; retry turns effects that kept stopping their helper back on",
+            "{retry?} → {paths, helpers, loaded, errors}: starts the effect helpers installed in helpers/ next to the app, helpers/ in the settings folder and PULSO_HELPER_PATH, and adds their effects; retry turns effects that kept stopping their helper back on",
             has_helpers,
             helpers_scan
         ),

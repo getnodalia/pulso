@@ -3,9 +3,9 @@
 //! 1 s WAV layer of 351 with their out points moved to 5 s import as long as their source; the
 //! remapped layer of 354 keeps its out point.
 
-use effectcraft_aep::import::{ImportOptions, import};
-use effectcraft_aep::{Body, Chunk, parse, write};
-use effectcraft_project::{ItemKind, LayerSource, Project};
+use pulso_aep::import::{ImportOptions, import};
+use pulso_aep::{Body, Chunk, parse, write};
+use pulso_project::{ItemKind, LayerSource, Project};
 
 /// Moves the out point of every `Layr` of the file to `seconds` (relative to its start).
 fn with_out_point(bytes: &[u8], seconds: u32) -> Vec<u8> {
@@ -72,16 +72,16 @@ fn a_footage_layer_ends_at_its_source() {
 fn a_reversed_layer_plays_backwards() {
     // 982: stretch -100 %, start 5 s, Opacity keys at layer time 1 s (20 %) and 5 s (100 %);
     // After Effects reads 80 % at comp 1 s and 40 % at 3 s (MANIFEST).
-    let mut p = effectcraft_project::Project::default();
+    let mut p = pulso_project::Project::default();
     let none = |_: &str| false;
-    let opts = effectcraft_aep::import::ImportOptions { allow_losses: false, ..effectcraft_aep::import::ImportOptions::new(&none) };
-    effectcraft_aep::import::import(&mut p, &fixture!("982-layer-stretch-minus100-opacity-keys.aep"), &opts).expect("lossless");
+    let opts = pulso_aep::import::ImportOptions { allow_losses: false, ..pulso_aep::import::ImportOptions::new(&none) };
+    pulso_aep::import::import(&mut p, &fixture!("982-layer-stretch-minus100-opacity-keys.aep"), &opts).expect("lossless");
     let l = p.comps().next().map(|(_, c)| c.layers[0].clone()).expect("layer");
     assert_eq!(l.stretch, -100.0);
     assert_eq!((l.in_point.seconds(), l.out_point.seconds()), (0.0, 5.0));
     let op = l.props.prop("transform/opacity").expect("opacity");
     for (comp_s, want) in [(1.0, 80.0), (3.0, 40.0)] {
-        let t = l.layer_time(effectcraft_time::Tick::from_seconds_f64(comp_s));
+        let t = l.layer_time(pulso_time::Tick::from_seconds_f64(comp_s));
         let v = op.value_at(t).as_f64();
         assert!((v - want).abs() < 0.01, "{comp_s}: {v}");
     }

@@ -1,6 +1,6 @@
 //! Render Queue benchmark (#3335): a 1080p 32 bpc job on the GPU, the CPU or the measured choice.
 //!
-//! `cargo run --release -p effectcraft-ui-egui --example rq_bench -- [options]`
+//! `cargo run --release -p pulso-ui-egui --example rq_bench -- [options]`
 //!
 //! It builds a comp like a compositing shot: a 1920 × 1080 OpenEXR sequence (float RGBA with a
 //! Cryptomatte ID channel and manifest, generated once into `target/rq-bench/media`, no
@@ -10,13 +10,13 @@
 //! the written pixels (equal hashes: identical output).
 //!
 //! Options: `--renderer gpu|cpu` (the project's renderer, default gpu; with gpu the Render
-//! Queue measures both unless `EFFECTCRAFT_RQ_RENDERER` says otherwise), `--frames N` (default
+//! Queue measures both unless `PULSO_RQ_RENDERER` says otherwise), `--frames N` (default
 //! 60), `--format png|exr|tiff` (default png), `--out DIR` (default `target/rq-bench/out`).
 
 use std::sync::Arc;
 
-use effectcraft_engine::Session;
-use effectcraft_engine::raster::channels3d::{crypto_float, crypto_hash};
+use pulso_engine::Session;
+use pulso_engine::raster::channels3d::{crypto_float, crypto_hash};
 use serde_json::{Value, json};
 
 const W: usize = 1920;
@@ -94,9 +94,9 @@ fn main() {
         }
     }
 
-    let mut s = effectcraft_host::session();
-    let accel = effectcraft_gpu::Gpu::try_headless().unwrap_or_else(|e| panic!("no GPU: {e}"));
-    eprintln!("GPU: {}", effectcraft_engine::render::Accelerator::name(&accel));
+    let mut s = pulso_host::session();
+    let accel = pulso_gpu::Gpu::try_headless().unwrap_or_else(|e| panic!("no GPU: {e}"));
+    eprintln!("GPU: {}", pulso_engine::render::Accelerator::name(&accel));
     s.accel = Some(Arc::new(accel));
     let r = run(&mut s, "file.import", json!({"paths": [first.to_string_lossy()], "sequence": true}));
     let footage = r["items"][0].as_u64().expect("the plate");
@@ -112,7 +112,7 @@ fn main() {
     run(&mut s, "prop.addKey", json!({"layer": solid, "path": "transform/position", "time": secs, "value": [1720.0, 540.0]}));
     run(&mut s, "prop.set", json!({"layer": solid, "path": "transform/opacity", "value": 70.0}));
     let mut p = (*s.project).clone();
-    p.settings.bit_depth = effectcraft_engine::project::BitDepth::Bpc32;
+    p.settings.bit_depth = pulso_engine::project::BitDepth::Bpc32;
     p.settings.gpu_acceleration = gpu;
     s.project = Arc::new(p);
 
@@ -127,10 +127,10 @@ fn main() {
     run(&mut s, "renderQueue.render", json!({"wait": true}));
     let total = t0.elapsed().as_secs_f64();
     println!(
-        "renderer {} (EFFECTCRAFT_RQ_RENDERER={:?}, EFFECTCRAFT_GPU_INFLIGHT={:?}), {frames} frames {W}x{H} 32 bpc, {format}",
+        "renderer {} (PULSO_RQ_RENDERER={:?}, PULSO_GPU_INFLIGHT={:?}), {frames} frames {W}x{H} 32 bpc, {format}",
         if gpu { "gpu" } else { "cpu" },
-        std::env::var("EFFECTCRAFT_RQ_RENDERER").ok(),
-        std::env::var("EFFECTCRAFT_GPU_INFLIGHT").ok()
+        std::env::var("PULSO_RQ_RENDERER").ok(),
+        std::env::var("PULSO_GPU_INFLIGHT").ok()
     );
     for (i, (item, d)) in s.project.render_queue.iter().zip(&dirs).enumerate() {
         let secs = item.render_time.unwrap_or(f64::NAN);

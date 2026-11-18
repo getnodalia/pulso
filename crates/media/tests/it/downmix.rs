@@ -5,8 +5,8 @@ use std::f64::consts::PI;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use effectcraft_media::{MediaPool, probe};
-use effectcraft_time::Tick;
+use pulso_media::{MediaPool, probe};
+use pulso_time::Tick;
 
 const RATE: u32 = 48_000;
 
@@ -169,7 +169,7 @@ fn each_channel_reaches_stereo_at_its_bs775_gain() {
 }
 
 /// `p`, or a copy whose AAC sample entry names all `channels` of its PCE layout: ffmpeg 4.2 writes
-/// 2 there for a PCE layout (8.1 the real count), and FilmCraft decodes as many channels as the
+/// 2 there for a PCE layout (8.1 the real count), and Toma decodes as many channels as the
 /// sample entry names, so the other five of a 6.1 would never reach the mix.
 fn whole_pce_entry(p: &Path, channels: usize) -> PathBuf {
     let mut bytes = std::fs::read(p).expect("read");

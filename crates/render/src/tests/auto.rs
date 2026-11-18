@@ -2,10 +2,10 @@
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use effectcraft_color::Label;
-use effectcraft_project::build;
-use effectcraft_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid};
-use effectcraft_time::{FrameRate, Tick};
+use pulso_color::Label;
+use pulso_project::build;
+use pulso_project::{Comp, ItemId, ItemKind, LayerSource, Project, Solid};
+use pulso_time::{FrameRate, Tick};
 
 use crate::{Accelerator, AutoKey, AutoPick, Backend, NoFootage, RenderOpts, Renderer};
 
@@ -169,7 +169,7 @@ struct ScopedFootage {
     reads: AtomicUsize,
 }
 impl crate::FootageSource for ScopedFootage {
-    fn frame(&self, _: ItemId, f: &effectcraft_project::Footage, _: Tick) -> Option<std::sync::Arc<crate::Image>> {
+    fn frame(&self, _: ItemId, f: &pulso_project::Footage, _: Tick) -> Option<std::sync::Arc<crate::Image>> {
         assert!(!self.in_scope.load(Ordering::SeqCst), "CPU fallback ran before GPU validation/cleanup");
         self.reads.fetch_add(1, Ordering::SeqCst);
         Some(std::sync::Arc::new(crate::Image::filled(f.width, f.height, [1.0, 0.0, 0.0, 1.0])))
@@ -179,9 +179,9 @@ impl crate::FootageSource for ScopedFootage {
 fn scoped_project() -> (Project, ItemId) {
     let (mut p, cid) = project();
     let comp = p.comp(cid).unwrap().clone();
-    let footage = effectcraft_project::Footage {
+    let footage = pulso_project::Footage {
         path: "synthetic.png".into(),
-        kind: effectcraft_project::FootageKind::Still,
+        kind: pulso_project::FootageKind::Still,
         width: 50,
         height: 50,
         has_video: true,

@@ -421,7 +421,7 @@ mod tests {
 28 25 0:25 / /mnt/ram rw - ramfs none rw
 29 25 0:26 / /media/My\\040Disk rw - ext4 /dev/sdb1 rw
 ";
-        assert!(mountinfo_is_memory_backed(mountinfo, std::path::Path::new("/tmp/effectcraft-fill")));
+        assert!(mountinfo_is_memory_backed(mountinfo, std::path::Path::new("/tmp/pulso-fill")));
         assert!(!mountinfo_is_memory_backed(mountinfo, std::path::Path::new("/tmp/disk/fill")));
         assert!(mountinfo_is_memory_backed(mountinfo, std::path::Path::new("/mnt/ram/a")));
         assert!(!mountinfo_is_memory_backed(mountinfo, std::path::Path::new("/home/fill")));

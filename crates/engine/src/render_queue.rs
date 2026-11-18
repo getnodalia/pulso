@@ -1,5 +1,5 @@
-//! Render Queue runtime: the [`Exporter`] hook (implemented by `effectcraft-export`, wired by
-//! `effectcraft-host`), output path resolution, and the render job that works through the queued
+//! Render Queue runtime: the [`Exporter`] hook (implemented by `pulso-export`, wired by
+//! `pulso-host`), output path resolution, and the render job that works through the queued
 //! items, in the background (desktop UI) or blocking (CLI, agents, tests).
 //!
 //! The queue itself (items, Render Settings, Output Modules, status) lives in the project
@@ -10,9 +10,9 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
-use effectcraft_project::render_queue::{OutputFormat, OutputModule, PostRenderAction, RenderQueueItem, RenderStatus, TemplateVars, expand_template};
-use effectcraft_project::{ItemId, ItemKind, LayerSource, Project};
-use effectcraft_render::{ExprHost, FootageSource};
+use pulso_project::render_queue::{OutputFormat, OutputModule, PostRenderAction, RenderQueueItem, RenderStatus, TemplateVars, expand_template};
+use pulso_project::{ItemId, ItemKind, LayerSource, Project};
+use pulso_render::{ExprHost, FootageSource};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -25,11 +25,11 @@ pub struct ExportJob<'a> {
     pub expr: Option<&'a dyn ExprHost>,
     pub item: &'a RenderQueueItem,
     /// GPU compositor to render with when the project's renderer is Mercury GPU Acceleration.
-    pub accel: Option<&'a dyn effectcraft_render::Accelerator>,
+    pub accel: Option<&'a dyn pulso_render::Accelerator>,
     /// Resolved output path (templates expanded except the `#` frame-number run).
     pub path: &'a str,
     /// Free-space hook (Use Storage Overflow).
-    pub storage: Option<&'a dyn effectcraft_project::render_queue::StorageQuota>,
+    pub storage: Option<&'a dyn pulso_project::render_queue::StorageQuota>,
     /// "#n Comp Name", for the render log.
     pub label: String,
     /// Settings ▸ General ▸ Switches Affect Nested Comps.
@@ -40,7 +40,7 @@ pub struct ExportJob<'a> {
     pub caches: Option<&'a RunCaches>,
     /// The compositor the queue item's output modules render on (#3335): the first module
     /// chooses (measuring a GPU project's first frames) and stores it here, the others follow.
-    pub renderer: Option<&'a Mutex<Option<effectcraft_render::Backend>>>,
+    pub renderer: Option<&'a Mutex<Option<pulso_render::Backend>>>,
     /// Settings ▸ Memory & CPU ▸ GPU Frames Rendered at Once: 1 to 3, `None` for Auto.
     pub gpu_frames: Option<usize>,
 }
@@ -49,20 +49,20 @@ pub struct ExportJob<'a> {
 /// compositor (a buffer an effect made on the GPU is not the CPU's), together at the budget
 /// each job's single cache had before.
 pub struct RunCaches {
-    pub gpu: effectcraft_render::LayerCache,
-    pub cpu: effectcraft_render::LayerCache,
+    pub gpu: pulso_render::LayerCache,
+    pub cpu: pulso_render::LayerCache,
 }
 
 impl Default for RunCaches {
     fn default() -> Self {
-        let half = effectcraft_render::LayerCache::default().budget() / 2;
-        RunCaches { gpu: effectcraft_render::LayerCache::new(half), cpu: effectcraft_render::LayerCache::new(half) }
+        let half = pulso_render::LayerCache::default().budget() / 2;
+        RunCaches { gpu: pulso_render::LayerCache::new(half), cpu: pulso_render::LayerCache::new(half) }
     }
 }
 
-/// Calls [`effectcraft_render::Accelerator::render_end`] when a Render Queue run ends, however
+/// Calls [`pulso_render::Accelerator::render_end`] when a Render Queue run ends, however
 /// it ends (done, failed, stopped, panicked): its jobs leave the pooled textures to each other.
-struct RunEnd<'a>(Option<&'a dyn effectcraft_render::Accelerator>);
+struct RunEnd<'a>(Option<&'a dyn pulso_render::Accelerator>);
 
 impl Drop for RunEnd<'_> {
     fn drop(&mut self) {
@@ -97,7 +97,7 @@ pub trait Exporter: Send + Sync {
     /// Whether Skip Existing Files preserves sequence frames written by earlier items. Exporters
     /// without an existence check (such as memory sinks) must keep the conservative default.
     /// The check must cover the final destination for these settings, including any overflow.
-    fn supports_skip_existing(&self, _settings: &effectcraft_project::render_queue::RenderSettings) -> bool {
+    fn supports_skip_existing(&self, _settings: &pulso_project::render_queue::RenderSettings) -> bool {
         false
     }
     /// Render and write one item (blocking). `progress(done, total)` returns `false` to cancel;
@@ -240,9 +240,9 @@ struct Work {
     project: Arc<Project>,
     footage: Arc<dyn FootageSource>,
     expr: Option<Arc<dyn ExprHost>>,
-    accel: Option<Arc<dyn effectcraft_render::Accelerator>>,
+    accel: Option<Arc<dyn pulso_render::Accelerator>>,
     exporter: Arc<dyn Exporter>,
-    storage: Option<Arc<dyn effectcraft_project::render_queue::StorageQuota>>,
+    storage: Option<Arc<dyn pulso_project::render_queue::StorageQuota>>,
     /// Per queue item: one (item with that output module, resolved path) per output module
     /// (and per segment, see [`Session::segments`]).
     items: Vec<Vec<(RenderQueueItem, String)>>,
@@ -262,8 +262,8 @@ pub(crate) fn default_output_base(home: Option<std::path::PathBuf>) -> Option<st
 
 /// Bits per channel an output format writes for a project bit depth (named in the file when
 /// Settings ▸ Export ▸ Append Bit Depth to File Name is on).
-pub fn output_bits(format: OutputFormat, depth: effectcraft_project::BitDepth) -> u32 {
-    use effectcraft_project::BitDepth;
+pub fn output_bits(format: OutputFormat, depth: pulso_project::BitDepth) -> u32 {
+    use pulso_project::BitDepth;
     let project = match depth {
         BitDepth::Bpc8 => 8,
         BitDepth::Bpc16 => 16,
@@ -283,7 +283,7 @@ pub fn output_bits(format: OutputFormat, depth: effectcraft_project::BitDepth) -
 /// The bytes an output writes per frame, estimated from its data rate (H.264 bitrate, Apple's
 /// published ProRes target rates at 1080p29.97 scaled by frame size, typical rates otherwise).
 pub fn bytes_per_frame(om: &OutputModule, w: u32, h: u32, fps: f64) -> f64 {
-    use effectcraft_project::render_queue::ProResProfile::*;
+    use pulso_project::render_queue::ProResProfile::*;
     let fps = fps.max(1.0);
     let px = (w as f64 * h as f64) / (1920.0 * 1080.0);
     let mbps = |m: f64| m * 1_000_000.0 / 8.0;
@@ -302,12 +302,12 @@ pub fn bytes_per_frame(om: &OutputModule, w: u32, h: u32, fps: f64) -> f64 {
         }
         // 24-bit RGB rows padded to even bytes, or 32-bit ARGB.
         OutputFormat::Uncompressed => {
-            let bpp = if om.channels == effectcraft_project::render_queue::Channels::Rgba { 4 } else { 3 };
+            let bpp = if om.channels == pulso_project::render_queue::Channels::Rgba { 4 } else { 3 };
             ((w as u64 * bpp).next_multiple_of(2) * h as u64) as f64
         }
         // An 18-byte header and 24-bit BGR, 32-bit BGRA or 8-bit grey (Alpha) pixels, uncompressed.
         OutputFormat::TargaSequence => {
-            use effectcraft_project::render_queue::Channels;
+            use pulso_project::render_queue::Channels;
             let bpp = match om.channels {
                 Channels::Rgb => 3,
                 Channels::Rgba => 4,
@@ -485,7 +485,7 @@ impl Session {
                 .and_then(|s| std::path::Path::new(s).parent())
                 .map(|d| if d.as_os_str().is_empty() { std::path::PathBuf::from(".") } else { d.to_path_buf() })
         });
-        // Unsaved project: ~/Movies, else the home folder (as FilmCraft's exports do). The working directory
+        // Unsaved project: ~/Movies, else the home folder (as Toma's exports do). The working directory
         // is `/` for an app started from the macOS Finder, where nothing can be written (#446).
         let home = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")).map(std::path::PathBuf::from);
         let base = base.or_else(|| default_output_base(home));
@@ -518,7 +518,7 @@ impl Session {
             let n = per.min(frames - i);
             let mut m = item.clone();
             let (start, end) = (rate.tick_of(f0 + i as i64), rate.tick_of(f0 + (i + n) as i64));
-            m.settings.time_span = effectcraft_project::render_queue::TimeSpan::Custom { start, end };
+            m.settings.time_span = pulso_project::render_queue::TimeSpan::Custom { start, end };
             let seg = if fmt.is_sequence() {
                 let base = stem.trim_end_matches(['#', '[', ']', '_']).to_string();
                 let folder = dir.join(format!("{base}_{k:03}"));
@@ -659,7 +659,7 @@ impl Session {
         };
         let shared = Arc::new(JobShared::default());
         if wait {
-            effectcraft_render::passes::block_on(run_work(work, &shared, &mut |_| {}));
+            pulso_render::passes::block_on(run_work(work, &shared, &mut |_| {}));
             self.render_job = Some(RenderJob { shared, thread: None, remote: None });
         } else {
             let sh = shared.clone();
@@ -668,7 +668,7 @@ impl Session {
                 .spawn(move || {
                     let pending: Vec<u64> = work.items.iter().filter_map(|modules| modules.first().map(|(item, _)| item.id)).collect();
                     if let Err(error) = crate::guard::guarded("render worker", || {
-                        effectcraft_render::passes::block_on(run_work(work, &sh, &mut |_| {}));
+                        pulso_render::passes::block_on(run_work(work, &sh, &mut |_| {}));
                         Ok(())
                     }) {
                         let completed = lock(&sh.state).items_done;
@@ -821,7 +821,7 @@ impl Session {
         let comp = item.comp;
         let label = if replace { "Pre-render: Import & Replace Usage" } else { "Post-Render: Import" };
         self.edit(label, None, |proj, st| {
-            let fid = proj.add_item(&name, effectcraft_color::Label::Aqua, None, ItemKind::Footage(footage));
+            let fid = proj.add_item(&name, pulso_color::Label::Aqua, None, ItemKind::Footage(footage));
             if replace {
                 let ids: Vec<ItemId> = proj.comps().map(|(i, _)| *i).filter(|i| *i != comp).collect();
                 for cid in ids {

@@ -21,4 +21,4 @@ See [Install Pulso](../getting-started/install.md) for the files.
 
 ## How mature is it?
 
-Pulso is in alpha. The README calls macOS the most tested platform, and says Linux and Windows users have hit basic interaction bugs that are being fixed first. Bug reports in the [issue tracker](https://github.com/storytold/effectcraft/issues) are the most useful thing you can send.
+Pulso is in alpha. The README calls macOS the most tested platform, and says Linux and Windows users have hit basic interaction bugs that are being fixed first. Bug reports in the [issue tracker](https://github.com/getnodalia/pulso/issues) are the most useful thing you can send.

@@ -3,7 +3,7 @@
 //! layer cache as the Render Queue has. Prints the median and mean ms per frame and a hash of
 //! every frame (to compare the pixels of two builds).
 //!
-//! `cargo test -p effectcraft-gpu --release --lib bench_share -- --ignored --nocapture`
+//! `cargo test -p pulso-gpu --release --lib bench_share -- --ignored --nocapture`
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -57,7 +57,7 @@ fn bench_share() {
     let mut runs = vec![];
     let mut hashes = vec![];
     for pass in 0..4 {
-        let cache = effectcraft_render::cache::LayerCache::new(1 << 30);
+        let cache = pulso_render::cache::LayerCache::new(1 << 30);
         let mut r = Renderer::new(&p, &src, RenderOpts { backend: Backend::Gpu, ..Default::default() });
         r.accel = Some(g);
         r.cache = Some(&cache);

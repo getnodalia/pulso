@@ -21,9 +21,9 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex};
 
-use effectcraft_effects::Buf;
-use effectcraft_keyframe::Value;
-use effectcraft_project::{FootageKind, ItemKind, Layer, LayerSource, Node, PropGroup};
+use pulso_effects::Buf;
+use pulso_keyframe::Value;
+use pulso_project::{FootageKind, ItemKind, Layer, LayerSource, Node, PropGroup};
 
 use crate::disk_cache::{EntryFiles, SharedVirtualFileId, VirtualFileId, layer_disk_key};
 use crate::eval::EvalCtx;
@@ -277,7 +277,7 @@ impl LayerCache {
     /// See [`LayerCache::insert`]: the buffer kept under `key` and its files (`buf` and `files`,
     /// unless one was kept first or `buf` is too large to keep).
     fn insert_mem(&self, key: u64, buf: Arc<Buf>, files: Arc<ReadFiles>) -> (Arc<Buf>, Arc<ReadFiles>) {
-        let bytes = buf.img.data.len() * std::mem::size_of::<effectcraft_raster::Px>();
+        let bytes = buf.img.data.len() * std::mem::size_of::<pulso_raster::Px>();
         let Ok(mut g) = self.inner.lock() else { return (buf, files) };
         if bytes > g.budget / 4 {
             return (buf, files);
@@ -407,7 +407,7 @@ struct Fetched {
 
 /// The memory a buffer's pixels take, in bytes.
 fn buf_bytes(b: &Buf) -> usize {
-    b.img.data.len().saturating_mul(std::mem::size_of::<effectcraft_raster::Px>())
+    b.img.data.len().saturating_mul(std::mem::size_of::<pulso_raster::Px>())
 }
 
 #[derive(Default)]
@@ -589,14 +589,14 @@ fn time_dependent(layer: &Layer, effects: bool) -> bool {
         && let Some(fx) = layer.effects()
     {
         for g in fx.groups() {
-            if let effectcraft_project::GroupKind::Effect { effect } = &g.kind
+            if let pulso_project::GroupKind::Effect { effect } = &g.kind
                 && g.enabled
-                && effectcraft_effects::is_time_dependent(effect)
+                && pulso_effects::is_time_dependent(effect)
             {
                 return true;
             }
             // Clone strokes reading another layer or another time.
-            if g.enabled && effectcraft_effects::paint::is_paint(g) && effectcraft_effects::paint::cache_key(g, 0.0).1 {
+            if g.enabled && pulso_effects::paint::is_paint(g) && pulso_effects::paint::cache_key(g, 0.0).1 {
                 return true;
             }
         }
@@ -633,7 +633,7 @@ fn group_has(g: &PropGroup, match_id: &str) -> bool {
 /// at the context time. The static structure is hashed separately.
 /// Mix the collapsed-instance overrides that target `id` into a cache key. They replace values
 /// without editing the layer, so a key without them would reuse another instance's buffer.
-fn hash_overrides(h: &mut KeyHasher, ctx: &EvalCtx, id: effectcraft_project::LayerId) {
+fn hash_overrides(h: &mut KeyHasher, ctx: &EvalCtx, id: pulso_project::LayerId) {
     for o in ctx.property_overrides.iter().filter(|o| o.layer == id) {
         o.prop.hash(h);
         o.font.hash(h);
@@ -693,10 +693,10 @@ fn reads_other_times(layer: &Layer, effects: Option<usize>) -> bool {
         && layer.effects().is_some_and(|fx| {
             fx.groups().take(effects.unwrap_or(usize::MAX)).any(|g| {
                 g.enabled
-                    && matches!(&g.kind, effectcraft_project::GroupKind::Effect { effect }
+                    && matches!(&g.kind, pulso_project::GroupKind::Effect { effect }
                         if effect.starts_with("ec.time.")
-                            || effectcraft_effects::reads_param_history(effect)
-                            || (!effect.starts_with("ec.") && effectcraft_effects::plugin::reads_other_times(effect)))
+                            || pulso_effects::reads_param_history(effect)
+                            || (!effect.starts_with("ec.") && pulso_effects::plugin::reads_other_times(effect)))
             })
         })
 }
@@ -710,14 +710,14 @@ fn history_unkeyable(layer: &Layer, effects: Option<usize>) -> bool {
 /// A still image (no proxy): its layer is cached like a text or shape layer, so the GPU
 /// compositor uploads it once, not every frame (#1812: four 21120 px plates re-uploaded by every
 /// preview worker ran the GPU out of memory). Movies and sequences stay in the media pool only.
-fn still_footage(ctx: &EvalCtx, item: effectcraft_project::ItemId) -> bool {
+fn still_footage(ctx: &EvalCtx, item: pulso_project::ItemId) -> bool {
     ctx.project.item(item).is_some_and(|it| it.proxy.is_none() && matches!(&it.kind, ItemKind::Footage(f) if f.kind == FootageKind::Still))
 }
 
 /// Does the layer have an animated mask that motion blur may draw at other times (Layer ▸ Mask ▸
 /// Motion Blur On, or Same As Layer with the layer blurred)?
 fn mask_motion_blur(ctx: &EvalCtx, layer: &Layer, blur: bool) -> bool {
-    use effectcraft_project::{GroupKind, MaskMotionBlur};
+    use pulso_project::{GroupKind, MaskMotionBlur};
     fn animated(g: &PropGroup) -> bool {
         g.children.iter().any(|c| match c {
             Node::Prop(p) => !p.keys.is_empty() || p.has_expression(),
@@ -832,7 +832,7 @@ fn key_any(ctx: &EvalCtx, layer: &Layer, scale: f64, draft: bool, blur: bool, fo
     for c in &layer.props.children {
         // Transform is applied later; Layer Styles are keyed separately (see [`styles_key`]).
         if let Node::Group(g) = c
-            && (g.match_id == "transform" || g.match_id == effectcraft_project::styles::GROUP)
+            && (g.match_id == "transform" || g.match_id == pulso_project::styles::GROUP)
         {
             continue;
         }
@@ -873,8 +873,8 @@ fn key_any(ctx: &EvalCtx, layer: &Layer, scale: f64, draft: bool, blur: bool, fo
         && let Some(fx) = layer.effects()
     {
         let lt = layer.layer_time(ctx.time).seconds();
-        for g in fx.groups().filter(|g| g.enabled && effectcraft_effects::paint::is_paint(g)) {
-            effectcraft_effects::paint::cache_key(g, lt).0.hash(&mut h);
+        for g in fx.groups().filter(|g| g.enabled && pulso_effects::paint::is_paint(g)) {
+            pulso_effects::paint::cache_key(g, lt).0.hash(&mut h);
         }
     }
     // Mask motion blur draws animated masks at the shutter's other times too: their values at
@@ -916,8 +916,7 @@ fn reads_comp_scene(layer: &Layer) -> bool {
     layer.switches.effects
         && layer.effects().is_some_and(|fx| {
             fx.groups().any(|g| {
-                g.enabled
-                    && matches!(&g.kind, effectcraft_project::GroupKind::Effect { effect } if effectcraft_effects::READS_COMP_SCENE.contains(&effect.as_str()))
+                g.enabled && matches!(&g.kind, pulso_project::GroupKind::Effect { effect } if pulso_effects::READS_COMP_SCENE.contains(&effect.as_str()))
             })
         })
 }
@@ -946,8 +945,8 @@ mod shared_insert_tests {
     use std::sync::Arc;
 
     use super::LayerCache;
-    use effectcraft_effects::Buf;
-    use effectcraft_raster::Image;
+    use pulso_effects::Buf;
+    use pulso_raster::Image;
 
     /// Two renders of one layer kept under one key: both use the buffer kept first.
     #[test]
@@ -1144,7 +1143,7 @@ mod shared_insert_tests {
         let (first, second) = (files(1), files(2));
         let a = buf();
         cache.insert(3, a.clone(), first.clone());
-        let project = effectcraft_project::Project::default();
+        let project = pulso_project::Project::default();
         let log = ReadLog::new();
         let mut r = Renderer::new(&project, &NoFootage, RenderOpts::default());
         r.cache = Some(&cache);

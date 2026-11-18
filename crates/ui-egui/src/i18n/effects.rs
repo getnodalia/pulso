@@ -1,7 +1,7 @@
 //! Effect names in the interface language, keyed by effect id (#821).
 //!
 //! The generated Effect menu, Effect Controls, the Timeline and Effects & Presets draw an
-//! effect's name. The registry (`effectcraft_effects`) keeps the English name: scripts,
+//! effect's name. The registry (`pulso_effects`) keeps the English name: scripts,
 //! expressions, MCP and the control channel match on it, and the property tree stores it as the
 //! effect group's name. Only the *drawing* goes through this catalog, so a project file stays
 //! identical whichever interface language opens it.
@@ -32,7 +32,7 @@
 //! (26.5.0.89) Simplified Chinese interface, its 21 category folder names included (the `CC` names
 //! came from Adobe's Chinese *documentation*, which names 68 of the 69); `Cryptomatte`,
 //! `EXtractoR`, `IDentifier`, `Key Light` and `Unmult` stay in English as brand names, and
-//! `Face Measurements` / `Face Track Points` are EffectCraft's own effects, so their wording is
+//! `Face Measurements` / `Face Track Points` are Pulso's own effects, so their wording is
 //! ours.
 //!
 //! The Traditional Chinese names for Taiwan are written from the meaning of the English ones, with
@@ -129,9 +129,9 @@ pub(super) fn translated_rows(language: &str) -> usize {
 /// Current and legacy default names (including numeric instance suffixes) draw the current
 /// name. Other names were supplied by the user and stay verbatim. Stored data is never changed.
 pub(crate) fn group(id: &str, stored: &str) -> String {
-    let Some(spec) = effectcraft_engine::effects::find(id) else { return stored.to_string() };
+    let Some(spec) = pulso_engine::effects::find(id) else { return stored.to_string() };
     let translated = name(id, spec.name);
-    for source in std::iter::once(spec.name).chain(effectcraft_engine::effects::aliases(id).iter().copied()) {
+    for source in std::iter::once(spec.name).chain(pulso_engine::effects::aliases(id).iter().copied()) {
         if stored == source {
             return translated;
         }
@@ -155,7 +155,7 @@ pub(crate) fn category(source: &str) -> String {
 /// `query` (lowercase)? Both names match, so a translated interface can be searched either way.
 pub(crate) fn matches(id: &str, english: &str, query: &str) -> bool {
     english.to_lowercase().contains(query)
-        || effectcraft_engine::effects::find(id).is_some_and(|spec| effectcraft_engine::effects::name_matches(spec, query))
+        || pulso_engine::effects::find(id).is_some_and(|spec| pulso_engine::effects::name_matches(spec, query))
         || catalog(current()).and_then(|c| c.row(id)).is_some_and(|(_, translated)| translated.to_lowercase().contains(query))
 }
 
@@ -164,8 +164,8 @@ pub(crate) fn matches(id: &str, english: &str, query: &str) -> bool {
 #[cfg(test)]
 pub(super) fn missing(language: &str) -> Vec<String> {
     let table = catalog(language);
-    let effects = effectcraft_engine::effects::registry().iter().filter(|spec| table.and_then(|c| c.row(spec.id)).is_none()).map(|spec| spec.name.to_string());
-    let categories = effectcraft_engine::effects::categories()
+    let effects = pulso_engine::effects::registry().iter().filter(|spec| table.and_then(|c| c.row(spec.id)).is_none()).map(|spec| spec.name.to_string());
+    let categories = pulso_engine::effects::categories()
         .into_iter()
         .filter(|source| table.and_then(|c| c.category(source)).is_none())
         .map(|source| format!("{source} (category)"));
@@ -807,7 +807,7 @@ const TRADITIONAL_CHINESE: &[Row] = &[
 /// (`Cryptomatte`, `EXtractoR`, `IDentifier` and `Key Light`) repeat that English name here rather
 /// than being left out; the `VR` and `OCIO` sets take a Japanese tail instead, and `Unmult` keeps
 /// its English name in both catalogs. An effect with no row draws its English name anyway, which
-/// is what `Twirl (Legacy)` and the two EffectCraft-only effects would do without their rows.
+/// is what `Twirl (Legacy)` and the two Pulso-only effects would do without their rows.
 ///
 /// The rows of the effects this cleanup did not rename come from AE 2026's Japanese interface
 /// where it was read directly (its Effect menu and its Effects & Presets panel) and from Adobe's
@@ -1182,7 +1182,7 @@ const JAPANESE_CATEGORIES: &[(&str, &str)] = &[
 ];
 
 /// Georgian (`ka`): one row per effect, ids from [`SIMPLIFIED_CHINESE`]. Written from the meaning
-/// of the English names, with the terms the Georgian menus and panels use (FilmCraft's Georgian
+/// of the English names, with the terms the Georgian menus and panels use (Toma's Georgian
 /// for the effects the two apps share). The brand names (`Cryptomatte`, `EXtractoR`, `IDentifier`,
 /// `Key Light`, `Unmult`) stay in English; `VR` and `OCIO` keep their prefix. The renamed effects
 /// are translated from their new descriptive names.
@@ -2231,7 +2231,7 @@ const SWEDISH_CATEGORIES: &[(&str, &str)] = &[
 mod tests {
     use super::*;
     use crate::i18n::set_current;
-    use effectcraft_engine::effects;
+    use pulso_engine::effects;
 
     #[test]
     fn legacy_effect_names_draw_current_labels_without_changing_custom_names() {

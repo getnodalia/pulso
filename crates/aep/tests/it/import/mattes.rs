@@ -2,11 +2,11 @@
 //! matte layer it was made with.
 
 use crate::import::helpers::comp;
-use effectcraft_aep::import::{ImportOptions, LossCategory, import};
-use effectcraft_project::{MatteKind, Project};
+use pulso_aep::import::{ImportOptions, LossCategory, import};
+use pulso_project::{MatteKind, Project};
 
 /// The layers of comp `C` as `(name, video switch, matte layer name, matte kind)`, top first.
-fn mattes(project: &Project, r: &effectcraft_aep::import::ImportResult) -> Vec<(String, bool, Option<(String, MatteKind)>)> {
+fn mattes(project: &Project, r: &pulso_aep::import::ImportResult) -> Vec<(String, bool, Option<(String, MatteKind)>)> {
     let (_, c) = comp(project, r, "C");
     c.layers
         .iter()
@@ -58,7 +58,7 @@ fn matte_id_offset(bytes: &[u8], layer_id: u32) -> usize {
     at + 8 + 160
 }
 
-fn import_patched(bytes: &[u8]) -> (Project, effectcraft_aep::import::ImportResult) {
+fn import_patched(bytes: &[u8]) -> (Project, pulso_aep::import::ImportResult) {
     let mut project = Project::default();
     let none = |_: &str| false;
     let r = import(&mut project, bytes, &ImportOptions { allow_losses: true, ..ImportOptions::new(&none) }).expect("imports");

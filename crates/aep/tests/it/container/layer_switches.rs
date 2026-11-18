@@ -2,7 +2,7 @@
 //! colours, checked against the values the corpus was made with (its MANIFEST, batch 2).
 
 use crate::container::helpers::{assert_near, base_layer, first_comp, layer_of_type, layer_shown_as, open};
-use effectcraft_aep::{BlendMode, CompHeader, LayerHeader, LayerType, LightType, Project, Rational, ValueSource};
+use pulso_aep::{BlendMode, CompHeader, LayerHeader, LayerType, LightType, Project, Rational, ValueSource};
 
 fn l_header(name: &str) -> Option<LayerHeader> {
     Some({
@@ -111,11 +111,11 @@ fn keyframe_times_follow_the_ntsc_timescale() {
         while let Some(group) = stack.pop() {
             for e in group.entries() {
                 match e.node {
-                    effectcraft_aep::PropNode::Group(g) => stack.push(g),
-                    effectcraft_aep::PropNode::Property(p) => {
+                    pulso_aep::PropNode::Group(g) => stack.push(g),
+                    pulso_aep::PropNode::Property(p) => {
                         scales.extend(p.time_scale());
                     }
-                    effectcraft_aep::PropNode::Other(_) => {}
+                    pulso_aep::PropNode::Other(_) => {}
                 }
             }
         }

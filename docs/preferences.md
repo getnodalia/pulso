@@ -9,11 +9,11 @@ Expressions) with OK, Cancel, Previous and Next. Older page names still open the
 (`prefs.open {"page": "Auto-Save"}` opens Project, `Media & Disk Cache` opens Disk, `Memory &
 Performance` opens Memory & CPU).
 
-The model is `effectcraft_engine::prefs::Prefs`: serde, versioned (`version`), addressed by dotted
+The model is `pulso_engine::prefs::Prefs`: serde, versioned (`version`), addressed by dotted
 keys (`general.undoLevels`, `autoSave.intervalMinutes`, `labels.3.name`). It is stored as
 `prefs.json` through the session's `ConfigStore` (the desktop app uses the platform config
 directory: `~/Library/Application Support/Pulso` on macOS, `%APPDATA%\Pulso` on
-Windows, `$XDG_CONFIG_HOME/effectcraft` on Linux, or `EffectCraftData` beside the executable when a
+Windows, `$XDG_CONFIG_HOME/pulso` on Linux, or `PulsoData` beside the executable when a
 `portable.txt` sits there, as in the Windows portable zip; the web app keeps it in browser storage: the
 Origin Private File System, or IndexedDB where OPFS can't write, see [web.md](web.md)). Loading migrates older layouts, keeps unknown keys (from newer versions) and
 falls back to defaults for values that don't parse.
@@ -86,10 +86,10 @@ Commands (CLI, MCP, control channel):
   frames the Render Queue renders on the GPU at once. Auto measures the GPU memory after the
   job's first GPU frame and fits up to 3 frames into the GPU memory cap (by default a
   conservative 3 GiB on a discrete card, less when its memory is known, 2 GiB on an integrated
-  one; `EFFECTCRAFT_GPU_MEMCAP_MB` sets it), keeping room for the upload cache to fill. It
+  one; `PULSO_GPU_MEMCAP_MB` sets it), keeping room for the upload cache to fill. It
   renders one frame at a time where the memory can't be measured (Metal, WebGPU, GL, or the
   cap turned off) and once frames have had to wait for memory. The render log names the count.
-  `EFFECTCRAFT_GPU_INFLIGHT` overrides it.
+  `PULSO_GPU_INFLIGHT` overrides it.
 - `threeD.defaultRenderer`: Default 3D Renderer
 - `labels.N.name` / `labels.N.color`: the 16 label names and colours, used by the Label menu,
   the timeline, project panel, render queue and viewer handles
@@ -245,7 +245,7 @@ from?, newName?}`, `shortcuts.export {preset?, path?}`, `shortcuts.import {path?
 - File ▸ Open Recent lists recent projects (stored in the settings), File ▸ Revert reloads the
   saved project, File ▸ Increment and Save saves `Intro.ecproj` as `Intro 2.ecproj`.
 
-Headless MCP clients can opt in with `effectcraft-cli mcp --autosave`. Unlike the desktop's
+Headless MCP clients can opt in with `pulso-cli mcp --autosave`. Unlike the desktop's
 interval, this writes changed dirty projects before sending each tool reply, with separate
 version slots per server under `Pulso Auto-Save/MCP/` (or the custom folder's `MCP/`).
 It reads settings without sharing the desktop's writable settings store or `session.lock`.
@@ -257,9 +257,9 @@ Commands: `file.autoSave` (now), `file.recoveryInfo`, `file.openRecent {index? |
 
 ## Logs
 
-The desktop app writes its log records to standard error and to `Logs/effectcraft.log` in the
-config directory. Each launch moves the previous log to `effectcraft.1.log` (and that one to
-`effectcraft.2.log`), so the log of a run that crashed survives the next start; a log stops
+The desktop app writes its log records to standard error and to `Logs/pulso.log` in the
+config directory. Each launch moves the previous log to `pulso.1.log` (and that one to
+`pulso.2.log`), so the log of a run that crashed survives the next start; a log stops
 growing at 16 MiB. A launch from the Dock, the Start menu or a launcher has no terminal, so
 attach these files to a bug report. Help ▸ Reveal Logging File shows this run's log (or Help ▸
 Enable Logging's `Pulso Log.txt` while that is on, which keeps every Pulso record
@@ -267,4 +267,4 @@ across launches).
 
 By default the log has `info` records from Pulso and warnings and errors from everything
 else. `RUST_LOG` replaces that with env_logger-style directives: `debug`,
-`warn,effectcraft_render=trace`, `wgpu_core=info`. The control-channel token is never logged.
+`warn,pulso_render=trace`, `wgpu_core=info`. The control-channel token is never logged.

@@ -4,14 +4,14 @@
 
 use std::sync::{Arc, Mutex};
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::ItemId;
-use effectcraft_engine::time::Tick;
-use effectcraft_ui_egui::EffectcraftApp;
-use effectcraft_ui_egui::audio::{AudioDevice, AudioFeed};
-use effectcraft_ui_egui::frames::{RemoteDone, RemoteFrame, RemoteFrames, RemoteJob};
 use egui::{Event, Modifiers, pos2};
 use egui_kittest::Harness;
+use pulso_engine::Session;
+use pulso_engine::project::ItemId;
+use pulso_engine::time::Tick;
+use pulso_ui_egui::PulsoApp;
+use pulso_ui_egui::audio::{AudioDevice, AudioFeed};
+use pulso_ui_egui::frames::{RemoteDone, RemoteFrame, RemoteFrames, RemoteJob};
 use serde_json::json;
 
 /// An output that records the feed it is given and whether it was stopped.
@@ -57,7 +57,7 @@ impl RemoteFrames for GatedFrames {
 
 impl GatedFrames {
     /// Put `frames` in the cache, dropping every other queued frame (playback asks again).
-    fn render(&self, h: &mut Harness<'_, EffectcraftApp>, cid: ItemId, frames: &[i64]) {
+    fn render(&self, h: &mut Harness<'_, PulsoApp>, cid: ItemId, frames: &[i64]) {
         let scale = h.state().shown_series(cid).scale as f64 / 1000.0;
         for &f in frames {
             h.state().request_frame(cid, f, scale);
@@ -75,7 +75,7 @@ impl GatedFrames {
     }
 
     /// Drop everything queued without caching it (the warm-up passes request viewer frames).
-    fn discard(&self, h: &mut Harness<'_, EffectcraftApp>) {
+    fn discard(&self, h: &mut Harness<'_, PulsoApp>) {
         while h.state().frames.dispatch_remote() != 0 {}
         for (_, _, _, done) in std::mem::take(&mut *self.pending.lock().unwrap()) {
             done(Err("held back by the test renderer".into()));
@@ -84,12 +84,12 @@ impl GatedFrames {
 }
 
 /// A 2 s, 30 fps comp whose solid sounds a tone (Audio switch on).
-fn setup(audible: bool, fake: &Fake) -> (EffectcraftApp, ItemId) {
+fn setup(audible: bool, fake: &Fake) -> (PulsoApp, ItemId) {
     setup_long(audible, fake, 2.0)
 }
 
 /// A `duration`-second, 30 fps comp whose solid sounds a tone (Audio switch on).
-fn setup_long(audible: bool, fake: &Fake, duration: f64) -> (EffectcraftApp, ItemId) {
+fn setup_long(audible: bool, fake: &Fake, duration: f64) -> (PulsoApp, ItemId) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "A", "width": 64, "height": 36, "frameRate": 30, "duration": duration})).unwrap();
     let cid = s.active_comp_id().unwrap();
@@ -98,7 +98,7 @@ fn setup_long(audible: bool, fake: &Fake, duration: f64) -> (EffectcraftApp, Ite
         s.execute("effect.apply", json!({"layers": [l], "effect": "ec.audio.tone"})).unwrap();
         s.execute("layer.setSwitch", json!({"layers": [l], "switch": "audio", "value": true})).unwrap();
     }
-    let mut app = EffectcraftApp::new(s);
+    let mut app = PulsoApp::new(s);
     let f = fake.clone();
     app.hooks.audio_device = Some(Box::new(move |_| Some(Box::new(f.clone()) as Box<dyn AudioDevice>)));
     (app, cid)
@@ -167,21 +167,21 @@ fn cmd_dragging_the_current_time_scrubs_and_an_idle_scrub_closes() {
 }
 
 /// The comp's frame at the current time.
-fn frame(h: &Harness<'_, EffectcraftApp>, cid: ItemId) -> i64 {
+fn frame(h: &Harness<'_, PulsoApp>, cid: ItemId) -> i64 {
     let app = h.state();
     app.session.project.comp(cid).unwrap().frame_rate.frame_at(app.session.time())
 }
 
 /// The frame under the preview audio's first sample (its clock before the device pulls any).
-fn audio_frame(h: &Harness<'_, EffectcraftApp>, cid: ItemId) -> Option<i64> {
+fn audio_frame(h: &Harness<'_, PulsoApp>, cid: ItemId) -> Option<i64> {
     let app = h.state();
     let a = app.audio.as_ref()?;
-    Some(effectcraft_ui_egui::audio::frame_of_sample(a.clock(), a.rate, app.session.project.comp(cid).unwrap().frame_rate))
+    Some(pulso_ui_egui::audio::frame_of_sample(a.clock(), a.rate, app.session.project.comp(cid).unwrap().frame_rate))
 }
 
 /// Step until the preview's sound starts (or 60 s pass, for a loaded machine), checking the
 /// playhead holds `first` meanwhile. Returns whether the sound started.
-fn until_sound(h: &mut Harness<'_, EffectcraftApp>, cid: ItemId, first: i64) -> bool {
+fn until_sound(h: &mut Harness<'_, PulsoApp>, cid: ItemId, first: i64) -> bool {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(60);
     while std::time::Instant::now() < deadline {
         step(h);
@@ -197,7 +197,7 @@ fn until_sound(h: &mut Harness<'_, EffectcraftApp>, cid: ItemId, first: i64) -> 
 
 /// One step with the app clock, which playback runs on, a step (1/30 s) further on: these tests
 /// count time in steps, however long a step takes on a loaded machine.
-fn step(h: &mut Harness<'_, EffectcraftApp>) {
+fn step(h: &mut Harness<'_, PulsoApp>) {
     h.state_mut().clock_mut().advance(1.0 / 30.0);
     h.step();
 }
@@ -370,7 +370,7 @@ fn audio_only_previews_start_at_once() {
     h.state_mut().use_manual_clock();
     h.run_steps(2);
     let now = h.state().now();
-    h.state_mut().play_with(now, effectcraft_engine::preview::PreviewShortcut::AltNumpad0);
+    h.state_mut().play_with(now, pulso_engine::preview::PreviewShortcut::AltNumpad0);
     assert!(h.state().audio.is_some() && !h.state().playback.starting, "Video off: the sound starts at once");
     assert_eq!(audio_frame(&h, cid), Some(0));
 }
@@ -421,7 +421,7 @@ fn no_device_plays_the_picture_and_stop_ends_the_wait() {
 }
 
 /// Start a preview and step until it leaves its startup (or 60 s pass). Returns whether it did.
-fn until_started(h: &mut Harness<'_, EffectcraftApp>) -> bool {
+fn until_started(h: &mut Harness<'_, PulsoApp>) -> bool {
     let now = h.state().now();
     h.state_mut().play(now);
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(60);
@@ -469,7 +469,7 @@ fn startup_finishes_at_any_ram_preview_budget() {
 /// An audible 160×120 comp with a 3D layer and Draft 3D, Extended Viewer on: its viewer frames
 /// render the pasteboard too, larger than the comp. Returns the harness once the first frame has
 /// rendered, the comp, and that frame's size.
-fn extended_viewer(fake: &Fake) -> (Harness<'static, EffectcraftApp>, ItemId, [usize; 2]) {
+fn extended_viewer(fake: &Fake) -> (Harness<'static, PulsoApp>, ItemId, [usize; 2]) {
     let mut s = Session::default();
     s.execute("comp.new", json!({"name": "E", "width": 160, "height": 120, "frameRate": 30, "duration": 8})).unwrap();
     let cid = s.active_comp_id().unwrap();
@@ -479,7 +479,7 @@ fn extended_viewer(fake: &Fake) -> (Harness<'static, EffectcraftApp>, ItemId, [u
     s.execute("layer.setSwitch", json!({"layers": [l], "switch": "threeD", "value": true})).unwrap();
     s.execute("comp.setSwitch", json!({"switch": "draft3d", "value": true})).unwrap();
     s.prefs.three_d.extended_viewer = true;
-    let mut app = EffectcraftApp::new(s);
+    let mut app = PulsoApp::new(s);
     let f = fake.clone();
     app.hooks.audio_device = Some(Box::new(move |_| Some(Box::new(f.clone()) as Box<dyn AudioDevice>)));
     let mut h = Harness::builder().with_size(egui::vec2(1400.0, 900.0)).with_step_dt(1.0 / 30.0).build_eframe(|_| app);
@@ -756,7 +756,7 @@ fn unmuting_a_silent_preview_starts_audio_at_its_current_frame() {
         h.run_steps(2);
         gate.render(&mut h, cid, &(0..60).collect::<Vec<_>>());
         let now = h.state().now();
-        let shortcut = if video { h.state().session.prefs.preview.current } else { effectcraft_engine::preview::PreviewShortcut::AltNumpad0 };
+        let shortcut = if video { h.state().session.prefs.preview.current } else { pulso_engine::preview::PreviewShortcut::AltNumpad0 };
         h.state_mut().play_with(now, shortcut);
         for _ in 0..6 {
             step(&mut h);
@@ -786,7 +786,7 @@ fn unmuting_a_silent_preview_starts_audio_at_its_current_frame() {
 
 /// Pull only queued frames: underruns are deliberately excluded so the test measures the
 /// feeder's composition mapping, not how quickly a loaded test host schedules its thread.
-fn take_preview_samples(app: &EffectcraftApp, frames: usize) -> Vec<f32> {
+fn take_preview_samples(app: &PulsoApp, frames: usize) -> Vec<f32> {
     let audio = app.audio.as_ref().expect("preview audio opened");
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(60);
     let mut samples = Vec::with_capacity(frames * 2);
@@ -807,7 +807,7 @@ fn take_preview_samples(app: &EffectcraftApp, frames: usize) -> Vec<f32> {
 
 #[test]
 fn preview_rate_audio_sounds_at_the_selected_speed_and_finishes_at_the_end() {
-    use effectcraft_engine::preview::{PlayFrom, PreviewRange};
+    use pulso_engine::preview::{PlayFrom, PreviewRange};
     for (comp_fps, preview_fps, duration_frames) in [(60.0, 30.0, 96_000), (30.0, 60.0, 24_000)] {
         let fake = Fake::default();
         let (mut app, cid) = setup_long(true, &fake, 1.0);
@@ -838,7 +838,7 @@ fn preview_rate_audio_sounds_at_the_selected_speed_and_finishes_at_the_end() {
 
 #[test]
 fn preview_rate_audio_resamples_the_sound_instead_of_only_changing_the_clock() {
-    use effectcraft_engine::preview::{PlayFrom, PreviewRange};
+    use pulso_engine::preview::{PlayFrom, PreviewRange};
     let render = |preview_fps, frames| {
         let fake = Fake::default();
         let (mut app, _) = setup(true, &fake);
@@ -913,7 +913,7 @@ fn preview_rate_audio_keeps_the_include_audio_switch_and_skip_independent() {
 /// Live edits keep the consumed output cursor at either speed, including a nonzero start.
 #[test]
 fn preview_rate_audio_keeps_its_position_through_live_mute_and_unmute() {
-    use effectcraft_engine::preview::{PlayFrom, PreviewRange};
+    use pulso_engine::preview::{PlayFrom, PreviewRange};
     for preview_fps in [15.0, 60.0] {
         let fake = Fake::default();
         let (mut app, cid) = setup(true, &fake);

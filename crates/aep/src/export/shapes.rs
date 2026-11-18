@@ -21,8 +21,8 @@
 //! Transform properties (856, R15).
 
 use crate::Chunk;
-use effectcraft_keyframe::{Gradient, Interp, Keyframe, Value};
-use effectcraft_project::{Node, PropGroup, Property};
+use pulso_keyframe::{Gradient, Interp, Keyframe, Value};
+use pulso_project::{Node, PropGroup, Property};
 
 use crate::export::masks::ShapePlan;
 use crate::export::plan::{CompPlan, EaseSlot, KeyPlan};
@@ -210,7 +210,7 @@ pub(crate) fn c_scalar(v: &Value) -> Option<Vec<f64>> {
     }
 }
 
-/// Offset Paths' Copy Offset: EffectCraft's value + 1 (826-828).
+/// Offset Paths' Copy Offset: Pulso's value + 1 (826-828).
 fn c_copy_offset(v: &Value) -> Option<Vec<f64>> {
     match v {
         Value::Scalar(s) => Some(vec![*s + 1.0]),
@@ -251,7 +251,7 @@ fn colour_alpha(p: &Property, keyed: bool) -> bool {
     if keyed { p.keys.iter().any(|k| alpha(&k.value)) } else { alpha(&p.value) }
 }
 
-/// A popup stored 1-based (EffectCraft's items in After Effects' order).
+/// A popup stored 1-based (Pulso's items in After Effects' order).
 pub(crate) fn c_popup(v: &Value) -> Option<Vec<f64>> {
     match v {
         Value::Enum(e) => Some(vec![f64::from(*e) + 1.0]),
@@ -307,7 +307,7 @@ fn plan_keys(p: &Property, conv: Conv, layout: Layout, what: &str, cx: &mut ShCx
         };
         let (in_i, out_i) = (side(k.in_interp), side(k.out_interp));
         let slots = if layout == Layout::Size { value.len().max(1) } else { 1 };
-        let ease = |eases: &[effectcraft_keyframe::Ease], on: bool| -> Vec<EaseSlot> {
+        let ease = |eases: &[pulso_keyframe::Ease], on: bool| -> Vec<EaseSlot> {
             (0..slots)
                 .map(|s| {
                     if !on {
@@ -325,7 +325,7 @@ fn plan_keys(p: &Property, conv: Conv, layout: Layout, what: &str, cx: &mut ShCx
                 })
                 .collect()
         };
-        let (mut tin, mut tout) = if layout == Layout::Point { effectcraft_keyframe::spatial_tangents(&all, i) } else { ([0.0; 3], [0.0; 3]) };
+        let (mut tin, mut tout) = if layout == Layout::Point { pulso_keyframe::spatial_tangents(&all, i) } else { ([0.0; 3], [0.0; 3]) };
         for t in tin.iter_mut().chain(tout.iter_mut()) {
             if !t.is_finite() || t.abs() > 1e9 {
                 beyond.set(true);
@@ -579,14 +579,14 @@ pub(crate) fn plan_contents(contents: &PropGroup, what: &str, depth: usize, cx: 
                 rec(&mut r, g, ("ADBE Vector Offset Line Join", "join"), c_popup, &[1.0], &w, cx);
                 rec(&mut r, g, ("ADBE Vector Offset Miter Limit", "miter"), c_scalar, &[4.0], &w, cx);
                 rec(&mut r, g, ("ADBE Vector Offset Copies", "copies"), c_scalar, &[1.0], &w, cx);
-                // EffectCraft offsets copy i by Amount x (i + 1 + copyOffset), After Effects by
+                // Pulso offsets copy i by Amount x (i + 1 + copyOffset), After Effects by
                 // Amount x (i + Copy Offset) (826-828): Copy Offset = copyOffset + 1, the
                 // importer's inverse.
                 rec(&mut r, g, ("ADBE Vector Offset Copy Offset", "copyOffset"), c_copy_offset, &[1.0], &w, cx);
                 if g.get("copyOffset").is_some_and(|p| p.has_expression()) {
                     cx.col.lose(
                         LossCategory::ShapeLayers,
-                        format!("{w}: the expression on Offset Paths' Copy Offset is written as it is (After Effects' value is 1 more than EffectCraft's)"),
+                        format!("{w}: the expression on Offset Paths' Copy Offset is written as it is (After Effects' value is 1 more than Pulso's)"),
                     );
                 }
                 "ADBE Vector Filter - Offset"

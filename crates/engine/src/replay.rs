@@ -2,7 +2,7 @@
 //!
 //! The session's command journal ([`Session::journal`]) becomes a JSON-lines script
 //! (`journal.export`, `help.exportRepro`, and automatically when the last-resort guard catches a
-//! panic, see [`after_command`]); `effectcraft-cli replay script.jsonl` runs one headless and
+//! panic, see [`after_command`]); `pulso-cli replay script.jsonl` runs one headless and
 //! `crates/host/tests/it/repros.rs` runs every `tests/repros/*.jsonl` as a regression test.
 //!
 //! Format (one JSON object per line; blank lines and lines starting with `//` or `#` are
@@ -194,7 +194,7 @@ pub fn export(s: &Session, crash: Option<Value>) -> String {
     let mut head = Map::new();
     head.insert("start".into(), json!("new"));
     head.insert("version".into(), json!(VERSION));
-    head.insert("app".into(), json!(format!("EffectCraft {}", env!("CARGO_PKG_VERSION"))));
+    head.insert("app".into(), json!(format!("Pulso {}", env!("CARGO_PKG_VERSION"))));
     head.insert("os".into(), json!(std::env::consts::OS));
     head.insert("exported".into(), json!(unix_secs()));
     if let Some(c) = crash {

@@ -111,6 +111,19 @@ pub struct Tokens {
     pub gradients: bool,
 }
 
+/// WCAG 2 contrast ratio of two opaque colours.
+fn contrast(a: Color32, b: Color32) -> f32 {
+    let lum = |c: Color32| {
+        let lin = |v: u8| {
+            let v = f32::from(v) / 255.0;
+            if v <= 0.039_28 { v / 12.92 } else { ((v + 0.055) / 1.055).powf(2.4) }
+        };
+        0.2126 * lin(c.r()) + 0.7152 * lin(c.g()) + 0.0722 * lin(c.b())
+    };
+    let (la, lb) = (lum(a), lum(b));
+    (la.max(lb) + 0.05) / (la.min(lb) + 0.05)
+}
+
 /// A vertical gradient fill (`top` → `bottom`) over `rect`.
 pub fn gradient_rect(painter: &egui::Painter, rect: egui::Rect, top: Color32, bottom: Color32) {
     let mut m = egui::Mesh::default();
@@ -124,6 +137,13 @@ pub fn gradient_rect(painter: &egui::Painter, rect: egui::Rect, top: Color32, bo
 }
 
 impl Tokens {
+    /// Text drawn on an accent fill (a primary button): white or NDL's near-black, whichever reads
+    /// better on this accent. Pulso's lime needs dark text in the dark themes.
+    pub fn on_accent(&self) -> Color32 {
+        let dark = Color32::from_rgb(11, 12, 16);
+        if contrast(dark, self.accent) > contrast(Color32::WHITE, self.accent) { dark } else { Color32::WHITE }
+    }
+
     /// The gradient top colour for a fill (a little lighter), or the fill itself when gradients
     /// are off.
     pub fn grad_top(&self, c: Color32) -> Color32 {
@@ -135,7 +155,7 @@ impl Tokens {
     /// as in After Effects, hovered and dragged too; otherwise these tokens. For the values only:
     /// the name, stopwatch and swatches keep the ordinary tokens.
     ///
-    /// [`Property::has_expression`]: effectcraft_engine::project::Property::has_expression
+    /// [`Property::has_expression`]: pulso_engine::project::Property::has_expression
     pub fn for_value(self, expression: bool) -> Tokens {
         if expression { Tokens { hot_text: self.expr_text, accent_hover: self.expr_text, ..self } } else { self }
     }
@@ -197,7 +217,7 @@ impl Tokens {
             row_h: 19.0,
             gradients: true,
         };
-        match kind {
+        let base = match kind {
             ThemeKind::Dark => dark,
             ThemeKind::Darker => Tokens {
                 app_bg: Color32::from_rgb(0x08, 0x08, 0x08),
@@ -250,7 +270,78 @@ impl Tokens {
                 expr_text: Color32::from_rgb(0xa3, 0x34, 0x17),
                 ..dark
             },
+        };
+        base.nodalia()
+    }
+
+    /// The Nodalia Design Language over these tokens: the window, the islands, text, controls and
+    /// the accent come from `nodalia-theme` with Pulso's accent (NDL's dark palette for Darker
+    /// and Dark, the latter lifted a step; its light palette for Light). Media surfaces (label
+    /// colours, keyframes, the cache bars, the expression colour) keep their own colours.
+    fn nodalia(self) -> Self {
+        let p = ndl_palette(self.kind);
+        let c = ndl;
+        let island = c(p.surface_panel);
+        let light = self.kind.is_light();
+        Tokens {
+            app_bg: c(p.surface_window),
+            header_bg: c(p.surface_window),
+            panel_bg: island,
+            tab_text: c(p.text_secondary),
+            tab_text_active: c(p.text_primary),
+            focus: c(p.accent_default),
+            accent: c(p.accent_default),
+            accent_hover: c(p.accent_hover),
+            text: c(p.text_primary),
+            text_dim: c(p.text_secondary),
+            // NDL's tertiary text is a shade too light for line numbers on a matched bracket in
+            // the light theme's expression field; darken it there just enough to stay readable.
+            text_faint: if light { c(p.text_tertiary).lerp_to_gamma(Color32::BLACK, 0.12) } else { c(p.text_tertiary).lerp_to_gamma(Color32::WHITE, 0.06) },
+            danger: c(p.status_danger_fg),
+            icon: c(p.text_secondary),
+            icon_active: c(p.text_primary),
+            hover: c(p.control_bg_hover),
+            pressed: c(p.control_bg_pressed),
+            field_bg: c(p.control_field_bg),
+            field_border: c(p.border_default),
+            separator: c(p.border_subtle),
+            row: island,
+            row_alt: if light { island.lerp_to_gamma(Color32::BLACK, 0.025) } else { island.lerp_to_gamma(Color32::WHITE, 0.025) },
+            row_selected: c(p.selection_bg),
+            hot_text: c(p.accent_text),
+            tl_bg: island,
+            tl_ruler_bg: island,
+            cti: c(p.accent_default),
+            keyframe_selected: c(p.accent_text),
+            timecode: c(p.accent_text),
+            fx_header: c(p.control_bg),
+            fx_header_active: c(p.selection_bg),
+            tl_graph_selected: c(p.control_bg),
+            switch_well: c(p.control_field_bg),
+            expr_bg: c(p.control_field_bg),
+            pasteboard: c(p.surface_window),
+            radius: ISLAND_RADIUS,
+            radius_sm: 8.0,
+            gap: ISLAND_GAP,
+            // NDL draws flat fills: no decorative gradients.
+            gradients: false,
+            ..self
         }
+    }
+
+    /// The creator suite's shared parts (`nodalia_theme::creator`) in these tokens' colours, so
+    /// Pulso draws the workspace selector, dialog buttons, Home and Preferences with the same code
+    /// as Lienzo, Pluma and Toma.
+    pub fn creator(&self) -> nodalia_theme::creator::Look {
+        let mut p = ndl_palette(self.kind);
+        p.accent_default = rgba(self.accent);
+        p.accent_hover = rgba(self.accent_hover);
+        nodalia_theme::creator::Look::new(p).strong_family(FontFamily::Name("semibold".into())).medium_family(FontFamily::Name("medium".into()))
+    }
+
+    /// Whether these tokens are a dark theme.
+    pub fn dark(&self) -> bool {
+        !self.kind.is_light()
     }
 
     pub fn mono(size: f32) -> FontId {
@@ -266,17 +357,17 @@ impl Tokens {
         FontId::new(size, FontFamily::Name("medium".into()))
     }
     /// sRGB colour of an item/layer label (Settings ▸ Labels).
-    pub fn label(&self, l: effectcraft_color::Label) -> Color32 {
-        let i = effectcraft_color::Label::ALL.iter().position(|x| *x == l).unwrap_or(0);
+    pub fn label(&self, l: pulso_color::Label) -> Color32 {
+        let i = pulso_color::Label::ALL.iter().position(|x| *x == l).unwrap_or(0);
         self.labels[i]
     }
 
     /// Theme tokens for the current settings: theme, UI brightness and label colours.
     /// The tokens for theme `kind` (resolved from the appearance mode) with the rest of the
     /// Appearance settings: brightness, label colours, gradients.
-    pub fn from_prefs(p: &effectcraft_engine::prefs::Prefs, kind: ThemeKind) -> Tokens {
+    pub fn from_prefs(p: &pulso_engine::prefs::Prefs, kind: ThemeKind) -> Tokens {
         let mut t = Tokens::for_kind(kind).with_brightness(p.appearance.brightness as f32);
-        for (i, l) in effectcraft_color::Label::ALL.iter().enumerate() {
+        for (i, l) in pulso_color::Label::ALL.iter().enumerate() {
             let [r, g, b] = p.label_rgb(*l);
             t.labels[i] = Color32::from_rgb(r, g, b);
         }
@@ -325,10 +416,53 @@ impl Tokens {
     }
 }
 
-/// The default label colours, one RGB colour per [`effectcraft_color::Label`] in
+/// Pulso's accent in the Nodalia palette.
+pub const PULSO: nodalia_theme::Accent = nodalia_theme::Accent::Pulso;
+/// An island's corner radius.
+pub const ISLAND_RADIUS: f32 = nodalia_theme::component::PANEL_RADIUS;
+/// The window-colour gap between two islands, and between an island and the window's edge.
+pub const ISLAND_GAP: f32 = nodalia_theme::component::WINDOW_GAP;
+
+pub(crate) fn ndl(c: nodalia_theme::Rgba) -> Color32 {
+    Color32::from_rgba_unmultiplied(c.r, c.g, c.b, c.a)
+}
+
+fn rgba(c: Color32) -> nodalia_theme::Rgba {
+    nodalia_theme::Rgba::new(c.r(), c.g(), c.b(), c.a())
+}
+
+/// Nodalia's palette with Pulso's accent for `kind`: Dark lifts NDL's near-black surfaces a step.
+pub(crate) fn ndl_palette(kind: ThemeKind) -> nodalia_theme::Palette {
+    let mode = if kind.is_light() { nodalia_theme::Mode::Light } else { nodalia_theme::Mode::Dark };
+    let mut p = mode.palette_with(PULSO);
+    if kind == ThemeKind::Dark {
+        let lift = |c: nodalia_theme::Rgba, k: f32| {
+            let m = |v: u8| (f32::from(v) + (255.0 - f32::from(v)) * k).round() as u8;
+            nodalia_theme::Rgba::new(m(c.r), m(c.g), m(c.b), c.a)
+        };
+        p.surface_window = lift(p.surface_window, 0.08);
+        p.surface_panel = lift(p.surface_panel, 0.09);
+        p.surface_raised = lift(p.surface_raised, 0.09);
+        p.surface_overlay = lift(p.surface_overlay, 0.09);
+        p.control_bg = lift(p.control_bg, 0.09);
+        p.control_bg_hover = lift(p.control_bg_hover, 0.09);
+        p.control_bg_pressed = lift(p.control_bg_pressed, 0.09);
+        p.control_field_bg = lift(p.control_field_bg, 0.06);
+        p.border_subtle = lift(p.border_subtle, 0.09);
+    }
+    p
+}
+
+/// Rounds the corners of an island whose contents paint edge to edge (a dock group, the viewer):
+/// a window-coloured ring outside the rounded `rect`. Paint it after the contents.
+pub fn round_island_corners(painter: &egui::Painter, t: &Tokens, rect: egui::Rect) {
+    nodalia_theme::creator::round_island_corners(painter, &t.creator(), rect);
+}
+
+/// The default label colours, one RGB colour per [`pulso_color::Label`] in
 /// `Label::ALL` order.
 fn default_labels() -> [Color32; 17] {
-    effectcraft_color::Label::ALL.map(|l| {
+    pulso_color::Label::ALL.map(|l| {
         let [r, g, b] = l.rgb();
         Color32::from_rgb(r, g, b)
     })
@@ -348,7 +482,7 @@ static NOTO_SYMBOLS2: &[u8] = include_bytes!("../../../assets/fonts/NotoSansSymb
 /// not the stored `general.language` preference: `system` is already resolved there, so a Chinese
 /// system draws Chinese with the default setting. The CJK fallback that draws the interface's own
 /// script is registered first, so a Chinese interface is drawn by a Chinese face and a Japanese one
-/// by a Japanese face. `install` is called again when the language changes (see the `EffectcraftApp`
+/// by a Japanese face. `install` is called again when the language changes (see the `PulsoApp`
 /// frame loop), so the fonts do not need a restart.
 pub fn install(ctx: &egui::Context, t: &Tokens, language: &str) {
     let mut fonts = FontDefinitions::default();
@@ -412,7 +546,7 @@ const BASELINE_METRICS_PX: f32 = 12.0;
 /// line gap separately to 1/32, then `ascent + descent + line_gap` (epaint's descent is negative,
 /// this one is positive).
 #[cfg(not(target_arch = "wasm32"))]
-fn ascent_and_height(m: &effectcraft_text::fonts::VMetrics) -> (f32, f32) {
+fn ascent_and_height(m: &pulso_text::fonts::VMetrics) -> (f32, f32) {
     let ascent = m.ascent.round_ui();
     let descent = m.descent.round_ui();
     let line_gap = m.line_gap.round_ui();
@@ -437,7 +571,7 @@ fn ascent_and_height(m: &effectcraft_text::fonts::VMetrics) -> (f32, f32) {
 /// rounded away above, so one factor per face is enough. The test
 /// `fallback_glyphs_sit_on_the_row_baseline` pins the result.
 #[cfg(not(target_arch = "wasm32"))]
-fn baseline_tweak(row: &effectcraft_text::fonts::Face, face: &effectcraft_text::fonts::Face) -> FontTweak {
+fn baseline_tweak(row: &pulso_text::fonts::Face, face: &pulso_text::fonts::Face) -> FontTweak {
     let px = BASELINE_METRICS_PX;
     let (a_row, h_row) = ascent_and_height(&row.metrics(px));
     let (a_face, h_face) = ascent_and_height(&face.metrics(px));
@@ -465,7 +599,7 @@ fn install_script_fallbacks(family_fonts: &mut FontDefinitions, language: &str) 
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        use effectcraft_text::fonts;
+        use pulso_text::fonts;
         // Kana is unambiguously Japanese; Han ideographs are shared, so the order decides which
         // language's face draws them.
         const KANA: (char, &str) = ('あ', "japanese-system");
@@ -601,14 +735,15 @@ pub fn apply_visuals(ctx: &egui::Context, t: &Tokens) {
     v.extreme_bg_color = t.field_bg;
     v.faint_bg_color = t.row_alt;
     v.override_text_color = Some(t.text);
-    v.selection.bg_fill = t.accent;
-    v.selection.stroke = Stroke::new(1.0, Color32::WHITE);
+    v.selection.bg_fill = t.row_selected;
+    v.selection.stroke = Stroke::new(1.0, t.text);
     v.hyperlink_color = t.accent;
-    v.window_stroke = Stroke::new(1.0, t.field_border);
-    v.window_corner_radius = egui::CornerRadius::same(8);
-    v.menu_corner_radius = egui::CornerRadius::same(6);
-    v.popup_shadow = egui::epaint::Shadow { offset: [0, 6], blur: 20, spread: 0, color: Color32::from_black_alpha(150) };
-    v.window_shadow = egui::epaint::Shadow { offset: [0, 10], blur: 36, spread: 0, color: Color32::from_black_alpha(170) };
+    // NDL: dialogs are islands, menus and popovers take the control radius.
+    v.window_stroke = Stroke::new(1.0, t.separator);
+    v.window_corner_radius = egui::CornerRadius::same(ISLAND_RADIUS as u8);
+    v.menu_corner_radius = egui::CornerRadius::same(nodalia_theme::component::CONTROL_RADIUS as u8);
+    v.popup_shadow = egui::epaint::Shadow { offset: [0, 4], blur: 16, spread: 0, color: Color32::from_black_alpha(if light { 40 } else { 140 }) };
+    v.window_shadow = egui::epaint::Shadow { offset: [0, 10], blur: 36, spread: 0, color: Color32::from_black_alpha(if light { 50 } else { 170 }) };
     for w in [&mut v.widgets.noninteractive, &mut v.widgets.inactive, &mut v.widgets.hovered, &mut v.widgets.active, &mut v.widgets.open] {
         w.corner_radius = egui::CornerRadius::same(t.radius_sm as u8);
     }
@@ -655,7 +790,7 @@ pub fn apply_visuals(ctx: &egui::Context, t: &Tokens) {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod script_font_tests {
     use super::{SCRIPT_PROBES, interface_fallback_candidates};
-    use effectcraft_text::fonts;
+    use pulso_text::fonts;
 
     /// Whether an installed face covers `probe` (else the glyph check is skipped).
     fn installed(probe: char) -> bool {
@@ -927,7 +1062,7 @@ mod tests {
 
     #[test]
     fn hangul_gets_a_face_when_one_is_installed() {
-        use effectcraft_text::fonts;
+        use pulso_text::fonts;
         let mut fonts_def = FontDefinitions::default();
         install_script_fallbacks(&mut fonts_def, "en");
         let base = fonts::resolve("Inter", "Regular").face;

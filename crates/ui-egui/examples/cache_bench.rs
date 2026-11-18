@@ -1,6 +1,6 @@
 //! Background caching benchmark: how fast the RAM preview fills a comp, and where the time goes.
 //!
-//! `cargo run --release -p effectcraft-ui-egui --example cache_bench -- [options]`
+//! `cargo run --release -p pulso-ui-egui --example cache_bench -- [options]`
 //!
 //! Without `--project` it builds a comp like a typical edit: eight 1080p30 H.264 clips one after
 //! another (encoded once into `target/cache-bench/media` with the Render Queue, no committed
@@ -17,10 +17,10 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use effectcraft_engine::Session;
-use effectcraft_engine::project::ItemId;
-use effectcraft_engine::render::RenderOpts;
-use effectcraft_ui_egui::frames::{FrameKey, Frames, RenderSource, opts_hash};
+use pulso_engine::Session;
+use pulso_engine::project::ItemId;
+use pulso_engine::render::RenderOpts;
+use pulso_ui_egui::frames::{FrameKey, Frames, RenderSource, opts_hash};
 use serde_json::{Value, json};
 
 fn arg(name: &str) -> Option<String> {
@@ -39,7 +39,7 @@ fn clips(dir: &std::path::Path) -> Vec<String> {
     let first = media.join("clip0.mp4");
     if !first.exists() {
         eprintln!("encoding the source clip (once)…");
-        let mut s = effectcraft_host::session();
+        let mut s = pulso_host::session();
         run(&mut s, "comp.new", json!({"name": "Src", "width": 1920, "height": 1080, "frameRate": 30, "duration": 4.25}));
         let l = run(&mut s, "layer.newSolid", json!({"color": "#808080"}))["layer"].clone();
         run(&mut s, "effect.apply", json!({"layers": [l], "effect": "Fractal Noise"}));
@@ -61,8 +61,8 @@ fn clips(dir: &std::path::Path) -> Vec<String> {
 
 fn main() {
     let dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/cache-bench");
-    let mut s = effectcraft_host::session();
-    let pool = Arc::new(effectcraft_media::MediaPool::new());
+    let mut s = pulso_host::session();
+    let pool = Arc::new(pulso_media::MediaPool::new());
     s.footage = pool.clone();
     if std::env::args().any(|a| a == "--disk") {
         let disk = dir.join("disk");
@@ -100,7 +100,7 @@ fn main() {
                 let l = run(&mut s, "layer.addItem", json!({"item": item}))["layer"].as_u64().expect("layer");
                 let c = Arc::make_mut(&mut s.project).comp_mut(cid).expect("comp");
                 let fr = c.frame_rate;
-                let l = c.layer_mut(effectcraft_engine::project::LayerId(l)).expect("layer");
+                let l = c.layer_mut(pulso_engine::project::LayerId(l)).expect("layer");
                 let at = fr.tick_of(i as i64 * 1275 / 10);
                 (l.start_time, l.in_point, l.out_point) = (at, at, fr.tick_of((i as i64 + 1) * 1275 / 10));
             }
@@ -143,7 +143,7 @@ fn main() {
     };
 
     eprintln!("caching {n} frames of {}×{} at scale {scale} with {slots} in flight…", comp.width, comp.height);
-    let (gop0, t0) = (effectcraft_media::gop_stats(), Instant::now());
+    let (gop0, t0) = (pulso_media::gop_stats(), Instant::now());
     let mut next = 0;
     loop {
         while next < n && frames.inflight() < slots {
@@ -156,7 +156,7 @@ fn main() {
         std::thread::sleep(Duration::from_millis(1));
     }
     let secs = t0.elapsed().as_secs_f64();
-    let gop = effectcraft_media::gop_stats();
+    let gop = pulso_media::gop_stats();
     let cached = frames.cached_frames(&series).len();
     println!("frames cached     {cached}/{n} in {secs:.2} s: {:.1} frames/s, {:.1} ms each", cached as f64 / secs, secs * 1000.0 / cached.max(1) as f64);
     println!(

@@ -1,9 +1,9 @@
-//! Headless UI snapshot: runs the real [`EffectcraftApp`] without a window (egui_kittest + wgpu)
+//! Headless UI snapshot: runs the real [`PulsoApp`] without a window (egui_kittest + wgpu)
 //! and writes PNGs. Works regardless of window focus, Spaces or display sleep, so agents can
 //! look at the UI at any time.
 //!
 //! ```text
-//! cargo run -p effectcraft-ui-egui --example snapshot -- [--out ui.png] [--size 1680x1020]
+//! cargo run -p pulso-ui-egui --example snapshot -- [--out ui.png] [--size 1680x1020]
 //!     [--scale 2] [--settle 1.5] [--empty] [--script steps.jsonl | --step '<json>']...
 //! ```
 //!
@@ -15,8 +15,8 @@
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
-use effectcraft_ui_egui::{ControlRequest, EffectcraftApp};
 use egui_kittest::Harness;
+use pulso_ui_egui::{ControlRequest, PulsoApp};
 use serde_json::{Value, json};
 
 struct Args {
@@ -25,11 +25,13 @@ struct Args {
     scale: f32,
     settle: f64,
     demo: bool,
+    /// Draw Nodalia's own title bar and window controls, as the Linux app does.
+    titlebar: bool,
     steps: Vec<Value>,
 }
 
 fn parse_args() -> Result<Args, String> {
-    let mut a = Args { out: "ui.png".into(), size: (1680.0, 1020.0), scale: 2.0, settle: 1.5, demo: true, steps: Vec::new() };
+    let mut a = Args { out: "ui.png".into(), size: (1680.0, 1020.0), scale: 2.0, settle: 1.5, demo: true, titlebar: false, steps: Vec::new() };
     let mut it = std::env::args().skip(1);
     while let Some(arg) = it.next() {
         let mut val = || it.next().ok_or_else(|| format!("{arg} needs a value"));
@@ -43,6 +45,7 @@ fn parse_args() -> Result<Args, String> {
             "--scale" => a.scale = val()?.parse().map_err(|_| "bad --scale")?,
             "--settle" => a.settle = val()?.parse().map_err(|_| "bad --settle")?,
             "--empty" => a.demo = false,
+            "--titlebar" => a.titlebar = true,
             "--step" => a.steps.push(serde_json::from_str(&val()?).map_err(|e| format!("--step: {e}"))?),
             "--script" => {
                 let path = val()?;
@@ -62,7 +65,7 @@ fn parse_args() -> Result<Args, String> {
 
 /// One frame, first queueing the app's synthetic input (kittest doesn't call
 /// `raw_input_hook`); the harness runs one frame per queued event.
-fn step_frame(h: &mut Harness<'_, EffectcraftApp>) {
+fn step_frame(h: &mut Harness<'_, PulsoApp>) {
     for e in h.state_mut().take_synthetic_input() {
         h.event(e);
     }
@@ -70,7 +73,7 @@ fn step_frame(h: &mut Harness<'_, EffectcraftApp>) {
 }
 
 /// Step the app for `secs` of wall time so background frame renders land in the viewer.
-fn settle(h: &mut Harness<'_, EffectcraftApp>, secs: f64) {
+fn settle(h: &mut Harness<'_, PulsoApp>, secs: f64) {
     let end = Instant::now() + Duration::from_secs_f64(secs);
     while Instant::now() < end {
         step_frame(h);
@@ -79,7 +82,7 @@ fn settle(h: &mut Harness<'_, EffectcraftApp>, secs: f64) {
     step_frame(h);
 }
 
-fn snap(h: &mut Harness<'_, EffectcraftApp>, path: &str) -> Result<(), String> {
+fn snap(h: &mut Harness<'_, PulsoApp>, path: &str) -> Result<(), String> {
     let img = h.render()?;
     img.save(path).map_err(|e| format!("{path}: {e}"))?;
     println!("{}", json!({"snapshot": path, "width": img.width(), "height": img.height()}));
@@ -94,16 +97,17 @@ fn main() {
             std::process::exit(2);
         }
     };
-    let mut session = effectcraft_host::session();
+    let mut session = pulso_host::session();
     if args.demo {
         let _ = session.execute("file.openDemoProject", json!({}));
     }
     let (tx, rx) = mpsc::channel::<ControlRequest>();
-    let mut harness = Harness::builder()
-        .with_size(egui::vec2(args.size.0, args.size.1))
-        .with_pixels_per_point(args.scale)
-        .wgpu()
-        .build_eframe(move |_cc| EffectcraftApp::new(session).with_control(rx));
+    let titlebar = args.titlebar;
+    let mut harness = Harness::builder().with_size(egui::vec2(args.size.0, args.size.1)).with_pixels_per_point(args.scale).wgpu().build_eframe(move |_cc| {
+        let mut app = PulsoApp::new(session).with_control(rx);
+        app.custom_titlebar = titlebar;
+        app
+    });
     settle(&mut harness, args.settle);
     for step in &args.steps {
         let method = step["method"].as_str().unwrap_or_default().to_string();

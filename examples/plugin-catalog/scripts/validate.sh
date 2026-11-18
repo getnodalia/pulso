@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Validate the plug-in catalog: schema, unique ids, every release's download (size + SHA-256),
-# then install every package with the real EffectCraft loader.
+# then install every package with the real Pulso loader.
 #
 #   scripts/validate.sh [index.json]
 #
 # Needs bash, jq, curl, sha256sum and npx (Node). Environment:
-#   EFFECTCRAFT_CLI  path to an effectcraft-cli build; unset: the loader step is skipped.
+#   PULSO_CLI  path to an pulso-cli build; unset: the loader step is skipped.
 #   SKIP_SCHEMA=1    skip the schema step (testing with a local catalog that names file:// URLs).
 set -euo pipefail
 
@@ -58,17 +58,17 @@ done < <(jq -r '.packages | to_entries[] | .key as $p | .value as $pkg | $pkg.ve
   | [$p, .key, $pkg.id, .value.version, .value.url, .value.sha256, (.value.size // "")] | @tsv' "$catalog")
 echo "ok"
 
-echo "== 4. load with EffectCraft"
-if [ -z "${EFFECTCRAFT_CLI:-}" ]; then
-  echo "skipped (set EFFECTCRAFT_CLI to an effectcraft-cli build)"
+echo "== 4. load with Pulso"
+if [ -z "${PULSO_CLI:-}" ]; then
+  echo "skipped (set PULSO_CLI to an pulso-cli build)"
   exit 0
 fi
 printf '%s\n' "$local_catalog" >"$work/index.json"
 mkdir -p "$work/config"
-export EFFECTCRAFT_CONFIG_DIR=$(native "$work/config")
-"$EFFECTCRAFT_CLI" exec library.refresh "{\"catalog\": \"$(file_url "$work/index.json")\", \"wait\": true}"
+export PULSO_CONFIG_DIR=$(native "$work/config")
+"$PULSO_CLI" exec library.refresh "{\"catalog\": \"$(file_url "$work/index.json")\", \"wait\": true}"
 # shortcut: installs each package's newest release this build runs, not every release; older releases were checked when they were added.
 for id in $(jq -r '.packages[].id' "$catalog"); do
-  "$EFFECTCRAFT_CLI" exec library.install "{\"id\": \"$id\", \"wait\": true}" || fail "$id didn't install"
+  "$PULSO_CLI" exec library.install "{\"id\": \"$id\", \"wait\": true}" || fail "$id didn't install"
 done
 echo "ok"

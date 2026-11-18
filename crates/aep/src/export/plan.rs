@@ -1,13 +1,13 @@
-//! The plan: the EffectCraft project reduced to exactly the values the `.aep` can hold, in the
+//! The plan: the Pulso project reduced to exactly the values the `.aep` can hold, in the
 //! file's units, with everything that cannot be written already reported. Pure data; the chunks
 //! are built from it in `emit`.
 
 use std::collections::{BTreeMap, HashSet};
 
-use effectcraft_color::{BlendMode, Label};
-use effectcraft_keyframe::{Ease, Interp, Keyframe};
-use effectcraft_project::{Comp, ItemId, ItemKind, Layer, LayerId, LayerSource, Project, Property, Quality, Renderer};
-use effectcraft_time::{FrameRate, Tick};
+use pulso_color::{BlendMode, Label};
+use pulso_keyframe::{Ease, Interp, Keyframe};
+use pulso_project::{Comp, ItemId, ItemKind, Layer, LayerId, LayerSource, Project, Property, Quality, Renderer};
+use pulso_time::{FrameRate, Tick};
 
 use crate::export::report::{Collector, LossCategory};
 use crate::export::timebase::{TimeBase, time_base};
@@ -829,13 +829,13 @@ fn plan_transform(layer: &Layer, src: &LayerSrc, comp: &Comp, source_size: (u32,
             }
         }
         // A camera's or light's block holds After Effects' own Position and point of interest:
-        // a value at EffectCraft's default is written too.
+        // a value at Pulso's default is written too.
         if cam_light {
             for (kind, id) in [(PropKind::Position, "position"), (PropKind::Anchor, "poi")] {
                 if props.iter().any(|p: &PropPlan| p.kind == kind) {
                     continue;
                 }
-                if let Some(effectcraft_keyframe::Value::Vec3(v)) = tr.get(id).map(|p| &p.value) {
+                if let Some(pulso_keyframe::Value::Vec3(v)) = tr.get(id).map(|p| &p.value) {
                     let value: Vec<f64> = v.iter().map(|c| if c.is_finite() { *c } else { 0.0 }).collect();
                     props.push(PropPlan { kind, value, keys: Vec::new(), expr: None });
                     col.exported.properties += 1;
@@ -898,7 +898,7 @@ pub(crate) fn report_beyond(beyond: bool, what: &str, col: &mut Collector) {
 }
 
 /// Reports keys whose evaluation the format does not keep: muted keys (written as active keys) and
-/// auto-Bezier keys (written with their stored ease, not the slope EffectCraft computes).
+/// auto-Bezier keys (written with their stored ease, not the slope Pulso computes).
 fn report_key_flags(layer: &Layer, what: &str, col: &mut Collector) {
     layer.props.walk("", &mut |_, p| {
         if p.keys.iter().any(|k| k.muted) {
@@ -947,7 +947,7 @@ fn plan_layer(cx: &PlanCx<'_>, at: CompAt<'_>, cp: &CompPlan, layer: &Layer, col
     // stretch for a stretch of 100 % or more, in the composition's below (018, 317: 51 200 and
     // 38 400; 316: 25 600). Keys count source time in that time scale (641: 200 %, a key at comp
     // 1 s = source 0.5 s stored as 25 600 / 51 200; 642: 50 %, comp 1 s = source 2 s stored as
-    // 51 200 / 25 600; 643: the same with the layer starting at 1 s), which is EffectCraft's layer
+    // 51 200 / 25 600; 643: the same with the layer starting at 1 s), which is Pulso's layer
     // time in the layer's time scale.
     let (stretch, time_scale) = plan_stretch(layer, cp.tb.timescale, comp_name, col);
     // In and out points relative to the start, in source time (reversed, 981: After Effects' in
@@ -980,10 +980,10 @@ fn plan_layer(cx: &PlanCx<'_>, at: CompAt<'_>, cp: &CompPlan, layer: &Layer, col
     let sw = &layer.switches;
     let unwritten = [
         (sw.quality == Quality::Wireframe, "Wireframe quality (written as Best)"),
-        (sw.sampling != effectcraft_project::Sampling::Bilinear, "Bicubic sampling (written as Bilinear)"),
-        (sw.frame_blend != effectcraft_project::FrameBlend::Off, "frame blending"),
+        (sw.sampling != pulso_project::Sampling::Bilinear, "Bicubic sampling (written as Bilinear)"),
+        (sw.frame_blend != pulso_project::FrameBlend::Off, "frame blending"),
         (layer.preserve_transparency, "Preserve Transparency"),
-        (layer.auto_orient != effectcraft_project::AutoOrient::Off && !matches!(src, LayerSrc::Camera(_) | LayerSrc::Light(_)), "Auto-Orient"),
+        (layer.auto_orient != pulso_project::AutoOrient::Off && !matches!(src, LayerSrc::Camera(_) | LayerSrc::Light(_)), "Auto-Orient"),
         (layer.environment || layer.environment_background, "the environment layer setting"),
         (layer.markers_locked, "Lock Markers"),
     ];
@@ -992,7 +992,7 @@ fn plan_layer(cx: &PlanCx<'_>, at: CompAt<'_>, cp: &CompPlan, layer: &Layer, col
     }
     // The 3D switch is written (`ldta@38` bit 0x04, 015); a 3D layer's material options are not
     // (reported below when changed), and its X / Y rotation and orientation are reported too.
-    let per_char_3d = matches!(layer.props.prop("text/perChar3d").map(|p| &p.value), Some(effectcraft_keyframe::Value::Bool(true)));
+    let per_char_3d = matches!(layer.props.prop("text/perChar3d").map(|p| &p.value), Some(pulso_keyframe::Value::Bool(true)));
     if layer.switches.three_d && matches!(src, LayerSrc::Text(_)) && per_char_3d {
         col.lose(LossCategory::ThreeD, what("per-character 3D of the text layer is not written; 3D layer"));
     }
@@ -1008,10 +1008,10 @@ fn plan_layer(cx: &PlanCx<'_>, at: CompAt<'_>, cp: &CompPlan, layer: &Layer, col
     // exported (or the layer itself) is reported in `resolve_mattes`.
     let matte = layer.track_matte.map(|tm| {
         let mode = match tm.kind {
-            effectcraft_project::MatteKind::Alpha => 1,
-            effectcraft_project::MatteKind::AlphaInverted => 2,
-            effectcraft_project::MatteKind::Luma => 3,
-            effectcraft_project::MatteKind::LumaInverted => 4,
+            pulso_project::MatteKind::Alpha => 1,
+            pulso_project::MatteKind::AlphaInverted => 2,
+            pulso_project::MatteKind::Luma => 3,
+            pulso_project::MatteKind::LumaInverted => 4,
         };
         (tm.layer, mode)
     });
@@ -1050,7 +1050,7 @@ fn plan_layer(cx: &PlanCx<'_>, at: CompAt<'_>, cp: &CompPlan, layer: &Layer, col
     // A text layer named after its text stores no name (110, 113: After Effects shows the text):
     // the layer's own rule decides (#3233).
     if let LayerSrc::Text(tp) = &src
-        && layer.name_follows_text(&effectcraft_project::text_layer_name(&tp.text))
+        && layer.name_follows_text(&pulso_project::text_layer_name(&tp.text))
     {
         name.clear();
     }
@@ -1103,15 +1103,13 @@ fn plan_layer(cx: &PlanCx<'_>, at: CompAt<'_>, cp: &CompPlan, layer: &Layer, col
 
 /// Whether any property below `g` has keyframes.
 /// Whether a property of the group has a key with a bezier side.
-fn has_bezier_keys(g: &effectcraft_project::PropGroup, depth: usize) -> bool {
+fn has_bezier_keys(g: &pulso_project::PropGroup, depth: usize) -> bool {
     if depth > 64 {
         return true;
     }
     g.children.iter().any(|n| match n {
-        effectcraft_project::Node::Group(s) => has_bezier_keys(s, depth + 1),
-        effectcraft_project::Node::Prop(p) => {
-            p.keys.iter().any(|k| k.in_interp == effectcraft_keyframe::Interp::Bezier || k.out_interp == effectcraft_keyframe::Interp::Bezier)
-        }
+        pulso_project::Node::Group(s) => has_bezier_keys(s, depth + 1),
+        pulso_project::Node::Prop(p) => p.keys.iter().any(|k| k.in_interp == pulso_keyframe::Interp::Bezier || k.out_interp == pulso_keyframe::Interp::Bezier),
     })
 }
 
@@ -1139,11 +1137,11 @@ fn precomp_loop(project: &Project, from: ItemId, to: ItemId) -> bool {
 }
 
 /// The names of a layer's Material Options that differ from a new layer's (value, keys or an
-/// expression); a property EffectCraft's defaults do not list counts as changed.
+/// expression); a property Pulso's defaults do not list counts as changed.
 fn changed_material_options(layer: &Layer) -> Vec<String> {
     let Some(g) = layer.props.sub("materialOptions") else { return Vec::new() };
     let mut next = 0;
-    let defaults = effectcraft_project::build::material_options(&mut effectcraft_project::build::Ids(&mut next));
+    let defaults = pulso_project::build::material_options(&mut pulso_project::build::Ids(&mut next));
     g.props()
         .filter(|p| !p.keys.is_empty() || p.has_expression() || defaults.props().find(|d| d.match_id == p.match_id).is_none_or(|d| d.value != p.value))
         .map(|p| p.name.clone())
@@ -1281,7 +1279,7 @@ fn plan_prop(kind: PropKind, label: Option<&str>, p: &Property, at: PropAt<'_>, 
         };
         let in_ease: Vec<EaseSlot> = (0..slots).map(|s| if in_i == 2 { ease_of(&k.in_ease, s) } else { EaseSlot::default() }).collect();
         let out_ease: Vec<EaseSlot> = (0..slots).map(|s| if out_i == 2 { ease_of(&k.out_ease, s) } else { EaseSlot::default() }).collect();
-        let (mut tin, mut tout) = if kind.spatial() { effectcraft_keyframe::spatial_tangents(&all, i) } else { ([0.0; 3], [0.0; 3]) };
+        let (mut tin, mut tout) = if kind.spatial() { pulso_keyframe::spatial_tangents(&all, i) } else { ([0.0; 3], [0.0; 3]) };
         for t in tin.iter_mut().chain(tout.iter_mut()) {
             if sane(*t).is_none() {
                 beyond.set(true);

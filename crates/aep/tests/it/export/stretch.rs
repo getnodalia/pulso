@@ -2,17 +2,17 @@
 //! time scale (the composition's x stretch at 100 % or more, the composition's below).
 
 use crate::export::helpers::*;
-use effectcraft_aep::export::LossCategory;
-use effectcraft_aep::{PropNode, parse};
-use effectcraft_keyframe::{Interp, Value};
-use effectcraft_project::{LayerSource, Project};
-use effectcraft_time::FrameRate;
+use pulso_aep::export::LossCategory;
+use pulso_aep::{PropNode, parse};
+use pulso_keyframe::{Interp, Value};
+use pulso_project::{LayerSource, Project};
+use pulso_time::FrameRate;
 
 /// (stretch numerator, denominator, start units, Position time scale, key times) of the first
 /// layer of the first composition.
 fn position_keys(bytes: &[u8]) -> (i32, u32, i32, u32, Vec<i32>) {
     let file = parse(bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let comp = view.all_items().into_iter().find_map(|i| i.comp()).expect("comp");
     let layer = comp.layers().next().expect("layer");
     let h = layer.header().expect("header");
@@ -24,12 +24,8 @@ fn position_keys(bytes: &[u8]) -> (i32, u32, i32, u32, Vec<i32>) {
 fn reimport(bytes: &[u8]) -> Project {
     let mut p = Project::default();
     let none = |_: &str| false;
-    effectcraft_aep::import::import(
-        &mut p,
-        bytes,
-        &effectcraft_aep::import::ImportOptions { allow_losses: true, ..effectcraft_aep::import::ImportOptions::new(&none) },
-    )
-    .expect("import");
+    pulso_aep::import::import(&mut p, bytes, &pulso_aep::import::ImportOptions { allow_losses: true, ..pulso_aep::import::ImportOptions::new(&none) })
+        .expect("import");
     p
 }
 
@@ -46,8 +42,7 @@ fn keys_on_stretched_layers_are_written_as_after_effects_stores_them() {
         let layer = |p: &Project| p.comps().next().map(|(_, c)| c.layers[0].clone()).expect("layer");
         let (a, b) = (layer(&p1), layer(&p2));
         assert_eq!((a.stretch, a.start_time, a.in_point, a.out_point), (b.stretch, b.start_time, b.in_point, b.out_point), "{name}");
-        let keys =
-            |l: &effectcraft_project::Layer| l.props.prop("transform/position").map(|p| p.keys.iter().map(|k| (k.time, k.value.clone())).collect::<Vec<_>>());
+        let keys = |l: &pulso_project::Layer| l.props.prop("transform/position").map(|p| p.keys.iter().map(|k| (k.time, k.value.clone())).collect::<Vec<_>>());
         assert_eq!(keys(&a), keys(&b), "{name}");
     }
     // What the cases hold (MANIFEST): 200 % keys at comp 1 s / 2 s = units 25 600 / 51 200 at
@@ -95,7 +90,7 @@ fn a_comp_time_survives_any_stretch() {
 /// (stretch numerator, denominator, start, in, out as stored; Opacity time scale and key times).
 fn reversed_header(bytes: &[u8]) -> (i32, u32, i64, i64, i64, u32, Vec<i32>) {
     let file = parse(bytes).expect("parse");
-    let view = effectcraft_aep::Project::new(&file).expect("project");
+    let view = pulso_aep::Project::new(&file).expect("project");
     let comp = view.all_items().into_iter().find_map(|i| i.comp()).expect("comp");
     let layer = comp.layers().next().expect("layer");
     let h = layer.header().expect("header");

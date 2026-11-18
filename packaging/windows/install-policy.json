@@ -1,41 +1,41 @@
 {
-  "id": "effectcraft",
-  "name": "EffectCraft",
-  "upgradeCode": "AACA8593-C6ED-40A8-BA6C-CB325D8529F9",
+  "id": "pulso",
+  "name": "Pulso",
+  "upgradeCode": "4B70B55B-F964-449F-A845-9A382F982600",
   "sources": [
-    "effectcraft.wxs",
+    "pulso.wxs",
     "installer-ui.wxs"
   ],
-  "icon": "assets/app-icon/effectcraft.ico",
+  "icon": "assets/app-icon/pulso.ico",
   "localization": [],
   "extensions": [],
   "payloads": [
     "NOTICE",
-    "effectcraft-cli.exe",
-    "effectcraft.exe"
+    "pulso-cli.exe",
+    "pulso.exe"
   ],
   "registry": [
     [
       "-1",
-      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\effectcraft.exe",
+      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\pulso.exe",
       "",
-      "[#EffectcraftExe]"
+      "[#PulsoExe]"
     ],
     [
       "-1",
-      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\effectcraft.exe",
+      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\pulso.exe",
       "Path",
       "[INSTALLFOLDER]"
     ],
     [
       "-1",
-      "Software\\EffectCraft",
+      "Software\\Pulso",
       "DesktopShortcut",
       "[DESKTOPSHORTCUT]"
     ],
     [
       "-1",
-      "Software\\EffectCraft",
+      "Software\\Pulso",
       "DesktopShortcut",
       "1"
     ]

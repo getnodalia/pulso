@@ -3,12 +3,12 @@ use std::time::Instant;
 mod deep_nesting;
 mod fuzz;
 
-use effectcraft_color::Label;
-use effectcraft_keyframe::{Keyframe, ShapePath, TextDoc, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{Comp, Expression, ItemId, ItemKind, Layer, LayerId, LayerSource, Marker, MaskMode, Project, PropGroup, Solid};
-use effectcraft_render::{EvalCtx, NoFootage, RenderOpts, Renderer};
-use effectcraft_time::{FrameRate, Tick};
+use pulso_color::Label;
+use pulso_keyframe::{Keyframe, ShapePath, TextDoc, Value};
+use pulso_project::build::{self, Ids};
+use pulso_project::{Comp, Expression, ItemId, ItemKind, Layer, LayerId, LayerSource, Marker, MaskMode, Project, PropGroup, Solid};
+use pulso_render::{EvalCtx, NoFootage, RenderOpts, Renderer};
+use pulso_time::{FrameRate, Tick};
 
 use crate::{Expressions, check_syntax, eval_property, eval_standalone};
 
@@ -52,8 +52,8 @@ fn fx() -> Fx {
     let mut a = solid(&mut p, &comp, "A", [1.0, 0.0, 0.0], 20, 20);
     a.props.prop_mut(POS).unwrap().value = Value::Vec3([50.0, 40.0, 0.0]);
     a.props.prop_mut(ROT).unwrap().keys = vec![Keyframe::new(Tick::ZERO, Value::Scalar(0.0)), Keyframe::new(secs(1.0), Value::Scalar(90.0))];
-    let spec = effectcraft_effects::find("ec.control.slider").unwrap();
-    let mut slider = group_push(&mut p, |ids| effectcraft_effects::instantiate(spec, ids, "Slider Control", [20.0, 20.0]));
+    let spec = pulso_effects::find("ec.control.slider").unwrap();
+    let mut slider = group_push(&mut p, |ids| pulso_effects::instantiate(spec, ids, "Slider Control", [20.0, 20.0]));
     slider.prop_mut("slider").unwrap().value = Value::Scalar(42.0);
     a.props.sub_mut("effects").unwrap().children.push(slider.into());
     let mask = group_push(&mut p, |ids| build::mask(ids, "Mask 1", ShapePath::rect([10.0, 10.0], 10.0, 10.0), MaskMode::Add, [255, 0, 0]));
@@ -1246,13 +1246,13 @@ fn source_text_style_api() {
     assert_eq!((d.text.as_str(), d.size), ("Bye", 40.0));
     // Paragraph setters.
     let d = doc(&f, "text.sourceText.style.setJustification('CENTER_JUSTIFY').setStartIndent(12).setSpaceBefore(4).setEveryLineComposer(false)");
-    assert_eq!(d.justify, effectcraft_keyframe::Justify::Center);
+    assert_eq!(d.justify, pulso_keyframe::Justify::Center);
     assert_eq!((d.indent_left, d.space_before), (12.0, 4.0));
     assert_close!(f.num("thisComp.layer('Title').text.sourceText.style.setStartIndent(7).startIndent", 0.0), 7.0);
     // createStyle sets only what's given and keeps the existing runs.
     let d = doc(&f, "thisComp.layer('Title').text.sourceText.createStyle().setTsume(50).setBaselineOption('superscript')");
     assert_eq!(d.text, "Hello");
-    assert!(d.runs().iter().all(|r| r.style.tsume == 50.0 && r.style.baseline == effectcraft_keyframe::BaselineOption::Superscript));
+    assert!(d.runs().iter().all(|r| r.style.tsume == 50.0 && r.style.baseline == pulso_keyframe::BaselineOption::Superscript));
     assert_eq!(d.runs().len(), 3);
     // Non-text properties have no style.
     assert!(f.ev(f.a, ROT, "transform.rotation.style.fontSize", 0.0).is_err());
@@ -1303,9 +1303,9 @@ fn source_dimensions_follow_media_replacement() {
             name,
             Label::SeaFoam,
             None,
-            ItemKind::Footage(effectcraft_project::Footage {
+            ItemKind::Footage(pulso_project::Footage {
                 path: name.into(),
-                kind: effectcraft_project::FootageKind::Still,
+                kind: pulso_project::FootageKind::Still,
                 width,
                 height,
                 has_video: true,
@@ -1322,7 +1322,7 @@ fn source_dimensions_follow_media_replacement() {
     p.comp_mut(cid).unwrap().layers.push(l);
     let c = p.comp(cid).unwrap();
     let l = c.layer(lid).unwrap();
-    let media = effectcraft_render::MediaOverride::new(lid, replacement);
+    let media = pulso_render::MediaOverride::new(lid, replacement);
     let ctx = EvalCtx {
         project: &p,
         comp_id: cid,
@@ -1363,10 +1363,10 @@ fn colour_result_keeps_alpha() {
 #[test]
 fn checkbox_and_dropdown_results() {
     let mut f = fx();
-    let spec = effectcraft_effects::find("ec.control.checkbox").unwrap();
-    let cb = group_push(&mut f.p, |ids| effectcraft_effects::instantiate(spec, ids, "Checkbox Control", [20.0, 20.0]));
-    let spec = effectcraft_effects::find("ec.control.dropdown").unwrap();
-    let dd = group_push(&mut f.p, |ids| effectcraft_effects::instantiate(spec, ids, "Dropdown Menu Control", [20.0, 20.0]));
+    let spec = pulso_effects::find("ec.control.checkbox").unwrap();
+    let cb = group_push(&mut f.p, |ids| pulso_effects::instantiate(spec, ids, "Checkbox Control", [20.0, 20.0]));
+    let spec = pulso_effects::find("ec.control.dropdown").unwrap();
+    let dd = group_push(&mut f.p, |ids| pulso_effects::instantiate(spec, ids, "Dropdown Menu Control", [20.0, 20.0]));
     let fxg = f.layer_mut(f.b).props.sub_mut("effects").unwrap();
     fxg.children.push(cb.into());
     fxg.children.push(dd.into());
@@ -1557,10 +1557,10 @@ fn text_expression_selector_values() {
             media_overrides: &[],
             reads: None,
         };
-        let doc = effectcraft_render::text::source_text(&ctx, l).unwrap();
-        let lay = effectcraft_text::layout_doc(&doc);
+        let doc = pulso_render::text::source_text(&ctx, l).unwrap();
+        let lay = pulso_text::layout_doc(&doc);
         let anim = l.props.group("text/animators/#1").unwrap();
-        effectcraft_render::text::animator_selection(&ctx, l, anim, &lay).into_iter().map(|v| (v[0] * 1000.0).round() / 1000.0).collect::<Vec<_>>()
+        pulso_render::text::animator_selection(&ctx, l, anim, &lay).into_iter().map(|v| (v[0] * 1000.0).round() / 1000.0).collect::<Vec<_>>()
     };
     // Default: selectorValue * textIndex / textTotal (selectorValue = the full range selector).
     assert_eq!(sel_of(&p), vec![0.25, 0.5, 0.75, 1.0]);
@@ -1612,12 +1612,12 @@ fn sample_image_reads_rendered_pixels() {
 /// the render's log, also when the sampled buffer comes from the per-thread cache.
 #[test]
 fn sample_image_notes_the_files_it_reads() {
-    use effectcraft_render::reads::{FileStamp, ReadFile, ReadLog};
+    use pulso_render::reads::{FileStamp, ReadFile, ReadLog};
     /// A grey picture of any footage, noting `/clip.png` for every read.
     struct Clip;
-    impl effectcraft_render::FootageSource for Clip {
-        fn frame(&self, _: ItemId, f: &effectcraft_project::Footage, _: Tick) -> Option<std::sync::Arc<effectcraft_render::Image>> {
-            let mut img = effectcraft_render::Image::new(f.width, f.height);
+    impl pulso_render::FootageSource for Clip {
+        fn frame(&self, _: ItemId, f: &pulso_project::Footage, _: Tick) -> Option<std::sync::Arc<pulso_render::Image>> {
+            let mut img = pulso_render::Image::new(f.width, f.height);
             img.data.fill([0.5, 0.5, 0.5, 1.0]);
             Some(std::sync::Arc::new(img))
         }
@@ -1629,7 +1629,7 @@ fn sample_image_notes_the_files_it_reads() {
     let mut p = Project::default();
     let comp = Comp::new(20, 20, FrameRate::FPS_30, Tick::from_seconds_f64(1.0));
     let footage =
-        effectcraft_project::Footage { path: "/clip.png".into(), width: 8, height: 8, has_video: true, frame_rate: FrameRate::FPS_30, ..Default::default() };
+        pulso_project::Footage { path: "/clip.png".into(), width: 8, height: 8, has_video: true, frame_rate: FrameRate::FPS_30, ..Default::default() };
     let item = p.add_item("Clip", Label::Aqua, None, ItemKind::Footage(footage));
     let layer = build::layer(&mut p, &comp, "Clip", LayerSource::Footage { item }, (8, 8), None);
     let cid = p.add_item("C", Label::Sandstone, None, ItemKind::Comp(comp.into()));
@@ -1653,12 +1653,7 @@ fn sample_image_huge_point_is_transparent() {
 }
 
 fn data_item(p: &mut Project, name: &str, text: &str) {
-    let f = effectcraft_project::Footage {
-        path: format!("/data/{name}"),
-        kind: effectcraft_project::FootageKind::Data,
-        data: Some(text.into()),
-        ..Default::default()
-    };
+    let f = pulso_project::Footage { path: format!("/data/{name}"), kind: pulso_project::FootageKind::Data, data: Some(text.into()), ..Default::default() };
     p.add_item(name, Label::Sandstone, None, ItemKind::Footage(f));
 }
 
@@ -1707,7 +1702,7 @@ fn project_and_time_globals() {
         let a = f.a;
         let l = f.layer_mut(a);
         l.markers[0].protected = true;
-        l.markers[0].cue_point = Some(effectcraft_project::CuePoint { name: "go".into(), navigation: false, params: vec![("k".into(), "v".into())] });
+        l.markers[0].cue_point = Some(pulso_project::CuePoint { name: "go".into(), navigation: false, params: vec![("k".into(), "v".into())] });
     }
     assert_close!(f.num("thisLayer.marker.key(1).protectedRegion ? 1 : 0", 0.0), 1.0);
     assert_eq!(f.text("thisComp.layer(\"A\").marker.key(1).cuePointName + thisComp.layer(\"A\").marker.key(1).parameters.k", 0.0), "gov");
@@ -1766,9 +1761,9 @@ fn implicit_source_fx() -> (Fx, LayerId, LayerId, LayerId) {
         "still.png",
         Label::SeaFoam,
         None,
-        ItemKind::Footage(effectcraft_project::Footage {
+        ItemKind::Footage(pulso_project::Footage {
             path: "still.png".into(),
-            kind: effectcraft_project::FootageKind::Still,
+            kind: pulso_project::FootageKind::Still,
             width: 48,
             height: 36,
             has_video: true,
@@ -1843,8 +1838,8 @@ fn implicit_source_follows_the_current_layer() {
 fn layer_control_property_stands_for_its_layer() {
     let mut f = fx();
     // Layer A gets a Layer Control ("Map") that points at layer B (#809).
-    let spec = effectcraft_effects::find("ec.control.layer").unwrap();
-    let mut map = group_push(&mut f.p, |ids| effectcraft_effects::instantiate(spec, ids, "Map", [20.0, 20.0]));
+    let spec = pulso_effects::find("ec.control.layer").unwrap();
+    let mut map = group_push(&mut f.p, |ids| pulso_effects::instantiate(spec, ids, "Map", [20.0, 20.0]));
     map.prop_mut("layer").unwrap().value = Value::Layer(Some(f.b.0));
     f.p.comp_mut(f.cid).unwrap().layers[0].props.sub_mut("effects").unwrap().children.push(map.into());
     // effect("Map")(1) is the layer itself: its name, index, transform and value.
@@ -2028,7 +2023,7 @@ fn an_expression_cant_change_the_prelude_for_the_next() {
 mod property_group;
 
 /// Timing harness for the prelude's cost on the evaluation path. Ignored: it is a measurement, not
-/// an assertion. `cargo test -p effectcraft-expr --release --lib bench_evaluation -- --ignored
+/// an assertion. `cargo test -p pulso-expr --release --lib bench_evaluation -- --ignored
 /// --nocapture`.
 #[test]
 #[ignore = "timing measurement, not a test"]

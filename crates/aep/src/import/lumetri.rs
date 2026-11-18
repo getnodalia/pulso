@@ -1,4 +1,4 @@
-//! Lumetri Color (`ADBE Lumetri`) to EffectCraft's Lumetri Color (`ec.color.lumetri`).
+//! Lumetri Color (`ADBE Lumetri`) to Pulso's Lumetri Color (`ec.color.lumetri`).
 //!
 //! The parameters are found by their match name (`ADBE Lumetri-0011` is Exposure), not by their
 //! place in `parT`: After Effects has added parameters in the middle of the list over the
@@ -13,7 +13,7 @@
 //!   ([`EffectParam::recorded_value`]).
 //! - **Section switches.** Each section (Basic Correction, Creative, Curves, RGB Curves, the five
 //!   hue / saturation curves, Color Wheels, HSL Secondary, Vignette) has an on / off checkbox in
-//!   After Effects; EffectCraft's Lumetri has none. A section that is off does nothing in After
+//!   After Effects; Pulso's Lumetri has none. A section that is off does nothing in After
 //!   Effects (1200 `lumetri-03-sec-basic-correction`, `-17-sec-vignette` render as `-00-defaults`),
 //!   so its values are not imported (the effect looks the same) and are listed in the report.
 //! - **Arbitrary data** (`ParamKind::ArbitraryData`, every instance stores it). Curves are a
@@ -22,7 +22,7 @@
 //!     `lumetri-60-preset-curves-rgb`), imported. The other three are reported when moved: no
 //!     sample tells which is which channel.
 //!   - Hue vs Sat (`-0042`): y is an offset from neutral, 1 doubling the saturation (`-61`), so
-//!     EffectCraft's y is `0.5 + y / 2`. The other four hue / saturation curves have no sample
+//!     Pulso's y is `0.5 + y / 2`. The other four hue / saturation curves have no sample
 //!     of their scale and are reported when moved.
 //!   - Color Wheels (`-0047`): Shadows, Midtones, Highlights and a fourth wheel, each hue,
 //!     brightness slider, distance ([`import_wheels`], `-62`).
@@ -30,7 +30,7 @@
 //!     reported when they are not the default (not sampled).
 //! - **LUTs and looks.** The Input LUT and the Look are files After Effects names (the Look's name
 //!   is UTF-16 text in `-0096`, the popups only index a list of the installed ones); they are not
-//!   in the project, so a set one is reported by name and EffectCraft's popup stays None.
+//!   in the project, so a set one is reported by name and Pulso's popup stays None.
 //! - **Eyedropper colours** (White Balance, the hue curve selectors, the key's Set / Add /
 //!   Remove colours) only set other controls in After Effects; they are reported when set.
 //! - The `Blob` (`-0001`, an XML copy of the grade After Effects writes when a Look changes and does
@@ -39,13 +39,13 @@
 
 use crate::effect_map::{Conv, ParamMap};
 use crate::{Effect as AepEffect, EffectParam, ParamKind, ParamValue};
-use effectcraft_keyframe::Value;
+use pulso_keyframe::Value;
 
 use crate::import::effects::{LayerCtx, ParamOut, carries_nothing, import_mapped, param_label};
 use crate::import::report::LossCategory;
 use ParamKind as K;
 
-/// After Effects' Show Mask styles (`-0075`, `pdnm`), EffectCraft's in the same order.
+/// After Effects' Show Mask styles (`-0075`, `pdnm`), Pulso's in the same order.
 pub const MASK_STYLE: &[&str] = &["Color/Gray", "Color/Black", "White/Black"];
 
 /// A part of the effect with its own on / off switch.
@@ -89,7 +89,7 @@ impl Section {
 enum Data {
     /// The four RGB curves (4 x 520 bytes).
     RgbCurves,
-    /// One hue / saturation curve (520 bytes); the EffectCraft parameter when the scale of its y
+    /// One hue / saturation curve (520 bytes); the Pulso parameter when the scale of its y
     /// is known (Hue vs Sat).
     HueSatCurve(Option<&'static str>),
     /// Color Wheels (4 x 3 `f64`, each wheel 0, 0.5, 0 by default).
@@ -107,7 +107,7 @@ enum Data {
 /// What a Lumetri parameter is.
 #[derive(Clone, Copy, Debug)]
 enum Role {
-    /// An EffectCraft parameter and the conversion.
+    /// A Pulso parameter and the conversion.
     To(&'static str, Conv),
     /// The on / off switch of a section.
     Switch,
@@ -500,7 +500,7 @@ pub(crate) fn import_lumetri(fx: &AepEffect<'_, '_>, params: &[EffectParam<'_, '
     };
     // HSL Secondary without a picked key colour selects nothing: After Effects applies none of
     // its correction (1200 `-16-sec-correction`, `-15-sec-refine` render as `-00-defaults`);
-    // EffectCraft's default key is the whole image, so the values are left out too.
+    // Pulso's default key is the whole image, so the values are left out too.
     // Unreadable or missing key data does not count as unpicked (it is reported or older).
     let key_picked = find(73).and_then(|p| fx.arbitrary_data(&p.match_name)).and_then(HslKey::parse).is_none_or(|k| k.picked);
     let section_on = |sec: Section| -> bool {
@@ -628,7 +628,7 @@ pub(crate) fn import_lumetri(fx: &AepEffect<'_, '_>, params: &[EffectParam<'_, '
         let why = if sec == Section::HslSecondary && switch_on(68) {
             "has no key colour picked (After Effects applies it to nothing)"
         } else {
-            "is switched off (EffectCraft's Lumetri has no section switch)"
+            "is switched off (Pulso's Lumetri has no section switch)"
         };
         col.lose(LossCategory::Effects, format!("{here}: section {} {why}, its values are not imported: {}", sec.name(), list.join(", ")));
     }
@@ -641,16 +641,16 @@ pub(crate) fn import_lumetri(fx: &AepEffect<'_, '_>, params: &[EffectParam<'_, '
             let name = name.map(|n| format!(" '{n}'")).unwrap_or_default();
             col.lose(
                 LossCategory::Effects,
-                format!("{here}: the {what}{name} is not imported (the LUT file is not in the project; EffectCraft's {what} stays None)"),
+                format!("{here}: the {what}{name} is not imported (the LUT file is not in the project; Pulso's {what} stays None)"),
             );
         }
     }
 }
 
-/// HSL Secondary's key as EffectCraft's hue centre / range / softness (degrees) and saturation and
+/// HSL Secondary's key as Pulso's hue centre / range / softness (degrees) and saturation and
 /// lightness bands (percent): range is taken as the half width, tolerance as the softness. A key
-/// that was never picked keeps EffectCraft's default (the whole image).
-fn import_hsl_key(d: Option<&[u8]>, here: &str, group: &mut effectcraft_project::PropGroup, col: &mut crate::import::report::Collector) {
+/// that was never picked keeps Pulso's default (the whole image).
+fn import_hsl_key(d: Option<&[u8]>, here: &str, group: &mut pulso_project::PropGroup, col: &mut crate::import::report::Collector) {
     let Some(d) = d else { return };
     let Some(key) = HslKey::parse(d) else {
         col.lose(LossCategory::DamagedData, format!("{here}: the HSL Secondary key data is unreadable, the default key used"));
@@ -681,13 +681,13 @@ fn import_hsl_key(d: Option<&[u8]>, here: &str, group: &mut effectcraft_project:
 }
 
 /// A parameter of `group` set to `v` (ids the spec does not have are skipped).
-fn set_prop(group: &mut effectcraft_project::PropGroup, id: &str, v: Value) {
+fn set_prop(group: &mut pulso_project::PropGroup, id: &str, v: Value) {
     if let Some(prop) = group.prop_mut(id) {
         prop.value = v;
     }
 }
 
-/// Curve points as EffectCraft's `x,y x,y ...` text, x and y clamped to 0..1; `None` when a value
+/// Curve points as Pulso's `x,y x,y ...` text, x and y clamped to 0..1; `None` when a value
 /// is not finite.
 fn points_text(pts: impl IntoIterator<Item = (f64, f64)>) -> Option<String> {
     let mut out: Vec<String> = Vec::new();
@@ -704,7 +704,7 @@ fn points_text(pts: impl IntoIterator<Item = (f64, f64)>) -> Option<String> {
 /// `lumetri-60-preset-curves-rgb`: its midpoint raised to 0.787 lifts R, G and B alike) and
 /// becomes `curves/rgbCurves/master`. The other three are the channel curves, but no sample moves
 /// one, so which is red, green or blue is not known: a moved one is reported.
-fn import_rgb_curves(d: Option<&[u8]>, (here, label): (&str, &str), group: &mut effectcraft_project::PropGroup, col: &mut crate::import::report::Collector) {
+fn import_rgb_curves(d: Option<&[u8]>, (here, label): (&str, &str), group: &mut pulso_project::PropGroup, col: &mut crate::import::report::Collector) {
     let Some(d) = d else { return };
     let curves: Option<Vec<Vec<(f64, f64)>>> = if d.len() == 4 * 520 { d.as_chunks::<520>().0.iter().map(|c| curve_points(c)).collect() } else { None };
     let Some(curves) = curves else {
@@ -730,13 +730,13 @@ fn import_rgb_curves(d: Option<&[u8]>, (here, label): (&str, &str), group: &mut 
 /// Hue vs Sat (`-0042`): After Effects' y is an offset from neutral where 1 doubles the
 /// saturation (1200 `lumetri-61-preset-curves-huesat`: a point at hue 0.0155, y 0.97 scales pure
 /// red's saturation by about 1.96 in linear light; pins at -0.03 and -0.02 scale green, blue and
-/// cyan by 0.97). EffectCraft's y = 1 doubles it and 0.5 is neutral, so y becomes `0.5 + y / 2`.
+/// cyan by 0.97). Pulso's y = 1 doubles it and 0.5 is neutral, so y becomes `0.5 + y / 2`.
 /// x is the hue in both (0 red, 1/3 green).
 fn import_hue_sat_curve(
     d: Option<&[u8]>,
     target: &str,
     (here, label): (&str, &str),
-    group: &mut effectcraft_project::PropGroup,
+    group: &mut pulso_project::PropGroup,
     col: &mut crate::import::report::Collector,
 ) {
     let Some(d) = d else { return };
@@ -746,9 +746,9 @@ fn import_hue_sat_curve(
     }
 }
 
-/// The colour EffectCraft's wheel takes for After Effects' hue (degrees, 0 red, 120 green) and
+/// The colour Pulso's wheel takes for After Effects' hue (degrees, 0 red, 120 green) and
 /// distance from the centre (0..1): the HSL colour of that hue with saturation = distance and
-/// lightness 0.5 (grey 0.5 at distance 0). EffectCraft's wheel adds that colour's offset from its
+/// lightness 0.5 (grey 0.5 at distance 0). Pulso's wheel adds that colour's offset from its
 /// grey, so the direction is After Effects' and the strength grows with the distance.
 fn wheel_colour(hue: f64, distance: f64) -> [f64; 4] {
     let c = distance.clamp(0.0, 1.0);
@@ -771,9 +771,9 @@ fn wheel_colour(hue: f64, distance: f64) -> [f64; 4] {
 /// each by default. The first three are Shadows, Midtones and Highlights (1200
 /// `lumetri-62-preset-wheels`: Shadows 229 degrees (blue), slider 0.37, distance 0.55; Midtones
 /// 0.1 degrees (red), 0.5, 0.39; Highlights 93 degrees (yellow-green), 0.73, 0.32); the fourth is
-/// not known. Hue and distance become EffectCraft's wheel colour ([`wheel_colour`]); the brightness
+/// not known. Hue and distance become Pulso's wheel colour ([`wheel_colour`]); the brightness
 /// sliders and a set fourth wheel have no counterpart and are reported.
-fn import_wheels(d: Option<&[u8]>, (here, label): (&str, &str), group: &mut effectcraft_project::PropGroup, col: &mut crate::import::report::Collector) {
+fn import_wheels(d: Option<&[u8]>, (here, label): (&str, &str), group: &mut pulso_project::PropGroup, col: &mut crate::import::report::Collector) {
     let Some(d) = d else { return };
     let wheels: Option<Vec<[f64; 3]>> = if d.len() == 4 * 24 {
         (0..4).map(|w| Some([le_f64(d, w * 24)?, le_f64(d, w * 24 + 8)?, le_f64(d, w * 24 + 16)?]).filter(|v| v.iter().all(|x| x.is_finite()))).collect()

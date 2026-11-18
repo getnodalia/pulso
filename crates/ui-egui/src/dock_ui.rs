@@ -1,7 +1,7 @@
-//! EffectCraft's panels in craft-ui's shared docking. craft-ui draws the frames, tab strips,
+//! Pulso's panels in craft-ui's shared docking. craft-ui draws the frames, tab strips,
 //! stacked panels, floating windows, dividers and drop previews and owns the gestures (drag a tab
 //! onto a group to tab it there or split it off to a side; hold Cmd/Ctrl at the release, or drop
-//! outside every group, to float it). EffectCraft draws the panel bodies, the ≡ panel menu, the
+//! outside every group, to float it). Pulso draws the panel bodies, the ≡ panel menu, the
 //! Timeline's comp tabs and the viewer locks in each group header, and runs every layout change
 //! through its command path (`window.dockAction`), so pointer, menu and control-channel changes
 //! share one route.
@@ -16,11 +16,11 @@ use serde_json::{Value, json};
 use crate::dock::{self, DocAction, DocTab, PanelKind, Workspace, WorkspaceExt as _};
 use crate::icons::{self, Icon};
 use crate::theme::Tokens;
-use crate::{EffectcraftApp, panels};
+use crate::{PulsoApp, panels};
 
 /// The dock area's egui id; `DockArea::hit_rects` and `float_space` read by it.
 pub fn area_id() -> egui::Id {
-    egui::Id::unique("effectcraft-docking")
+    egui::Id::unique("pulso-docking")
 }
 
 /// Width of the ≡ panel menu button at the end of each tab strip.
@@ -95,7 +95,7 @@ fn check_raw_action(action: &Action<PanelKind>) -> Result<(), String> {
 
 /// The docking commands: `window.dockAction {action}`, craft-ui's `window.panel.*` commands,
 /// `ui.dock` and `ui.dock.reset`. `None` for any other id.
-pub(crate) fn route(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, params: &Value) -> Option<Result<Value, String>> {
+pub(crate) fn route(app: &mut PulsoApp, ctx: &egui::Context, id: &str, params: &Value) -> Option<Result<Value, String>> {
     match id {
         "window.dockAction" => Some((|| {
             let value = params.get("action").cloned().ok_or("missing docking action")?;
@@ -122,7 +122,7 @@ pub(crate) fn route(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, par
             let mut tagged = if params.is_object() { params.clone() } else { json!({}) };
             if let Some(fields) = tagged.as_object_mut() {
                 fields.insert("command".into(), json!(id));
-                // EffectCraft's panel names ("Effect Controls") as well as craft-ui's ids.
+                // Pulso's panel names ("Effect Controls") as well as craft-ui's ids.
                 for key in ["panel", "anchor", "before"] {
                     if let Some(name) = fields.get(key).and_then(Value::as_str) {
                         let panel = PanelKind::from_name(name).ok_or(format!("unknown panel `{name}`"))?;
@@ -147,7 +147,7 @@ pub(crate) fn route(app: &mut EffectcraftApp, ctx: &egui::Context, id: &str, par
     }
 }
 
-impl EffectcraftApp {
+impl PulsoApp {
     /// A layout action from the dock area or a menu, through the command path the control
     /// channel uses.
     pub(crate) fn dock_command(&mut self, ctx: &egui::Context, action: Action<PanelKind>) -> Result<(), String> {
@@ -156,7 +156,7 @@ impl EffectcraftApp {
     }
 
     /// Run a craft-ui docking command on the current workspace, all or nothing. Named
-    /// workspaces and Reset are EffectCraft's own (`window.workspace`, `window.resetWorkspace`).
+    /// workspaces and Reset are Pulso's own (`window.workspace`, `window.resetWorkspace`).
     pub(crate) fn run_dock_command(&mut self, ctx: &egui::Context, command: DockCommand<PanelKind>) -> Result<(), String> {
         if let DockCommand::Layout { action } | DockCommand::UiDock(UiDock::Action { action }) = &command {
             check_raw_action(action)?;
@@ -169,7 +169,7 @@ impl EffectcraftApp {
             }
             return Err("use the window.workspace commands for named workspaces".into());
         }
-        // A closed panel opens through EffectCraft's own path, which puts it in its usual place
+        // A closed panel opens through Pulso's own path, which puts it in its usual place
         // and runs the viewer and ScriptUI lifecycles.
         let shown = match &command {
             DockCommand::Activate { panel } | DockCommand::UiDock(UiDock::Operation(craft_ui::docking::DockOperation::Open { panel })) => Some(*panel),
@@ -321,7 +321,7 @@ impl EffectcraftApp {
     fn tab_titles(&self) -> Vec<(PanelKind, String)> {
         let mut out = Vec::new();
         // ScriptUI panels are named after their script.
-        for w in self.session.script_ui.windows.iter().filter(|w| w.kind == effectcraft_engine::scriptui::WindowKind::Panel) {
+        for w in self.session.script_ui.windows.iter().filter(|w| w.kind == pulso_engine::scriptui::WindowKind::Panel) {
             if let Some(t) = panels::scriptui_view::panel_title(self, w.id) {
                 out.push((PanelKind::ScriptPanel(w.id), t));
             }
@@ -341,9 +341,9 @@ impl EffectcraftApp {
     }
 
     /// A comp's label colour as a tab swatch (faint without a label).
-    fn comp_swatch(&self, cid: effectcraft_engine::project::ItemId) -> egui::Color32 {
+    fn comp_swatch(&self, cid: pulso_engine::project::ItemId) -> egui::Color32 {
         match self.session.project.item(cid).map(|i| i.label) {
-            Some(l) if l != effectcraft_engine::color::Label::None => self.tokens.label(l),
+            Some(l) if l != pulso_engine::color::Label::None => self.tokens.label(l),
             _ => self.tokens.text_faint,
         }
     }
@@ -370,7 +370,7 @@ impl EffectcraftApp {
             v.push((panels::viewers::panel(id), swatch));
         }
         if let Some(l) = self.session.active_comp().and_then(|c| self.session.state.selected_layers.first().and_then(|id| c.layer(*id)))
-            && l.label != effectcraft_engine::color::Label::None
+            && l.label != pulso_engine::color::Label::None
         {
             v.push((PanelKind::EffectControls, self.tokens.label(l.label)));
             if self.session.prefs.appearance.use_label_color_for_tabs {
@@ -437,6 +437,7 @@ impl EffectcraftApp {
             let mut child = ui.new_child(egui::UiBuilder::new().max_rect(body).id_salt("home"));
             child.set_clip_rect(body.intersect(ui.clip_rect()));
             panels::home::show(self, &mut child, body);
+            crate::theme::round_island_corners(&ui.painter().with_clip_rect(body), &t, body);
             return;
         }
         let style = dock_style(ui, &t);
@@ -446,7 +447,7 @@ impl EffectcraftApp {
             area = area.raise_panel(panel);
         }
         let layout = self.ui.dock.layout.clone();
-        let mut child = ui.new_child(egui::UiBuilder::new().max_rect(body).id_salt("effectcraft-dock-area"));
+        let mut child = ui.new_child(egui::UiBuilder::new().max_rect(body).id_salt("pulso-dock-area"));
         child.set_clip_rect(body.intersect(ui.clip_rect()));
         let docs = self.tab_docs();
         let ime = NativeIme::new(&layout.floating, &self.unpublished_viewports);
@@ -466,6 +467,15 @@ impl EffectcraftApp {
         };
         let mut output = area.show_content(&mut child, &layout, &style, &mut content);
         let EffectContent { doc_actions, locks, menu, bodies, ime, .. } = content;
+        // Nodalia's islands: each docked group, its tab strip included, with rounded corners cut
+        // into the window colour around it. Floating windows keep their own frames.
+        let corners = ctx.layer_painter(child.layer_id()).with_clip_rect(body);
+        for (panel, r) in &bodies {
+            let group = Rect::from_min_max(egui::pos2(r.min.x, r.min.y - t.tab_h), r.max);
+            if self.ui.dock.is_docked(*panel) && body.expand(1.0).contains_rect(group) {
+                crate::theme::round_island_corners(&corners, &t, group);
+            }
+        }
         self.dock_rects = bodies;
         self.unpublished_viewports = ime.unpublished();
         // A window that closed or docked takes its composition with it.
@@ -526,7 +536,7 @@ impl EffectcraftApp {
     }
 
     /// Keys and dropped files that reach a floating panel's own OS window go to the main
-    /// window's next frame ([`crate::EffectcraftApp::raw_input_hook`]), so its shortcuts and
+    /// window's next frame ([`crate::PulsoApp::raw_input_hook`]), so its shortcuts and
     /// file import handle them. Text is not forwarded, and nothing is while a text field in
     /// the main window has the keyboard.
     fn forward_window_input(&mut self, ctx: &egui::Context, events: Vec<egui::Event>, files: Vec<craft_ui::docking::WindowFiles<PanelKind>>) {
@@ -644,9 +654,9 @@ fn has_lock(panel: PanelKind) -> bool {
     matches!(panel, PanelKind::Composition | PanelKind::Viewer(_) | PanelKind::Timeline)
 }
 
-/// EffectCraft's side of the dock area for one frame.
+/// Pulso's side of the dock area for one frame.
 struct EffectContent<'a> {
-    app: &'a mut EffectcraftApp,
+    app: &'a mut PulsoApp,
     tokens: Tokens,
     titles: Vec<(PanelKind, String)>,
     swatches: Vec<(PanelKind, egui::Color32)>,

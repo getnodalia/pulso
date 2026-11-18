@@ -2,10 +2,10 @@
 //! Font Size, Syntax Highlighting, Line Numbers, Auto-complete (Tab accepts), Bracket Matching
 //! and Word Wrap. The Composition viewer uses the shared diagnostics in `expr_bar`.
 
-use effectcraft_engine::commands::expr_tools::language_menu;
-use effectcraft_engine::prefs::Scripting;
 use egui::text::{LayoutJob, TextFormat};
 use egui::{Color32, FontId, Rect, Stroke, pos2, vec2};
+use pulso_engine::commands::expr_tools::language_menu;
+use pulso_engine::prefs::Scripting;
 
 use crate::theme::Tokens;
 

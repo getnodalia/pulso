@@ -680,7 +680,7 @@ pub fn plan(a: &WarpAnalysis, s: &StabSettings) -> Plan {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use effectcraft_raster::Image;
+    use pulso_raster::Image;
     use rayon::prelude::*;
 
     /// A synthetic analysis: a slow pan plus per-frame jitter.
@@ -887,7 +887,7 @@ mod tests {
         });
     }
 
-    /// `cargo test --release -p effectcraft-track subspace_plan_bench -- --ignored --nocapture`
+    /// `cargo test --release -p pulso-track subspace_plan_bench -- --ignored --nocapture`
     /// (`RAYON_NUM_THREADS=1` for one thread): `plan()` of a 300-frame synthetic parallax shot.
     #[test]
     #[ignore]

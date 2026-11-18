@@ -12,19 +12,19 @@ and carries on. See [ADR 0001](adr/0001-external-effect-helpers.md) for why.
 
 | What | How |
 |---|---|
-| Install | Put the helper program (`effectcraft-helper-<name>`, `.exe` on Windows) in `helpers/` next to Pulso, in `helpers/` in the [settings folder](preferences.md), or in a folder named in `EFFECTCRAFT_HELPER_PATH` (a path list; entries can be programs or folders). Subfolders one level down are searched too. |
-| Start | Helpers run native code, so nothing starts them unless the user asks: Effect ▸ Scan for Effect Helpers (`effect.helpers.scan`) starts them. To start them every time Pulso launches, opt in with `EFFECTCRAFT_HELPERS=1`. It is an environment variable, not a setting, so writing to the settings folder can't turn it on. Agents confined with `--automation-read-root` / `--automation-write-root` can't run `effect.helpers.scan` or `effect.helpers.load`, and scripts can run them only with Allow Scripts to Write Files and Access Network on. |
+| Install | Put the helper program (`pulso-helper-<name>`, `.exe` on Windows) in `helpers/` next to Pulso, in `helpers/` in the [settings folder](preferences.md), or in a folder named in `PULSO_HELPER_PATH` (a path list; entries can be programs or folders). Subfolders one level down are searched too. |
+| Start | Helpers run native code, so nothing starts them unless the user asks: Effect ▸ Scan for Effect Helpers (`effect.helpers.scan`) starts them. To start them every time Pulso launches, opt in with `PULSO_HELPERS=1`. It is an environment variable, not a setting, so writing to the settings folder can't turn it on. Agents confined with `--automation-read-root` / `--automation-write-root` can't run `effect.helpers.scan` or `effect.helpers.load`, and scripts can run them only with Allow Scripts to Write Files and Access Network on. |
 | Load more plug-ins | Effect ▸ Load Plug-ins Through Helper… (`effect.helpers.load {path}`) hands a file or folder to the helpers that accept it (an OpenFX helper takes `.ofx` plug-ins and `.ofx.bundle` folders). |
 | Inspect | `effect.helpers.list` → `{helpers: [{program, name, version, loads, running, effects, restarts, error}], blocked}`; `effect.plugins.list` shows each effect's `source` (`helper: …`) and last render `error`. |
 | Errors | A failed render leaves the frame as it was and puts ⚠ after the effect's name in Effect Controls (hover for the message). The next render starts the helper again. An effect that stops its helper 3 times is turned off and listed in `helper_blocklist.txt` in the settings folder. `effect.helpers.scan {"retry": true}` turns it back on. A helper that stops 5 times in a minute stays off until the next scan. |
-| Timeouts | `EFFECTCRAFT_HELPER_TIMEOUT` (seconds per render step, default 120) and `EFFECTCRAFT_HELPER_LOAD_TIMEOUT` (start-up, describe, load; default 600). A helper idle for 30 s is pinged before it is used again. |
+| Timeouts | `PULSO_HELPER_TIMEOUT` (seconds per render step, default 120) and `PULSO_HELPER_LOAD_TIMEOUT` (start-up, describe, load; default 600). A helper idle for 30 s is pinged before it is used again. |
 
 Helpers are not available in the web build.
 
 ## Protocol (version 1)
 
-Pulso starts the helper with the single argument `--effectcraft-helper`, with stdin,
-stdout and stderr piped. The environment variable `EFFECTCRAFT_HELPER_STATE_DIR` names a folder
+Pulso starts the helper with the single argument `--pulso-helper`, with stdin,
+stdout and stderr piped. The environment variable `PULSO_HELPER_STATE_DIR` names a folder
 where the helper may keep its own records (for example, plug-ins that crashed it while
 loading).
 
@@ -92,7 +92,7 @@ doesn't know and creates it.
 ## Writing a helper
 
 Any language works: read lines, write prefixed lines, read and write a file. Rust helpers can
-use `effectcraft_helper_host::serve::serve` with a `Provider` that lists `EffectPlugin`s;
+use `pulso_helper_host::serve::serve` with a `Provider` that lists `EffectPlugin`s;
 `crates/helper-host/tests/it/main.rs` is a complete example and the protocol test that runs
 in `cargo xtask ci`. An unofficial OpenFX helper built this way lives in its own repository,
 [ec-extension-ofx](https://github.com/glumbis/ec-extension-ofx).

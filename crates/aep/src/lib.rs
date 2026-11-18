@@ -1,10 +1,10 @@
-//! After Effects projects: the `.aep` / `.aepx` container, import into an EffectCraft project and
-//! export back to `.aep`, in one crate (like `effectcraft-lottie`).
+//! After Effects projects: the `.aep` / `.aepx` container, import into a Pulso project and
+//! export back to `.aep`, in one crate (like `pulso-lottie`).
 //!
 //! - [`container`]: the RIFX `Egg!` chunk tree (lossless, byte-identical round trip) and its typed,
 //!   read-only view. Its API is re-exported at the crate root.
-//! - [`import`]: maps the typed view into an EffectCraft project and reports what it drops.
-//! - [`export`]: writes an EffectCraft project as an `.aep`, every chunk built in code.
+//! - [`import`]: maps the typed view into a Pulso project and reports what it drops.
+//! - [`export`]: writes a Pulso project as an `.aep`, every chunk built in code.
 //!
 //! See `docs/aep-format.md`, `docs/aep-import.md` and `docs/aep-export.md`.
 

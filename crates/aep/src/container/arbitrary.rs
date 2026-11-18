@@ -355,16 +355,16 @@ impl ExtractorChannels {
 
     /// Per output channel (red, green, blue, alpha) the channel it reads, `Err` with the
     /// position of the first record of another kind or without a name: a named channel by its
-    /// name, `(copy)` as EffectCraft's [`EXTRACTOR_COPY`](effectcraft_effects::EXTRACTOR_COPY),
+    /// name, `(copy)` as Pulso's [`EXTRACTOR_COPY`](pulso_effects::EXTRACTOR_COPY),
     /// the effect input's own channel of the same position. It is not `R`, `G`, `B` or `A`:
-    /// EffectCraft's EXtractoR reads those from an OpenEXR footage's channels of that name, the
+    /// Pulso's EXtractoR reads those from an OpenEXR footage's channels of that name, the
     /// file's own, which loses what an earlier effect did to the channel.
     pub fn sources(&self) -> Result<[String; 4], usize> {
         let mut out: [String; 4] = Default::default();
         for (k, ((kind, name), slot)) in self.channels.iter().zip(out.iter_mut()).enumerate() {
             *slot = match (kind, name.trim()) {
                 (1, n) if !n.is_empty() => n.to_string(),
-                (2, _) => effectcraft_effects::EXTRACTOR_COPY.to_string(),
+                (2, _) => pulso_effects::EXTRACTOR_COPY.to_string(),
                 _ => return Err(k),
             };
         }

@@ -12,10 +12,10 @@
 //!   uses, the media files and a poster frame); `essential.importTemplate` merges one into the
 //!   project and adds an instance to the active comp.
 
-use effectcraft_keyframe::Value as KV;
-use effectcraft_project::essential::{self, ControlType, EgControl, EgKind, EssentialGraphics};
-use effectcraft_project::{GroupKind, ItemId, ItemKind, LayerId, LayerSource, ParamUi, Project, Uid};
-use effectcraft_time::Tick;
+use pulso_keyframe::Value as KV;
+use pulso_project::essential::{self, ControlType, EgControl, EgKind, EssentialGraphics};
+use pulso_project::{GroupKind, ItemId, ItemKind, LayerId, LayerSource, ParamUi, Project, Uid};
+use pulso_time::Tick;
 use serde_json::{Value, json};
 
 use super::{CommandSpec, b_p, bad, comp_id, has_comp, layer_p, selected_leaf_props, str_p};
@@ -243,7 +243,7 @@ fn unlink_property(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"control": id, "layer": lid.0, "prop": uid}))
 }
 
-fn control_type(pr: &effectcraft_project::Property) -> Option<ControlType> {
+fn control_type(pr: &pulso_project::Property) -> Option<ControlType> {
     essential::control_type(pr)
 }
 
@@ -848,7 +848,7 @@ fn export_template(s: &mut Session, p: &Value) -> Result<Value> {
     let manifest = json!({
         "format": TEMPLATE_FORMAT,
         "version": TEMPLATE_VERSION,
-        "generator": format!("EffectCraft {}", env!("CARGO_PKG_VERSION")),
+        "generator": format!("Pulso {}", env!("CARGO_PKG_VERSION")),
         "name": name,
         "comp": cid.0,
         "compName": comp_name,
@@ -868,7 +868,7 @@ fn export_template(s: &mut Session, p: &Value) -> Result<Value> {
     }
     entries.insert(0, ("project.ecproj".into(), sub.to_json().into_bytes()));
     entries.insert(0, ("manifest.json".into(), serde_json::to_vec_pretty(&manifest).unwrap_or_default()));
-    let bytes = effectcraft_lottie::zip::store(&entries);
+    let bytes = pulso_lottie::zip::store(&entries);
     s.write_output(&path, &bytes)?;
     s.toast(format!("Exported template “{name}” to {path}"));
     Ok(json!({"path": path, "name": name, "bytes": bytes.len(), "controls": eg.flat().len(), "items": deps.len()}))
@@ -876,15 +876,15 @@ fn export_template(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// Read a template's manifest and project (with media paths still archive-relative).
 pub fn read_template(bytes: &[u8]) -> std::result::Result<(Value, Project, Vec<(String, Vec<u8>)>), String> {
-    let entries = effectcraft_lottie::zip::read_stored(bytes);
+    let entries = pulso_lottie::zip::read_stored(bytes);
     let get = |n: &str| entries.iter().find(|(k, _)| k == n).map(|(_, v)| v.clone());
     let manifest: Value =
-        serde_json::from_slice(&get("manifest.json").ok_or("not an EffectCraft template (no manifest.json)")?).map_err(|e| format!("manifest.json: {e}"))?;
+        serde_json::from_slice(&get("manifest.json").ok_or("not a Pulso template (no manifest.json)")?).map_err(|e| format!("manifest.json: {e}"))?;
     if manifest.get("format").and_then(Value::as_str) != Some(TEMPLATE_FORMAT) {
-        return Err("not an EffectCraft template".into());
+        return Err("not a Pulso template".into());
     }
     if manifest.get("version").and_then(Value::as_u64).unwrap_or(0) > TEMPLATE_VERSION as u64 {
-        return Err("the template was made by a newer EffectCraft".into());
+        return Err("the template was made by a newer Pulso".into());
     }
     let text = String::from_utf8(get("project.ecproj").ok_or("template has no project.ecproj")?).map_err(|e| e.to_string())?;
     let mut project = Project::from_json(&text).map_err(|e| e.to_string())?;
@@ -948,7 +948,7 @@ fn import_template(s: &mut Session, p: &Value) -> Result<Value> {
     essential::offset_ids(&mut sub, base);
     let new_comp = ItemId(tcomp.0 + base);
     let ids = s.edit("Import Template", None, |proj, st| {
-        let folder = proj.add_item(&name, effectcraft_color::Label::Yellow, None, ItemKind::Folder);
+        let folder = proj.add_item(&name, pulso_color::Label::Yellow, None, ItemKind::Folder);
         let mut ids = vec![];
         for (id, mut it) in std::mem::take(&mut sub.items) {
             if it.parent.is_none() {

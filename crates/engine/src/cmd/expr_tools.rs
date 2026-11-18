@@ -2,9 +2,9 @@
 //! Language menu (the ⓕ button next to an expression), written from the public Expression
 //! Language Reference.
 
-use effectcraft_project::{Expression, ItemId, Layer, Property};
-use effectcraft_render::EvalCtx;
-use effectcraft_time::Tick;
+use pulso_project::{Expression, ItemId, Layer, Property};
+use pulso_render::EvalCtx;
+use pulso_time::Tick;
 use serde::Serialize;
 use serde_json::{Value, json};
 

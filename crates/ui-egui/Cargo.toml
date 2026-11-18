@@ -1,6 +1,6 @@
 [package]
-name = "effectcraft-ui-egui"
-description = "The EffectCraft egui frontend (swappable): docking panels, composition viewer, timeline, effect controls, control channel"
+name = "pulso-ui-egui"
+description = "The Pulso egui frontend (swappable): docking panels, composition viewer, timeline, effect controls, control channel"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,18 +10,19 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
+nodalia-theme = { workspace = true, features = ["creator"] }
 craft-ui = { workspace = true }
 craft-quit = { workspace = true, features = ["egui"] }
-effectcraft-time = { workspace = true }
-effectcraft-geom = { workspace = true }
-effectcraft-color = { workspace = true }
-effectcraft-keyframe = { workspace = true }
-effectcraft-project = { workspace = true }
-effectcraft-path = { workspace = true }
-effectcraft-text = { workspace = true }
-effectcraft-render = { workspace = true }
-effectcraft-engine = { workspace = true }
-effectcraft-gpu = { workspace = true }
+pulso-time = { workspace = true }
+pulso-geom = { workspace = true }
+pulso-color = { workspace = true }
+pulso-keyframe = { workspace = true }
+pulso-project = { workspace = true }
+pulso-path = { workspace = true }
+pulso-text = { workspace = true }
+pulso-render = { workspace = true }
+pulso-engine = { workspace = true }
+pulso-gpu = { workspace = true }
 egui = { workspace = true }
 egui_extras = { workspace = true }
 eframe = { workspace = true, features = ["default_fonts", "wgpu", "accesskit", "clipboard"] }
@@ -51,9 +52,9 @@ sys-locale = { workspace = true }
 egui = { workspace = true, features = ["default_fonts", "monochrome_emoji_fonts"] }
 egui_kittest = { workspace = true, features = ["eframe", "wgpu"] }
 pollster = "1"
-effectcraft-segment = { workspace = true }
-effectcraft-host = { workspace = true }
-effectcraft-media = { workspace = true }
+pulso-segment = { workspace = true }
+pulso-host = { workspace = true }
+pulso-media = { workspace = true }
 exr = { workspace = true }
 tempfile = { workspace = true }
 

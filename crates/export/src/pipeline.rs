@@ -4,11 +4,11 @@
 
 use std::sync::Mutex;
 
-use effectcraft_project::render_queue::{AlphaMode, Channels, CurrentOrOff, EffectsMode, FrameSample, RenderLog, ResizeQuality, SwitchOverride, log_path};
-use effectcraft_project::{BitDepth, Comp, Project};
-use effectcraft_raster::Image;
-use effectcraft_render::{Backend, LayerCache, RenderOpts, Renderer};
-use effectcraft_time::Tick;
+use pulso_project::render_queue::{AlphaMode, Channels, CurrentOrOff, EffectsMode, FrameSample, RenderLog, ResizeQuality, SwitchOverride, log_path};
+use pulso_project::{BitDepth, Comp, Project};
+use pulso_raster::Image;
+use pulso_render::{Backend, LayerCache, RenderOpts, Renderer};
+use pulso_time::Tick;
 use web_time::Instant;
 
 use crate::{Job, RenderQuality, out};
@@ -21,9 +21,9 @@ pub(crate) const GPU_INFLIGHT_DEFAULT: usize = 1;
 pub const GPU_INFLIGHT_MAX: usize = 3;
 /// Overrides Settings ▸ Memory & CPU ▸ GPU Frames Rendered at Once: a whole number of frames,
 /// at least 1.
-pub(crate) const GPU_INFLIGHT_ENV: &str = "EFFECTCRAFT_GPU_INFLIGHT";
+pub(crate) const GPU_INFLIGHT_ENV: &str = "PULSO_GPU_INFLIGHT";
 
-/// GPU frames in flight from the `EFFECTCRAFT_GPU_INFLIGHT` value: a positive whole number, or
+/// GPU frames in flight from the `PULSO_GPU_INFLIGHT` value: a positive whole number, or
 /// `None` (with a warning when a value was given) when it is unset, 0, negative, not a number
 /// or too large.
 pub(crate) fn gpu_inflight_env(var: Option<&str>) -> Option<usize> {
@@ -31,7 +31,7 @@ pub(crate) fn gpu_inflight_env(var: Option<&str>) -> Option<usize> {
     match v.trim().parse::<usize>() {
         Ok(n) if n >= 1 => Some(n),
         _ => {
-            log::warn!(target: "effectcraft_export", "{GPU_INFLIGHT_ENV}={v:?} is not a whole number of frames of at least 1: ignored");
+            log::warn!(target: "pulso_export", "{GPU_INFLIGHT_ENV}={v:?} is not a whole number of frames of at least 1: ignored");
             None
         }
     }
@@ -41,7 +41,7 @@ pub(crate) fn gpu_inflight_env(var: Option<&str>) -> Option<usize> {
 /// frames as the budget has room for beyond the allocator's peak (which holds one frame's
 /// working memory) and what the caches may still grow by, 1 to [`GPU_INFLIGHT_MAX`]. Unknown
 /// memory: 1.
-pub fn auto_gpu_frames(m: Option<effectcraft_render::FrameMemory>) -> usize {
+pub fn auto_gpu_frames(m: Option<pulso_render::FrameMemory>) -> usize {
     let Some(m) = m.filter(|m| m.budget > 0 && m.frame > 0 && m.peak > 0) else { return GPU_INFLIGHT_DEFAULT };
     let more = m.budget.saturating_sub(m.peak).saturating_sub(m.reserve) / m.frame;
     usize::try_from(more.saturating_add(1)).unwrap_or(GPU_INFLIGHT_MAX).clamp(1, GPU_INFLIGHT_MAX)
@@ -50,7 +50,7 @@ pub fn auto_gpu_frames(m: Option<effectcraft_render::FrameMemory>) -> usize {
 /// The GPU frames a job renders at once and why (for the render log): the environment's
 /// override, else the setting (`pref`, `None` = Auto), else Auto from `measured` (`None`: no
 /// GPU frame has rendered yet, so nothing is settled).
-pub(crate) fn resolve_gpu_frames(env: Option<&str>, pref: Option<usize>, measured: Option<Option<effectcraft_render::FrameMemory>>) -> Option<(usize, String)> {
+pub(crate) fn resolve_gpu_frames(env: Option<&str>, pref: Option<usize>, measured: Option<Option<pulso_render::FrameMemory>>) -> Option<(usize, String)> {
     if let Some(n) = gpu_inflight_env(env) {
         return Some((n, format!("set by {GPU_INFLIGHT_ENV}")));
     }
@@ -78,7 +78,7 @@ pub(crate) fn resolve_gpu_frames(env: Option<&str>, pref: Option<usize>, measure
 /// Overrides the Render Queue's measured choice of compositor for GPU projects with an
 /// accelerator (#3335): `gpu` (no measurement, the GPU), `cpu` (Software Rendering) or
 /// `auto` (measure, the default).
-pub const RENDERER_ENV: &str = "EFFECTCRAFT_RQ_RENDERER";
+pub const RENDERER_ENV: &str = "PULSO_RQ_RENDERER";
 
 /// Frames the GPU renders, timed, when a job measures which compositor is faster (after one
 /// untimed warm-up frame each: layer cache misses, uploads, kernel builds).
@@ -94,11 +94,11 @@ const PROBE_MIN_JOB: u64 = 12;
 pub const CACHE_BUDGET: usize = 1 << 29;
 
 /// The faster compositor from measured milliseconds per frame (`None`: not measured, or the
-/// GPU stopped). As the viewer's Auto ([`effectcraft_render::AutoPick::MARGIN`]), the CPU wins
+/// GPU stopped). As the viewer's Auto ([`pulso_render::AutoPick::MARGIN`]), the CPU wins
 /// only when clearly faster: ties and noise stay on the GPU.
 pub fn pick_renderer(gpu_ms: Option<f64>, cpu_ms: Option<f64>) -> crate::JobRenderer {
     match (gpu_ms, cpu_ms) {
-        (Some(g), Some(c)) if g.is_finite() && c.is_finite() && c < g * effectcraft_render::AutoPick::MARGIN => crate::JobRenderer::Cpu,
+        (Some(g), Some(c)) if g.is_finite() && c.is_finite() && c < g * pulso_render::AutoPick::MARGIN => crate::JobRenderer::Cpu,
         (None, Some(_)) => crate::JobRenderer::Cpu,
         _ => crate::JobRenderer::Gpu,
     }
@@ -118,9 +118,9 @@ pub(crate) struct Choice {
 /// keep one frame per thread in flight as before. A heavy comp can need gigabytes of working
 /// memory per frame, so 16 threads at once can get the process OOM-killed; the headless CLI
 /// reads no `memory.*` preferences, so this is how a render there is held to fewer frames.
-pub(crate) const CPU_INFLIGHT_ENV: &str = "EFFECTCRAFT_CPU_INFLIGHT";
+pub(crate) const CPU_INFLIGHT_ENV: &str = "PULSO_CPU_INFLIGHT";
 
-/// CPU frames in flight from the `EFFECTCRAFT_CPU_INFLIGHT` value: `None` (no cap) when unset or
+/// CPU frames in flight from the `PULSO_CPU_INFLIGHT` value: `None` (no cap) when unset or
 /// blank, a positive whole number, or `None` with a warning when it is 0, negative, not a
 /// number or too large.
 pub(crate) fn cpu_inflight(var: Option<&str>) -> Option<usize> {
@@ -131,7 +131,7 @@ pub(crate) fn cpu_inflight(var: Option<&str>) -> Option<usize> {
     match v.trim().parse::<usize>() {
         Ok(n) if n >= 1 => Some(n),
         _ => {
-            log::warn!(target: "effectcraft_export", "{CPU_INFLIGHT_ENV}={v:?} is not a whole number of frames of at least 1: CPU frames are not capped");
+            log::warn!(target: "pulso_export", "{CPU_INFLIGHT_ENV}={v:?} is not a whole number of frames of at least 1: CPU frames are not capped");
             None
         }
     }
@@ -373,11 +373,11 @@ impl<'a> Cx<'a> {
             return Some(Choice { renderer: r, gpu_ms: None, cpu_ms: None, why: "as the queue item's first output module" });
         }
         match env.map(|v| v.trim().to_ascii_lowercase()).as_deref() {
-            Some("gpu") => fixed(crate::JobRenderer::Gpu, "set by EFFECTCRAFT_RQ_RENDERER"),
-            Some("cpu") => fixed(crate::JobRenderer::Cpu, "set by EFFECTCRAFT_RQ_RENDERER"),
+            Some("gpu") => fixed(crate::JobRenderer::Gpu, "set by PULSO_RQ_RENDERER"),
+            Some("cpu") => fixed(crate::JobRenderer::Cpu, "set by PULSO_RQ_RENDERER"),
             None | Some("" | "auto") => None,
             Some(v) => {
-                log::warn!(target: "effectcraft_export", "{RENDERER_ENV}={v:?} is not gpu, cpu or auto: measuring");
+                log::warn!(target: "pulso_export", "{RENDERER_ENV}={v:?} is not gpu, cpu or auto: measuring");
                 None
             }
         }
@@ -400,7 +400,7 @@ impl<'a> Cx<'a> {
                 });
             }
         }
-        log::info!(target: "effectcraft_export", "{}: {}", self.job.options.label, describe_choice(&c));
+        log::info!(target: "pulso_export", "{}: {}", self.job.options.label, describe_choice(&c));
     }
 
     /// The job's choice, once made.
@@ -447,7 +447,7 @@ impl<'a> Cx<'a> {
             nested_switches: self.job.nested_switches,
             draft_shadows: true,
             // OpenEXR keeps over-range values: no HDR compand / tone mapping on its frames.
-            skip_hdr_step: self.job.output.format == effectcraft_project::render_queue::OutputFormat::ExrSequence,
+            skip_hdr_step: self.job.output.format == pulso_project::render_queue::OutputFormat::ExrSequence,
             proxy: s.proxy_use,
         };
         let mut r = Renderer::new(&self.project, self.job.footage, opts);
@@ -459,12 +459,12 @@ impl<'a> Cx<'a> {
 
     async fn render_at(&self, t: Tick, on: crate::JobRenderer) -> Image {
         // With deferred GPU readbacks (a browser worker) the frame renders in passes.
-        effectcraft_render::passes::comp_frame(&self.renderer_on(on), self.job.comp, t).await
+        pulso_render::passes::comp_frame(&self.renderer_on(on), self.job.comp, t).await
     }
 
     /// Whether frames render in passes (an accelerator with deferred readbacks).
     pub fn deferred(&self) -> bool {
-        effectcraft_render::passes::is_deferred(self.job.accel)
+        pulso_render::passes::is_deferred(self.job.accel)
     }
 
     /// Output frames `ks`, each mapped by `f` (encoding): rendered in parallel batches, or one
@@ -612,7 +612,7 @@ impl<'a> Cx<'a> {
                 let mut done = None;
                 let frames = pool.in_place_scope(|s| {
                     s.spawn(|_| done = Some(std::panic::catch_unwind(std::panic::AssertUnwindSafe(encode))));
-                    effectcraft_render::passes::block_on(frames)
+                    pulso_render::passes::block_on(frames)
                 });
                 match done {
                     Some(Ok(a)) => Ok((a, frames)),
@@ -652,7 +652,7 @@ impl<'a> Cx<'a> {
         };
         let mut slot = self.gpu_frames.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         slot.get_or_insert_with(|| {
-            log::info!(target: "effectcraft_export", "{}: {n} GPU frame(s) at once ({why})", self.job.options.label);
+            log::info!(target: "pulso_export", "{}: {n} GPU frame(s) at once ({why})", self.job.options.label);
             (n, why)
         })
         .0
@@ -671,7 +671,7 @@ impl<'a> Cx<'a> {
 
     /// [`Cx::frame`] on compositor `on`.
     fn frame_on(&self, comp: &Comp, i: u64, on: crate::JobRenderer) -> Image {
-        effectcraft_render::passes::block_on(self.frame_async_on(comp, i, on))
+        pulso_render::passes::block_on(self.frame_async_on(comp, i, on))
     }
 
     /// [`Cx::frame`] as a future (deferred readbacks: the frame renders in passes).
@@ -700,7 +700,7 @@ impl<'a> Cx<'a> {
     }
 
     /// Output frame `i` as the H.264 export's 4:2:0 planes at `w`×`h`, rendered and converted
-    /// by the accelerator ([`effectcraft_render::Accelerator::comp_frame_yuv420`]). Only for
+    /// by the accelerator ([`pulso_render::Accelerator::comp_frame_yuv420`]). Only for
     /// frames that need nothing done after the render (progressive, at the project's depth, no
     /// crop or resize, rendered at exactly `w`×`h`). `None`: render it with [`Cx::frame`].
     fn yuv420_frame(&self, comp: &Comp, i: u64, w: u32, h: u32, on: crate::JobRenderer) -> Option<Vec<u8>> {
@@ -774,7 +774,7 @@ impl<'a> Cx<'a> {
             return img;
         }
         match om.resize.quality {
-            ResizeQuality::Low => effectcraft_raster::warp::resample(&img, w, h),
+            ResizeQuality::Low => pulso_raster::warp::resample(&img, w, h),
             ResizeQuality::High => bicubic(&img, w, h),
         }
     }
@@ -864,7 +864,7 @@ impl<'a> Cx<'a> {
         let comp = self.comp();
         let path = log_path(self.job.path);
         let mut s = String::new();
-        s.push_str("EffectCraft Render Log\n");
+        s.push_str("Pulso Render Log\n");
         s.push_str(&format!("Item: {}\n", if self.job.options.label.is_empty() { "(render)" } else { &self.job.options.label }));
         s.push_str(&format!("Output: {}\n", self.job.path));
         match result {
@@ -962,7 +962,7 @@ pub(crate) fn crop(img: &Image, t: i32, l: i32, b: i32, r: i32) -> Image {
 fn bicubic(src: &Image, w: u32, h: u32) -> Image {
     // Shrinking a lot: bilinear with its box pre-filter first, then bicubic for the last step.
     if src.width > w * 2 && src.height > h * 2 {
-        let mid = effectcraft_raster::warp::resample(src, w * 2, h * 2);
+        let mid = pulso_raster::warp::resample(src, w * 2, h * 2);
         return bicubic(&mid, w, h);
     }
     let mut out = Image::new(w, h);
@@ -992,7 +992,7 @@ fn premultiplied8(img: &Image, dither: bool) -> Vec<u8> {
         for c in 0..3 {
             let v = p[c].clamp(0.0, a);
             // Dither may round up past the rounded alpha; premultiplied colour never exceeds it.
-            out.push(if dither { effectcraft_raster::dither_u8(v, x, y).min(a8) } else { (v * 255.0 + 0.5) as u8 });
+            out.push(if dither { pulso_raster::dither_u8(v, x, y).min(a8) } else { (v * 255.0 + 0.5) as u8 });
         }
         out.push(a8);
     }
@@ -1148,17 +1148,17 @@ mod tests {
 
     /// An accelerator that renders nothing itself (the tests only check whether frames are capped).
     struct NoAccel;
-    impl effectcraft_render::Accelerator for NoAccel {
+    impl pulso_render::Accelerator for NoAccel {
         fn name(&self) -> String {
             "none".into()
         }
-        fn comp_frame(&self, _r: &Renderer, _comp: effectcraft_project::ItemId, _t: Tick) -> Option<Image> {
+        fn comp_frame(&self, _r: &Renderer, _comp: pulso_project::ItemId, _t: Tick) -> Option<Image> {
             None
         }
         fn supports_effect(&self, _id: &str) -> bool {
             false
         }
-        fn effects(&self, _chain: &[effectcraft_render::FxStep], _buf: &effectcraft_effects::Buf, _levels: Option<f32>) -> Option<effectcraft_effects::Buf> {
+        fn effects(&self, _chain: &[pulso_render::FxStep], _buf: &pulso_effects::Buf, _levels: Option<f32>) -> Option<pulso_effects::Buf> {
             None
         }
     }
@@ -1166,8 +1166,8 @@ mod tests {
     #[test]
     fn software_only_projects_are_not_capped() {
         // Review of #879: an accelerator alone capped Software Only projects, which render on the CPU.
-        use effectcraft_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
-        use effectcraft_render::NoFootage;
+        use pulso_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
+        use pulso_render::NoFootage;
         let (settings, output) = (RenderSettings::default(), OutputModule::for_format(OutputFormat::PngSequence));
         let accel = NoAccel;
         for (gpu, want) in [(false, None), (true, Some(GPU_INFLIGHT_DEFAULT))] {
@@ -1178,7 +1178,7 @@ mod tests {
                 footage: &NoFootage,
                 expr: None,
                 accel: Some(&accel),
-                comp: effectcraft_project::ItemId(0),
+                comp: pulso_project::ItemId(0),
                 settings: &settings,
                 output: &output,
                 path: "/c/f_[#####].png",
@@ -1198,7 +1198,7 @@ mod tests {
             footage: &NoFootage,
             expr: None,
             accel: None,
-            comp: effectcraft_project::ItemId(0),
+            comp: pulso_project::ItemId(0),
             settings: &settings,
             output: &output,
             path: "/c/f_[#####].png",
@@ -1216,18 +1216,18 @@ mod tests {
         if std::env::var_os(RENDERER_ENV).is_some() {
             return;
         }
-        use effectcraft_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
+        use pulso_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
         let (settings, output) = (RenderSettings::default(), OutputModule::for_format(OutputFormat::PngSequence));
         let mut p = Project::default();
         p.settings.gpu_acceleration = true;
-        let comp = Comp::new(16, 8, effectcraft_time::FrameRate::FPS_25, Tick::from_seconds_f64(1.0));
-        let cid = p.add_item("Comp", effectcraft_color::Label::Sandstone, None, effectcraft_project::ItemKind::Comp(comp.into()));
+        let comp = Comp::new(16, 8, pulso_time::FrameRate::FPS_25, Tick::from_seconds_f64(1.0));
+        let cid = p.add_item("Comp", pulso_color::Label::Sandstone, None, pulso_project::ItemKind::Comp(comp.into()));
         let accel = NoAccel;
         for n in [1, 2] {
             let shared = Mutex::new(None);
             let job = Job {
                 project: &p,
-                footage: &effectcraft_render::NoFootage,
+                footage: &pulso_render::NoFootage,
                 expr: None,
                 accel: Some(&accel),
                 comp: cid,
@@ -1255,17 +1255,17 @@ mod tests {
     fn a_job_that_chose_the_cpu_is_not_capped() {
         // #3335: the CPU's frame-parallel compositor is the point of choosing it; a GPU project
         // that measured the CPU faster must not keep rendering one frame at a time.
-        use effectcraft_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
+        use pulso_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
         let (settings, output) = (RenderSettings::default(), OutputModule::for_format(OutputFormat::PngSequence));
         let accel = NoAccel;
         let mut p = Project::default();
         p.settings.gpu_acceleration = true;
         let job = Job {
             project: &p,
-            footage: &effectcraft_render::NoFootage,
+            footage: &pulso_render::NoFootage,
             expr: None,
             accel: Some(&accel),
-            comp: effectcraft_project::ItemId(0),
+            comp: pulso_project::ItemId(0),
             settings: &settings,
             output: &output,
             path: "/c/f_[#####].png",
@@ -1395,7 +1395,7 @@ mod tests {
     #[test]
     fn auto_gpu_frames_follow_the_memory_budget() {
         // #3335: Auto renders as many GPU frames at once as the budget has room for, 1 to 3.
-        use effectcraft_render::FrameMemory;
+        use pulso_render::FrameMemory;
         const GIB: u64 = 1 << 30;
         let m = |budget: u64, peak: u64, frame: u64, reserve: u64| Some(FrameMemory { budget, peak, frame, reserve });
         // Unknown memory (no allocator report, no budget): one frame.
@@ -1419,7 +1419,7 @@ mod tests {
 
     #[test]
     fn gpu_frames_come_from_the_environment_the_setting_or_auto() {
-        use effectcraft_render::FrameMemory;
+        use pulso_render::FrameMemory;
         let ample = Some(Some(FrameMemory { budget: 3 << 30, peak: 1 << 29, frame: 1 << 28, reserve: 1 << 28 }));
         let n = |env, pref, measured| resolve_gpu_frames(env, pref, measured).map(|(n, _)| n);
         // Auto: unsettled until a GPU frame rendered, then measured.
@@ -1440,21 +1440,21 @@ mod tests {
     }
 
     /// An accelerator reporting `memory` once asked (renders nothing itself).
-    struct MemAccel(effectcraft_render::FrameMemory);
-    impl effectcraft_render::Accelerator for MemAccel {
+    struct MemAccel(pulso_render::FrameMemory);
+    impl pulso_render::Accelerator for MemAccel {
         fn name(&self) -> String {
             "mem".into()
         }
-        fn comp_frame(&self, _r: &Renderer, _comp: effectcraft_project::ItemId, _t: Tick) -> Option<Image> {
+        fn comp_frame(&self, _r: &Renderer, _comp: pulso_project::ItemId, _t: Tick) -> Option<Image> {
             None
         }
         fn supports_effect(&self, _id: &str) -> bool {
             false
         }
-        fn effects(&self, _chain: &[effectcraft_render::FxStep], _buf: &effectcraft_effects::Buf, _levels: Option<f32>) -> Option<effectcraft_effects::Buf> {
+        fn effects(&self, _chain: &[pulso_render::FxStep], _buf: &pulso_effects::Buf, _levels: Option<f32>) -> Option<pulso_effects::Buf> {
             None
         }
-        fn frame_memory(&self) -> Option<effectcraft_render::FrameMemory> {
+        fn frame_memory(&self) -> Option<pulso_render::FrameMemory> {
             Some(self.0)
         }
     }
@@ -1463,20 +1463,20 @@ mod tests {
     fn auto_gpu_frames_settle_after_the_first_gpu_frame() {
         // #3335: one GPU frame at a time until a frame measured the memory, then Auto's count
         // for the rest of the job; the setting skips the measurement.
-        use effectcraft_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
+        use pulso_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
         if std::env::var_os(GPU_INFLIGHT_ENV).is_some() || std::env::var_os(RENDERER_ENV).is_some() {
             return;
         }
         let (settings, output) = (RenderSettings::default(), OutputModule::for_format(OutputFormat::PngSequence));
         let mut p = Project::default();
         p.settings.gpu_acceleration = true;
-        let comp = Comp::new(16, 8, effectcraft_time::FrameRate::FPS_25, Tick::from_seconds_f64(1.0));
-        let cid = p.add_item("Comp", effectcraft_color::Label::Sandstone, None, effectcraft_project::ItemKind::Comp(comp.into()));
-        let accel = MemAccel(effectcraft_render::FrameMemory { budget: 3 << 30, peak: 1 << 29, frame: 1 << 28, reserve: 0 });
+        let comp = Comp::new(16, 8, pulso_time::FrameRate::FPS_25, Tick::from_seconds_f64(1.0));
+        let cid = p.add_item("Comp", pulso_color::Label::Sandstone, None, pulso_project::ItemKind::Comp(comp.into()));
+        let accel = MemAccel(pulso_render::FrameMemory { budget: 3 << 30, peak: 1 << 29, frame: 1 << 28, reserve: 0 });
         for (pref, want) in [(None, 3), (Some(2), 2), (Some(1), 1)] {
             let job = Job {
                 project: &p,
-                footage: &effectcraft_render::NoFootage,
+                footage: &pulso_render::NoFootage,
                 expr: None,
                 accel: Some(&accel),
                 comp: cid,
@@ -1500,12 +1500,12 @@ mod tests {
     #[test]
     fn layers_render_once_per_job() {
         // #413: a job rendered every layer of every frame from scratch (no layer cache).
-        use effectcraft_color::Label;
-        use effectcraft_keyframe::{Keyframe, Value};
-        use effectcraft_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
-        use effectcraft_project::{ItemKind, LayerSource, Solid, build};
-        use effectcraft_render::NoFootage;
-        use effectcraft_time::FrameRate;
+        use pulso_color::Label;
+        use pulso_keyframe::{Keyframe, Value};
+        use pulso_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
+        use pulso_project::{ItemKind, LayerSource, Solid, build};
+        use pulso_render::NoFootage;
+        use pulso_time::FrameRate;
         // A solid animated only in Transform: its pixels render once, then move.
         let mut p = Project::default();
         let mut comp = Comp::new(64, 48, FrameRate::FPS_25, Tick::from_seconds_f64(1.0));
@@ -1549,12 +1549,12 @@ mod tests {
 
     #[test]
     fn frames_render_beside_the_encoder() {
-        use effectcraft_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
-        use effectcraft_render::NoFootage;
-        use effectcraft_time::FrameRate;
+        use pulso_project::render_queue::{OutputFormat, OutputModule, RenderSettings};
+        use pulso_render::NoFootage;
+        use pulso_time::FrameRate;
         let mut p = Project::default();
         let comp = Comp::new(32, 16, FrameRate::FPS_25, Tick::from_seconds_f64(1.0));
-        let cid = p.add_item("Comp", effectcraft_color::Label::Sandstone, None, effectcraft_project::ItemKind::Comp(comp.into()));
+        let cid = p.add_item("Comp", pulso_color::Label::Sandstone, None, pulso_project::ItemKind::Comp(comp.into()));
         let (settings, output) = (RenderSettings::default(), OutputModule::for_format(OutputFormat::H264));
         let job = Job {
             project: &p,
@@ -1571,7 +1571,7 @@ mod tests {
         };
         let cx = Cx::new(&job);
         let comp = cx.comp().unwrap();
-        use effectcraft_render::passes::block_on;
+        use pulso_render::passes::block_on;
         let want = block_on(cx.frames(comp, (0..6).collect(), |k, img| (k, img.width, img.height)));
         // On threads of their own, and taking turns (no threads): the same frames, in order.
         for beside in [Beside::shared(), &Beside(None)] {
@@ -1601,7 +1601,7 @@ mod tests {
     /// Regress the locked-aspect example: cropping 1920x1080 must resize to 1280x1440.
     #[test]
     fn crop_resize_applies_margins_once() {
-        use effectcraft_project::render_queue::{Crop, OutputModule, Resize};
+        use pulso_project::render_queue::{Crop, OutputModule, Resize};
         let output = OutputModule {
             crop: Crop { enabled: true, left: 480, right: 480, ..Default::default() },
             resize: Resize { enabled: true, width: 1280, lock_aspect: true, quality: ResizeQuality::Low, ..Default::default() },
@@ -1614,16 +1614,16 @@ mod tests {
     }
 
     /// Apply output-module geometry to a synthetic frame without rendering or writing files.
-    fn run_crop_resize(img: Image, output: &effectcraft_project::render_queue::OutputModule, scale: f64) -> Image {
-        use effectcraft_project::render_queue::RenderSettings;
+    fn run_crop_resize(img: Image, output: &pulso_project::render_queue::OutputModule, scale: f64) -> Image {
+        use pulso_project::render_queue::RenderSettings;
         let project = Project::default();
         let settings = RenderSettings { resolution: scale, ..Default::default() };
         let job = Job {
             project: &project,
-            footage: &effectcraft_render::NoFootage,
+            footage: &pulso_render::NoFootage,
             expr: None,
             accel: None,
-            comp: effectcraft_project::ItemId(0),
+            comp: pulso_project::ItemId(0),
             settings: &settings,
             output,
             path: "unused.png",
@@ -1637,7 +1637,7 @@ mod tests {
     /// Match predicted dimensions across crop, padding, ROI scale, aspect locks and resize qualities.
     #[test]
     fn crop_resize_dimensions_match_the_output_module() {
-        use effectcraft_project::render_queue::{Crop, OutputModule, Resize};
+        use pulso_project::render_queue::{Crop, OutputModule, Resize};
         let edges = Crop { enabled: true, left: 2, right: 2, ..Default::default() };
         let padding = Crop { enabled: true, left: -2, bottom: -2, ..Default::default() };
         let roi = |rect| Crop { enabled: true, use_roi: true, roi: Some(rect), ..Default::default() };
@@ -1665,7 +1665,7 @@ mod tests {
     /// Exercise zero/empty inputs, collapsed crops and existing caps on extreme single-axis resizes.
     #[test]
     fn crop_resize_zero_and_extreme_sizes_stay_bounded() {
-        use effectcraft_project::render_queue::{Crop, OutputModule, Resize};
+        use pulso_project::render_queue::{Crop, OutputModule, Resize};
         for quality in [ResizeQuality::Low, ResizeQuality::High] {
             for (size, crop, width, height, expected) in [
                 ((8, 6), Crop::default(), 0, 0, (1, 1)),

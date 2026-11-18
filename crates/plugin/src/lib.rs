@@ -1,8 +1,8 @@
-//! # effectcraft-plugin (L3)
+//! # pulso-plugin (L3)
 //!
 //! Loads **WebAssembly effect plug-ins** (WebAssembly ABI v1 and v2, see `docs/plugins.md`; the
 //! native plug-in API 2 additions such as layer parameters and host services are not part of it)
-//! into the effect registry ([`effectcraft_effects::plugin`]). A plug-in is a `.wasm` (or
+//! into the effect registry ([`pulso_effects::plugin`]). A plug-in is a `.wasm` (or
 //! `.wat`) module with no imports that exports:
 //!
 //! | export | signature | |
@@ -29,8 +29,8 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
-use effectcraft_effects::EffectSpec;
-pub use effectcraft_effects::plugin::{
+use pulso_effects::EffectSpec;
+pub use pulso_effects::plugin::{
     EffectPlugin, MIN_WASM_API_VERSION, PLUGIN_API_VERSION, PluginFrame, PluginImage, PluginManifest, PluginParams, WASM_API_VERSION, register_plugin,
 };
 
@@ -60,7 +60,7 @@ pub fn load_wasm(bytes: &[u8], source: &str) -> Result<&'static EffectSpec, Stri
 /// [`load_wasm`] for the engine's plug-in loader hook: `{id, name, category, version, api}`.
 pub fn loader(bytes: &[u8], source: &str) -> Result<serde_json::Value, String> {
     let spec = load_wasm(bytes, source)?;
-    let m = effectcraft_effects::plugin::plugin(spec.id).map(|p| p.manifest().clone());
+    let m = pulso_effects::plugin::plugin(spec.id).map(|p| p.manifest().clone());
     Ok(serde_json::json!({
         "id": spec.id,
         "name": spec.name,
@@ -77,7 +77,7 @@ pub fn loader(bytes: &[u8], source: &str) -> Result<serde_json::Value, String> {
 pub fn preview(bytes: &[u8], width: u32, height: u32, pixels: &[[f32; 4]], times: &[f64]) -> Result<(serde_json::Value, Vec<Vec<[f32; 4]>>), String> {
     #[cfg(feature = "wasm")]
     {
-        use effectcraft_effects::plugin::{EffectPlugin, PluginFrame, PluginParamKind, PluginParams};
+        use pulso_effects::plugin::{EffectPlugin, PluginFrame, PluginParamKind, PluginParams};
         let p = wasm::WasmPlugin::new(bytes, "preview")?;
         let m = p.manifest();
         let mut flat = Vec::with_capacity(m.flat_len());

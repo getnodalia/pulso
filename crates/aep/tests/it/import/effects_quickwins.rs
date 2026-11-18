@@ -1,12 +1,12 @@
 //! HDR Highlight Compression, Echo, Linear Wipe, Offset and Color Stabilizer (#3110) arrive as
-//! EffectCraft's effects of the same name. Each is built into `synthetic.aep` (`fx_inject`) with
+//! Pulso's effects of the same name. Each is built into `synthetic.aep` (`fx_inject`) with
 //! the definitions After Effects 2026 wrote for it in the importer block of 2026-11-05 (valid
 //! ranges, defaults, popup items) and the values of that block's compositions.
 
 use crate::import::fx_inject::{Default, Fx, losses, near, num, other, popup, pt, run, slider, v};
-use effectcraft_aep::ParamKind as K;
-use effectcraft_aep::import::LossCategory;
-use effectcraft_keyframe::Value;
+use pulso_aep::ParamKind as K;
+use pulso_aep::import::LossCategory;
+use pulso_keyframe::Value;
 
 const ECHO_OPS: &[&str] = &["Add", "Maximum", "Minimum", "Screen", "Composite In Back", "Composite In Front", "Blend"];
 
@@ -66,10 +66,10 @@ fn echo_values_and_operator() {
     assert_eq!((num(&g, "numberOfEchoes"), v(&g, "echoOperator")), (1.0, Value::Enum(0)));
 }
 
-/// Echo values beyond EffectCraft's ranges are imported as stored and reported.
+/// Echo values beyond Pulso's ranges are imported as stored and reported.
 #[test]
-fn echo_values_beyond_effectcrafts_range_are_reported() {
-    // `echo-03-max`: 30 000 echoes and Decay 100; EffectCraft's Echo uses at most 255 and 1.
+fn echo_values_beyond_pulsos_range_are_reported() {
+    // `echo-03-max`: 30 000 echoes and Decay 100; Pulso's Echo uses at most 255 and 1.
     let (g, r) = run(&echo(vec![(2, 30000.0), (4, 100.0)]), "ec.time.echo");
     let found = losses(&r, LossCategory::Effects, "ADBE Echo");
     assert_eq!(found.len(), 2, "{found:?}");
@@ -83,8 +83,8 @@ fn echo_values_beyond_effectcrafts_range_are_reported() {
 
 /// A keyframed Echo parameter keeps its keys as stored and reports the range loss.
 #[test]
-fn echo_keys_beyond_effectcrafts_range_are_kept_and_reported() {
-    // Number Of Echoes keyed 10 -> 30 000: the second key is beyond EffectCraft's 255.
+fn echo_keys_beyond_pulsos_range_are_kept_and_reported() {
+    // Number Of Echoes keyed 10 -> 30 000: the second key is beyond Pulso's 255.
     let mut fx = echo(vec![]);
     fx.keys = vec![(2, vec![(0, 10.0), (1000, 30000.0)])];
     let (g, r) = run(&fx, "ec.time.echo");

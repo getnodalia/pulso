@@ -1,10 +1,10 @@
 //! Collapse Transformations, Continuously Rasterize and the Quality switch.
 
-use effectcraft_color::{BlendMode, Label};
-use effectcraft_keyframe::{TextDoc, Value};
-use effectcraft_project::build::{self, Ids};
-use effectcraft_project::{BitDepth, Comp, FrameBlend, ItemId, ItemKind, Layer, LayerSource, Project, Quality, Solid};
-use effectcraft_time::{FrameRate, Tick};
+use pulso_color::{BlendMode, Label};
+use pulso_keyframe::{TextDoc, Value};
+use pulso_project::build::{self, Ids};
+use pulso_project::{BitDepth, Comp, FrameBlend, ItemId, ItemKind, Layer, LayerSource, Project, Quality, Solid};
+use pulso_time::{FrameRate, Tick};
 
 use crate::{EvalCtx, Image, NoFootage, RenderOpts, Renderer, render_frame};
 
@@ -96,13 +96,8 @@ fn masks_on_a_collapsed_layer_force_a_flattened_render() {
     let (p2, cid2) = scene(false, false);
     // Add a mask covering everything: the layer renders like an uncollapsed precomp.
     let mut next = p.next_id;
-    let mask = build::mask(
-        &mut Ids(&mut next),
-        "Mask 1",
-        effectcraft_keyframe::ShapePath::rect([50.0, 50.0], 4000.0, 4000.0),
-        effectcraft_project::MaskMode::Add,
-        [255, 255, 0],
-    );
+    let mask =
+        build::mask(&mut Ids(&mut next), "Mask 1", pulso_keyframe::ShapePath::rect([50.0, 50.0], 4000.0, 4000.0), pulso_project::MaskMode::Add, [255, 255, 0]);
     p.next_id = next;
     p.comp_mut(cid).unwrap().layers[0].props.sub_mut("masks").unwrap().children.push(mask.into());
     let a = render_frame(&p, cid, Tick::ZERO, 1.0);
@@ -130,8 +125,7 @@ fn proxy_and_frame_blending_keep_a_precomp_on_the_flattened_path() {
     p.comp_mut(cid).unwrap().layers[0].switches.frame_blend = FrameBlend::Off;
     // A composition proxy stands in for the precomp's pixels.
     let LayerSource::Comp { item } = p.comp(cid).unwrap().layers[0].source else { panic!("a precomp layer") };
-    let proxy =
-        effectcraft_project::Proxy { footage: effectcraft_project::Footage { has_video: true, width: 32, height: 32, ..Default::default() }, enabled: true };
+    let proxy = pulso_project::Proxy { footage: pulso_project::Footage { has_video: true, width: 32, height: 32, ..Default::default() }, enabled: true };
     p.item_mut(item).unwrap().proxy = Some(Box::new(proxy));
     assert!(!collapses(&p), "a proxy keeps the flattened path");
 }
@@ -148,8 +142,8 @@ fn referenced_layer_overrides_change_the_owner_cache_key() {
     let bid = b.id;
     let mut next = p.next_id;
     let mut ids = Ids(&mut next);
-    let spec = effectcraft_effects::find("ec.channel.setmatte").unwrap();
-    let mut fx = effectcraft_effects::instantiate(spec, &mut ids, spec.name, [100.0, 100.0]);
+    let spec = pulso_effects::find("ec.channel.setmatte").unwrap();
+    let mut fx = pulso_effects::instantiate(spec, &mut ids, spec.name, [100.0, 100.0]);
     fx.prop_mut("takeMatteFromLayer").unwrap().value = Value::Layer(Some(a.id.0));
     p.next_id = next;
     b.props.sub_mut("effects").unwrap().children.push(fx.into());
@@ -386,8 +380,8 @@ fn effects_on_a_scaled_shape_follow_its_scale() {
         let rect = build::shape_rect(&mut ids, [size, size], [0.0, 0.0], 0.0);
         let fill = build::shape_fill(&mut ids, [1.0, 1.0, 1.0, 1.0]);
         let g = build::shape_group(&mut ids, "Rectangle 1", vec![rect, fill]);
-        let spec = effectcraft_effects::find("ec.blur.gaussian").unwrap();
-        let mut fx = effectcraft_effects::instantiate(spec, &mut ids, spec.name, [200.0, 200.0]);
+        let spec = pulso_effects::find("ec.blur.gaussian").unwrap();
+        let mut fx = pulso_effects::instantiate(spec, &mut ids, spec.name, [200.0, 200.0]);
         p.next_id = next;
         fx.prop_mut("blurriness").unwrap().value = Value::Scalar(blur);
         l.props.sub_mut("contents").unwrap().children.push(g.into());

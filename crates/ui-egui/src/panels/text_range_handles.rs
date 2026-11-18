@@ -12,25 +12,25 @@
 //!
 //! Automation ids: `viewer.textRange.<uid>` (the Start / End property's uid).
 
-use effectcraft_engine::geom::Mat3;
-use effectcraft_engine::project::{Layer, LayerSource, PropGroup};
-use effectcraft_engine::render::EvalCtx;
-use effectcraft_engine::render::text::{range_bars, range_value_of, source_text};
-use effectcraft_engine::text::kurbo::Point;
-use effectcraft_engine::text::layout_doc;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Vec2};
+use pulso_engine::geom::Mat3;
+use pulso_engine::project::{Layer, LayerSource, PropGroup};
+use pulso_engine::render::EvalCtx;
+use pulso_engine::render::text::{range_bars, range_value_of, source_text};
+use pulso_engine::text::kurbo::Point;
+use pulso_engine::text::layout_doc;
 use serde_json::json;
 
 use super::fx_widgets as fw;
 use super::gradient_handles::selected_in;
-use crate::EffectcraftApp;
+use crate::PulsoApp;
 use crate::state::Tool;
 
 /// Draw the selected Range Selectors' bars and, with the Selection tool, drag them. `l2c` is the
 /// viewer's layer→comp matrix. Called after the viewer's own gestures, so a bar takes the press
 /// before the layer would move.
 pub fn viewer_hook(
-    app: &mut EffectcraftApp,
+    app: &mut PulsoApp,
     ui: &mut egui::Ui,
     painter: &egui::Painter,
     map: &super::viewer::ViewerMap,

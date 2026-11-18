@@ -372,7 +372,7 @@ impl EffectHost for KeyedCard {
 /// #3125: with keyframed sample points After Effects samples the reference frame where the
 /// points were at the reference time, so a static card is corrected. Its render at 0.5 s (Black
 /// Point at (107.5, 94.5)) is a Levels map of the ramp: `out = a + b·v` with b 1.2935..1.2965
-/// and a −0.2365..−0.2350 (fitted on our 26-level export). EffectCraft sampled both frames at
+/// and a −0.2365..−0.2350 (fitted on our 26-level export). Pulso sampled both frames at
 /// the current points and left the card unchanged.
 #[test]
 fn color_stabilizer_samples_the_reference_at_the_points_reference_positions() {

@@ -1,12 +1,12 @@
-# effectcraft-aep
+# pulso-aep
 
-After Effects projects (`.aep`, `.aepx`) in one crate, the way `effectcraft-lottie` handles Lottie:
+After Effects projects (`.aep`, `.aepx`) in one crate, the way `pulso-lottie` handles Lottie:
 
 - `container`: reads and writes the container as a lossless chunk tree, with a typed, read-only
   view (below; its API is re-exported at the crate root);
-- `import`: maps the typed view into an Pulso project and reports everything it does not
+- `import`: maps the typed view into a Pulso project and reports everything it does not
   import ([`docs/aep-import.md`](../../docs/aep-import.md));
-- `export`: writes an Pulso project as an `.aep` with every chunk built in code, and reports everything it does not export
+- `export`: writes a Pulso project as an `.aep` with every chunk built in code, and reports everything it does not export
   ([`docs/aep-export.md`](../../docs/aep-export.md)).
 
 No file access: callers pass bytes, so the crate builds for wasm32.
@@ -63,8 +63,8 @@ the generator is in `tests/fixtures/tools/`). They are not in this repository bu
 attribution, the generation notes and the inspection of their embedded content.
 `cargo xtask aep-corpus` fetches them at the commit pinned in `tests/fixtures/corpus.lock`, checks
 every file against the SHA-256 listed there and only then installs them in `corpus/aep` (ignored by
-git). The tests read them from the folder named by the `EFFECTCRAFT_AEP_FIXTURES` environment
-variable (opt-in; set `EFFECTCRAFT_AEP_FIXTURES_REQUIRED=1` too, so that a missing project fails). The
+git). The tests read them from the folder named by the `PULSO_AEP_FIXTURES` environment
+variable (opt-in; set `PULSO_AEP_FIXTURES_REQUIRED=1` too, so that a missing project fails). The
 tests reach them only through `tests/it/common/mod.rs`, which hands a test its case as a project
 of its own cut from the combined file; a test whose fixture is missing (or with the variable not
 set) prints `SKIPPED: fixture <name> missing` and passes.
@@ -87,12 +87,12 @@ the import against After Effects' read-back, and the host's `vector_import` test
 - `tests/fixtures/tools/`: the generator of the test projects (regenerates the corpus with After
   Effects; its README says how).
 - `examples/aepdump.rs`: prints the chunk tree of a file (ids, sizes, short data, match names):
-  `cargo run -p effectcraft-aep --example aepdump -- file.aep`.
+  `cargo run -p pulso-aep --example aepdump -- file.aep`.
 - `examples/stubicc.rs`: replaces every embedded ICC profile of a saved project by a stub that keeps
   only the profile's description: the JSON `colorProfileData` of the working space (any white space
   around the colon, `\/` escapes, quotes as `&quot;`) in an `.aep` chunk or the `.aepx` text, and a raw
   profile of an imported image (an `.aep` chunk, or the `bdata` hex of an `.aepx`):
-  `cargo run -p effectcraft-aep --example stubicc -- in.aep out.aep`. A profile it cannot replace
+  `cargo run -p pulso-aep --example stubicc -- in.aep out.aep`. A profile it cannot replace
   stops it before anything is written. The importer reads the working space's name from the
   description only, so the project imports the same; no vendor colour data stays in the test
   project. Check the result independently, not by the tool's count (the corpus repository has

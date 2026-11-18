@@ -1,13 +1,13 @@
 //! The viewer on the GPU compositor (egui_kittest with wgpu): frames composited on the GPU match
 //! the CPU viewer. Skips without a GPU adapter (CI). Set `EC_SNAPSHOT_DIR` to keep PNGs.
 
-use effectcraft_engine::Session;
-use effectcraft_ui_egui::EffectcraftApp;
 use egui_kittest::Harness;
+use pulso_engine::Session;
+use pulso_ui_egui::PulsoApp;
 use serde_json::json;
 
 /// Step until the GPU compositor's worker is done and a frame has landed in the viewer.
-fn settle(h: &mut Harness<'_, EffectcraftApp>) {
+fn settle(h: &mut Harness<'_, PulsoApp>) {
     for _ in 0..3000 {
         h.step();
         if !h.state().gpu_initializing() && h.state().frames.inflight() == 0 && h.state().frames.last_ms.lock().map(|v| *v > 0.0).unwrap_or(false) {
@@ -22,7 +22,7 @@ fn settle(h: &mut Harness<'_, EffectcraftApp>) {
 
 /// Step until the GPU compositor's worker has handed its result over (attached, or why not).
 /// The first step starts the build.
-pub(crate) fn wait_for_compositor(h: &mut Harness<'_, EffectcraftApp>) {
+pub(crate) fn wait_for_compositor(h: &mut Harness<'_, PulsoApp>) {
     h.step();
     for _ in 0..3000 {
         if !h.state().gpu_initializing() {
@@ -61,7 +61,7 @@ fn the_interface_draws_and_composites_on_the_cpu_while_the_gpu_compositor_is_bui
     let (release, gate) = std::sync::mpsc::channel::<()>();
     let s = small_session();
     let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).wgpu().build_eframe(move |_| {
-        let mut app = EffectcraftApp::new(s);
+        let mut app = PulsoApp::new(s);
         // The status line's 5 s expiry reads the app clock: a manual one makes the steps below
         // stand for a known span of time.
         app.use_manual_clock();
@@ -81,8 +81,8 @@ fn the_interface_draws_and_composites_on_the_cpu_while_the_gpu_compositor_is_bui
     assert!(h.state().gpu_initializing(), "the compositor is still being built");
     assert!(!h.output().shapes.is_empty(), "the interface draws before the compositor exists");
     assert!(h.state().session.accel.is_none(), "nothing renders on a compositor that doesn't exist yet");
-    assert_eq!(h.state().ui.status, effectcraft_ui_egui::GPU_PREPARING, "the status line is honest about it");
-    assert_eq!(h.state().session.accel_note.as_deref(), Some(effectcraft_ui_egui::GPU_PREPARING));
+    assert_eq!(h.state().ui.status, pulso_ui_egui::GPU_PREPARING, "the status line is honest about it");
+    assert_eq!(h.state().session.accel_note.as_deref(), Some(pulso_ui_egui::GPU_PREPARING));
     assert!(h.state().frames.last_ms.lock().map(|v| *v > 0.0).unwrap_or(false), "a frame was composited on the CPU meanwhile");
     assert!(h.state_mut().viewer_pixels().is_some(), "the viewer shows that frame");
     // Other statuses clear after 5 s; this one stays for as long as the build takes (each step
@@ -92,11 +92,11 @@ fn the_interface_draws_and_composites_on_the_cpu_while_the_gpu_compositor_is_bui
         h.step();
     }
     assert!(h.state().gpu_initializing());
-    assert_eq!(h.state().ui.status, effectcraft_ui_egui::GPU_PREPARING, "the status line still says so 7.5 s later");
+    assert_eq!(h.state().ui.status, pulso_ui_egui::GPU_PREPARING, "the status line still says so 7.5 s later");
     release.send(()).unwrap();
     settle(&mut h);
     assert!(!h.state().gpu_initializing());
-    assert_ne!(h.state().ui.status, effectcraft_ui_egui::GPU_PREPARING, "the preparing status goes away");
+    assert_ne!(h.state().ui.status, pulso_ui_egui::GPU_PREPARING, "the preparing status goes away");
     match h.state().gpu_adapter() {
         Some(adapter) => {
             eprintln!("compositor attached after the first frames: {adapter}");
@@ -104,7 +104,7 @@ fn the_interface_draws_and_composites_on_the_cpu_while_the_gpu_compositor_is_bui
             assert!(h.state().session.accel_note.is_none());
         }
         // An adapter that can't run the compositor (software GL): the reason is recorded.
-        None => assert!(h.state().session.accel_note.as_deref().is_some_and(|n| n != effectcraft_ui_egui::GPU_PREPARING)),
+        None => assert!(h.state().session.accel_note.as_deref().is_some_and(|n| n != pulso_ui_egui::GPU_PREPARING)),
     }
 }
 
@@ -119,7 +119,7 @@ fn a_compositor_build_that_panics_leaves_the_viewer_on_the_cpu() {
     }
     let s = small_session();
     let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).wgpu().build_eframe(move |_| {
-        let mut app = EffectcraftApp::new(s);
+        let mut app = PulsoApp::new(s);
         app.hooks.before_gpu_build = Some(Box::new(|| panic!("synthetic shader compiler panic")));
         app
     });
@@ -156,11 +156,11 @@ fn same_adapter(name: String) -> eframe::egui_wgpu::WgpuSetup {
 #[test]
 fn viewer_draws_gpu_frames_that_match_the_cpu() {
     let _device = crate::gpu_test::lock();
-    let Some(probe) = effectcraft_gpu::Gpu::headless() else {
+    let Some(probe) = pulso_gpu::Gpu::headless() else {
         eprintln!("no GPU adapter: skipping");
         return;
     };
-    let adapter = effectcraft_engine::render::Accelerator::name(&probe);
+    let adapter = pulso_engine::render::Accelerator::name(&probe);
     eprintln!("headless compositor adapter: {adapter}");
     // egui-wgpu creates its GL device with WebGL2's limits, which the compositor declines.
     let gl = adapter.ends_with("(Gl)");
@@ -169,7 +169,7 @@ fn viewer_draws_gpu_frames_that_match_the_cpu() {
         .with_size(egui::vec2(1400.0, 900.0))
         .with_pixels_per_point(1.0)
         .wgpu_setup(same_adapter(adapter))
-        .build_eframe(|_| EffectcraftApp::new(Session::default()));
+        .build_eframe(|_| PulsoApp::new(Session::default()));
     // The project opens once the compositor (built on a worker thread) is attached. A frame the
     // CPU composited while it was being built has the GPU frame's key, so the viewer would keep
     // showing it, and the comparison below would be the CPU against itself.
@@ -215,13 +215,13 @@ fn a_lost_device_draws_nothing_autosaves_and_closes() {
     let mut s = Session { autosave_folder_override: Some(dir.clone()), ..Default::default() };
     s.execute("comp.new", json!({"name": "Unsaved", "width": 64, "height": 64, "duration": 1})).unwrap();
     assert!(s.is_dirty());
-    let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).build_eframe(|_| PulsoApp::new(s));
     let told = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
     let log = told.clone();
     h.state_mut().hooks.device_lost = Some(Box::new(move |saved| log.borrow_mut().push(saved)));
     h.run_steps(3);
     assert!(!h.output().shapes.is_empty(), "the UI draws before the loss");
-    let bridge = effectcraft_ui_egui::gpu_failure::GpuFailureBridge::new(&h.ctx);
+    let bridge = pulso_ui_egui::gpu_failure::GpuFailureBridge::new(&h.ctx);
     h.state_mut().set_gpu_failure_bridge(bridge.clone());
     bridge.report("GPU device lost (Unknown): Device is lost", true);
     h.step();
@@ -259,19 +259,19 @@ fn the_viewer_exposes_32_bpc_frames_on_the_gpu() {
     let lid = s.execute("layer.newSolid", json!({"color": "#ffffff"})).unwrap()["layer"].as_u64().unwrap();
     s.execute("effect.apply", json!({"layers": [lid], "effect": "Exposure"})).unwrap();
     s.execute("prop.set", json!({"layer": lid, "path": "effects/#1/master/exposure", "value": 2.0})).unwrap();
-    let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).wgpu().build_eframe(move |_| EffectcraftApp::new(s));
+    let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).wgpu().build_eframe(move |_| PulsoApp::new(s));
     settle(&mut h);
     let p = h.state().viewer_f16().expect("a half-float viewer frame").pixel(0).unwrap();
-    let l = effectcraft_engine::color::srgb_to_linear(p[0] / p[3]);
+    let l = pulso_engine::color::srgb_to_linear(p[0] / p[3]);
     assert!(l > 3.9, "{l}");
     // Screen pixels of the frame's grey (the comp is 64 × 64 points in the viewer at most).
-    let count = |h: &mut Harness<'_, EffectcraftApp>, stops: f32| {
+    let count = |h: &mut Harness<'_, PulsoApp>, stops: f32| {
         h.state_mut().session.state.viewer.exposure = stops;
         for _ in 0..4 {
             h.step();
         }
         assert!(h.state().viewer_display_texture().is_some(), "drawn by the display pass on the device");
-        let want = (effectcraft_engine::color::linear_to_srgb(l * 2f32.powf(stops)).clamp(0.0, 1.0) * 255.0).round() as i32;
+        let want = (pulso_engine::color::linear_to_srgb(l * 2f32.powf(stops)).clamp(0.0, 1.0) * 255.0).round() as i32;
         let img = h.render().expect("render");
         let n = img.pixels().filter(|px| px.0[..3].iter().all(|c| (*c as i32 - want).abs() <= 1)).count();
         (want, n)

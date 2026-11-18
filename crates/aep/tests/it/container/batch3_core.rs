@@ -3,11 +3,11 @@
 //! Every expected value is the value the corpus case was made with (its MANIFEST).
 
 use crate::container::helpers::{assert_near, base_layer, first_comp, layer_shown_as, layer_with_id, near, open, without_layer_id};
-use effectcraft_aep::{Interpolation, KeyEase, KeyframeKind, LayerHeader, ParamValue, Project, PropNode, Property, Rational, ValueSource};
+use pulso_aep::{Interpolation, KeyEase, KeyframeKind, LayerHeader, ParamValue, Project, PropNode, Property, Rational, ValueSource};
 
 const L: u32 = 0x1b;
 
-fn with_layer<R>(name: &str, id: u32, f: impl FnOnce(&Project<'_, '_>, &effectcraft_aep::Layer<'_, '_>) -> R) -> Option<R> {
+fn with_layer<R>(name: &str, id: u32, f: impl FnOnce(&Project<'_, '_>, &pulso_aep::Layer<'_, '_>) -> R) -> Option<R> {
     Some({
         let bytes = crate::common::try_fixture(name)?;
         let file = open(&bytes);
@@ -351,7 +351,7 @@ fn time_remapping_is_an_inert_property_until_enabled() {
 
 // ------------------------------------------------------------------ composition (325-327)
 
-fn comp_header(name: &str) -> Option<effectcraft_aep::CompHeader> {
+fn comp_header(name: &str) -> Option<pulso_aep::CompHeader> {
     Some({
         let bytes = crate::common::try_fixture(name)?;
         let file = open(&bytes);
@@ -378,6 +378,6 @@ fn pixel_aspect_shutter_phase_and_display_start() {
     assert_eq!(h.pixel_aspect_ratio(), Some(1.0));
     // A short chunk still decodes the old fields.
     let bytes = [0u8; 176];
-    let h = effectcraft_aep::CompHeader::parse(&bytes).unwrap();
+    let h = pulso_aep::CompHeader::parse(&bytes).unwrap();
     assert_eq!((h.shutter_phase, h.display_start.map(|r| r.den)), (None, Some(0)));
 }

@@ -2,9 +2,9 @@
 //! batches import without losses with the values they were made with.
 
 use crate::import::helpers::comp;
-use effectcraft_keyframe::Value;
-use effectcraft_project::{Project, PropGroup};
-use effectcraft_time::{TICKS_PER_SECOND, Tick};
+use pulso_keyframe::Value;
+use pulso_project::{Project, PropGroup};
+use pulso_time::{TICKS_PER_SECOND, Tick};
 
 /// The only effect of layer L, imported without losses.
 fn only_effect(name: &str) -> Option<PropGroup> {
@@ -37,7 +37,7 @@ fn close(a: &Value, b: f64) {
 fn invert() {
     let g = skip!(only_effect("410-fx-invert-channel-2.aep"));
     assert_eq!(g.match_id, "ec.channel.invert");
-    // The second file item, Red, is EffectCraft's item 1 (the separators are skipped by name).
+    // The second file item, Red, is Pulso's item 1 (the separators are skipped by name).
     assert_eq!((v(&g, "channel"), v(&g, "blend")), (Value::Enum(1), s(0.0)));
     let g = skip!(only_effect("411-fx-invert-blend-50.aep"));
     assert_eq!((v(&g, "channel"), v(&g, "blend")), (Value::Enum(0), s(50.0)));
@@ -141,12 +141,12 @@ fn fill() {
 }
 
 /// Drops every `pdnm` (popup items) from the tree.
-fn drop_pdnm(chunks: &mut Vec<effectcraft_aep::Chunk<'_>>) -> usize {
+fn drop_pdnm(chunks: &mut Vec<pulso_aep::Chunk<'_>>) -> usize {
     let before = chunks.len();
     chunks.retain(|c| c.id != *b"pdnm");
     let mut n = before - chunks.len();
     for c in chunks.iter_mut() {
-        if let effectcraft_aep::Body::List { children, .. } | effectcraft_aep::Body::Chunks(children) = &mut c.body {
+        if let pulso_aep::Body::List { children, .. } | pulso_aep::Body::Chunks(children) = &mut c.body {
             n += drop_pdnm(children);
         }
     }
@@ -161,12 +161,12 @@ fn popups_without_item_names_use_after_effects_items() {
         [("410-fx-invert-channel-2.aep", "channel", 1), ("427-fx-glow-default.aep", "operation", 1), ("427-fx-glow-default.aep", "glowOperation", 1)]
     {
         let bytes = fixture!(name);
-        let mut file = effectcraft_aep::parse(&bytes).expect("parse");
+        let mut file = pulso_aep::parse(&bytes).expect("parse");
         assert!(drop_pdnm(&mut file.chunks) > 0, "{name}");
-        let bytes = effectcraft_aep::write(&file).expect("write");
+        let bytes = pulso_aep::write(&file).expect("write");
         let mut p = Project::default();
         let none = |_: &str| false;
-        let r = effectcraft_aep::import::import(&mut p, &bytes, &effectcraft_aep::import::ImportOptions::new(&none)).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let r = pulso_aep::import::import(&mut p, &bytes, &pulso_aep::import::ImportOptions::new(&none)).unwrap_or_else(|e| panic!("{name}: {e}"));
         let (_, c) = comp(&p, &r, "C");
         let l = c.layers.iter().find(|l| l.name == "L").expect("L");
         let g = l.props.sub("effects").and_then(|fx| fx.children.iter().find_map(|n| n.as_group())).expect("effect");

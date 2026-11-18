@@ -4,10 +4,10 @@
 
 use std::sync::Arc;
 
-use effectcraft_engine::Session;
-use effectcraft_engine::commands::scripts::{OPEN_PANELS_FILE, PANELS_DIR};
-use effectcraft_engine::config::{ConfigStore, MemoryConfig};
-use effectcraft_engine::scriptui::WindowKind;
+use pulso_engine::Session;
+use pulso_engine::commands::scripts::{OPEN_PANELS_FILE, PANELS_DIR};
+use pulso_engine::config::{ConfigStore, MemoryConfig};
+use pulso_engine::scriptui::WindowKind;
 use serde_json::json;
 
 const PANEL: &str = "var p = this;\np.add('statictext', undefined, 'Hello from a panel');\np.layout.layout(true);\n";
@@ -34,8 +34,8 @@ fn a_panel_dropped_in_the_folder_is_listed_and_opens_as_a_panel() {
     // Not a script: not listed.
     store.write(&format!("{PANELS_DIR}/notes.txt"), "x").unwrap();
     let mut s = session(&store);
-    let cx = effectcraft_engine::menus::DynCtx::default();
-    let (entries, _) = effectcraft_engine::menus::dynamic(&s, "scriptPanels", &cx);
+    let cx = pulso_engine::menus::DynCtx::default();
+    let (entries, _) = pulso_engine::menus::dynamic(&s, "scriptPanels", &cx);
     let names: Vec<&str> = entries.iter().map(|e| e.label.as_str()).collect();
     assert!(names.contains(&"Hello Panel.jsx") && !names.contains(&"notes.txt"), "{names:?}");
     let e = entries.iter().find(|e| e.label == "Hello Panel.jsx").unwrap();
@@ -47,11 +47,7 @@ fn a_panel_dropped_in_the_folder_is_listed_and_opens_as_a_panel() {
     assert_eq!(w.root.children[0].text, "Hello from a panel");
     // Frontends dock it (`window.scriptPanel {window}` for the UI).
     let events = s.drain_events();
-    assert!(
-        events
-            .iter()
-            .any(|e| matches!(e, effectcraft_engine::Event::Frontend { command, params } if command == "window.scriptPanel" && params["window"] == id))
-    );
+    assert!(events.iter().any(|e| matches!(e, pulso_engine::Event::Frontend { command, params } if command == "window.scriptPanel" && params["window"] == id)));
 }
 
 #[test]

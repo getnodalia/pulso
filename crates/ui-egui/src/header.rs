@@ -1,65 +1,120 @@
-//! The Tools bar: home, the tool slots, tool options, snapping, workspaces and the community
-//! buttons (Discord is always one click away).
+//! The app bar (Nodalia's creator suite, 44 pt): the main menu (≡) with About, Preferences,
+//! Keyboard Shortcuts and Quit, Home, the tool slots, tool options and snapping, then the
+//! workspace selector at the right. On Linux, with Nodalia's window controls
+//! ([`PulsoApp::custom_titlebar`]), the bar is the window's title bar too: its empty space drags
+//! the window and the round controls take its right end.
 
-use crate::i18n::{tr, tr_args};
+use crate::i18n::tr;
 use egui::{Align2, Color32, Rect, Sense, Stroke, StrokeKind, pos2, vec2};
 use serde_json::json;
 
-use crate::icons::{self, Icon};
+use crate::PulsoApp;
+use crate::icons::Icon;
 use crate::state::Tool;
 use crate::theme::Tokens;
 use crate::widgets;
-use crate::{Dialog, EffectcraftApp};
-use effectcraft_color::BlendMode;
-use effectcraft_engine::commands::shape_tool::{PaintKind, ToolPaint};
-use effectcraft_engine::geom::vec2 as gv2;
-use effectcraft_engine::project::{LayerId, LayerSource, PropGroup};
-use effectcraft_engine::viewer as vw;
+use pulso_color::BlendMode;
+use pulso_engine::commands::shape_tool::{PaintKind, ToolPaint};
+use pulso_engine::geom::vec2 as gv2;
+use pulso_engine::project::{LayerId, LayerSource, PropGroup};
+use pulso_engine::viewer as vw;
 
-/// Draws the Tools bar into `rect`: brand (About), Home, the tool slots with their fly-out
-/// menus and press-and-hold picks, options for the active tool (shape paint, puppet, roto),
-/// Snapping, then Discord, GitHub, website, appearance and workspace controls. Clicks apply
-/// tool, dialog, theme and workspace changes to `app` or run their commands.
-pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
+/// Height of the app bar.
+pub const HEIGHT: f32 = 44.0;
+/// A bar button's side.
+const BUTTON: f32 = 28.0;
+
+/// Draws the app bar into `rect`: the main menu, Home, the tool slots with their fly-out menus
+/// and press-and-hold picks, options for the active tool (shape paint, puppet, roto), Snapping,
+/// then the workspace selector and, on Linux, the window controls. Clicks apply tool, dialog and
+/// workspace changes to `app` or run their commands.
+pub fn show(app: &mut PulsoApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let p = ui.painter().clone();
-    p.rect_filled(rect, 0.0, t.header_bg);
-    p.line_segment([rect.left_bottom(), rect.right_bottom()], Stroke::new(1.0, t.app_bg));
+    // The bar is the window's frame around the islands: window colour, no line under it.
+    p.rect_filled(rect, 0.0, t.app_bg);
+    if app.custom_titlebar || app.integrated_titlebar {
+        crate::titlebar::drag_area(ui, rect);
+    }
     let cy = rect.center().y;
-    let x = rect.min.x + if app.integrated_titlebar && !app.ui.show_menu_bar { 80.0 } else { 10.0 };
-    let x = brand_and_home(app, ui, &p, x, cy);
+    let x = rect.min.x + if app.integrated_titlebar && !app.ui.show_menu_bar { 80.0 } else { crate::theme::ISLAND_GAP + 2.0 };
+    let x = menu_and_home(app, ui, &p, x, cy);
     let x = tool_slots(app, ui, &p, x, cy);
     let x = tool_options_bar(app, ui, &p, x + 10.0, cy);
     let x = snapping_toggle(app, ui, &p, x, cy);
     right_side(app, ui, &p, rect, x, cy);
 }
 
-/// The brand mark (About) and the Home button; returns the x after them.
-fn brand_and_home(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, mut x: f32, cy: f32) -> f32 {
-    let t = app.tokens;
-    let brand = Rect::from_min_size(pos2(x, cy - 12.0), vec2(24.0, 24.0));
-    paint_logo(p, brand);
-    let bresp = ui.interact(brand, egui::Id::unique("brand"), Sense::click());
-    app.auto.add_response("header.about", &bresp, "About EffectCraft");
-    widgets::focus_outline(ui, &bresp, &t);
-    if bresp.on_hover_text(tr("About EffectCraft")).clicked() {
-        app.dialog = Some(Dialog::About);
+/// A 28 pt icon button of the bar: Nodalia's icon `icon`, a rounded fill under the pointer and
+/// while `selected`.
+fn bar_button(ui: &mut egui::Ui, t: &Tokens, rect: Rect, icon: &str, id: &str, tip: &str, selected: bool) -> egui::Response {
+    let resp = ui.interact(rect, egui::Id::unique(("hdr", id)), Sense::click());
+    resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, true, selected, tip));
+    let fill = if selected {
+        t.pressed
+    } else if resp.hovered() {
+        t.hover
+    } else {
+        Color32::TRANSPARENT
+    };
+    ui.painter().rect_filled(rect, nodalia_theme::component::CONTROL_RADIUS, fill);
+    if let Some(glyph) = nodalia_theme::icons::get(icon) {
+        let ink = if selected || resp.hovered() { t.text } else { t.text_dim };
+        nodalia_theme::icons::paint(ui.painter(), rect.shrink(6.0), glyph, nodalia_theme::icons::Style::bold(ink));
     }
-    x += 32.0;
+    resp
+}
 
-    let home = Rect::from_min_size(pos2(x, cy - 13.0), vec2(26.0, 26.0));
-    let home_response = widgets::icon_button(ui, home, Icon::Home, app.ui.start_screen, &t, egui::Id::unique("tool-home")).on_hover_text(tr("Home"));
-    app.auto.add_response("header.home", &home_response, "Home");
-    if home_response.clicked() {
+/// The main menu's entries: label, command, params.
+const MAIN_MENU: [(&str, &str, &str); 4] = [
+    ("About Pulso", "app.about", ""),
+    ("Preferences…", "app.settings", "general"),
+    ("Keyboard Shortcuts…", "app.keyboardShortcuts", ""),
+    ("Quit", "app.quit", ""),
+];
+
+/// Nodalia's main menu (a hamburger at the start of the bar with the app's own entries) and the
+/// Home button; returns the x after them.
+fn menu_and_home(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, mut x: f32, cy: f32) -> f32 {
+    let t = app.tokens;
+    let square = |x: f32| Rect::from_min_size(pos2(x, cy - BUTTON / 2.0), vec2(BUTTON, BUTTON));
+    let menu = square(x);
+    let button = bar_button(ui, &t, menu, "menu", "mainMenu", tr("Main Menu"), false);
+    app.auto.add("header.mainMenu", menu, "Main Menu");
+    let mut chosen = None;
+    egui::Popup::menu(&button).show(|ui| {
+        ui.set_min_width(230.0);
+        for (i, (label, id, page)) in MAIN_MENU.iter().enumerate() {
+            if i == 3 {
+                ui.separator();
+            }
+            let row = ui.add(egui::Button::new(tr(label)).min_size(vec2(0.0, 26.0)));
+            app.auto.add(&format!("header.mainMenu.{id}"), row.rect, label);
+            if row.clicked() {
+                chosen = Some((*id, *page));
+                ui.close();
+            }
+        }
+    });
+    if let Some((id, page)) = chosen {
+        let params = if page.is_empty() { json!({}) } else { json!({"page": page}) };
+        if let Err(e) = crate::menus::invoke(app, ui.ctx(), id, params) {
+            app.ui.status = e;
+        }
+    }
+    x += BUTTON + 4.0;
+    let home = square(x);
+    app.auto.add("header.home", home, "Home");
+    if bar_button(ui, &t, home, "home", "home", tr("Home"), app.ui.start_screen).on_hover_text(tr("Home")).clicked() {
         app.ui.start_screen = !app.ui.start_screen;
     }
-    x += 30.0;
+    x = home.max.x + 8.0;
     p.line_segment([pos2(x, cy - 10.0), pos2(x, cy + 10.0)], Stroke::new(1.0, t.separator));
     x + 6.0
 }
 
 /// The tool slots (with group separators after camera tools and pan-behind); returns the x after them.
-fn tool_slots(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, mut x: f32, cy: f32) -> f32 {
+fn tool_slots(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, mut x: f32, cy: f32) -> f32 {
     let t = app.tokens;
     let held_id = egui::Id::unique("tool-slot-held");
     if ui.input(|i| i.pointer.any_pressed()) {
@@ -79,7 +134,7 @@ fn tool_slots(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, mu
 }
 
 /// One tool slot button in `r`: select on click, Ctrl+double-click Pan Behind, and the fly-out.
-fn tool_slot(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, si: usize, slot: &[Tool], r: Rect, held_id: egui::Id) {
+fn tool_slot(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, si: usize, slot: &[Tool], r: Rect, held_id: egui::Id) {
     let t = app.tokens;
     let cur = app.ui.slot_tools.get(si).copied().unwrap_or(slot[0]);
     let active = slot.contains(&app.ui.tool);
@@ -169,7 +224,7 @@ fn tool_slot(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, si:
 }
 
 /// The fly-out menu of a multi-tool slot: right-click or press-and-hold opens it.
-fn slot_flyout(app: &mut EffectcraftApp, ui: &mut egui::Ui, si: usize, slot: &[Tool], resp: &egui::Response, held_id: egui::Id) {
+fn slot_flyout(app: &mut PulsoApp, ui: &mut egui::Ui, si: usize, slot: &[Tool], resp: &egui::Response, held_id: egui::Id) {
     let id = resp.id;
     let held = ui.data(|d| d.get_temp::<egui::Id>(held_id)) == Some(id);
     let held_for = resp.is_pointer_button_down_on().then(|| ui.input(|i| i.pointer.press_start_time().map(|s| i.time - s))).flatten();
@@ -206,7 +261,7 @@ fn slot_flyout(app: &mut EffectcraftApp, ui: &mut egui::Ui, si: usize, slot: &[T
 }
 
 /// The ids of the selected shape layers: the options show their paint and edit it.
-fn selected_shape_layers(app: &EffectcraftApp) -> Vec<u64> {
+fn selected_shape_layers(app: &PulsoApp) -> Vec<u64> {
     app.session
         .active_comp()
         .map(|c| {
@@ -216,10 +271,10 @@ fn selected_shape_layers(app: &EffectcraftApp) -> Vec<u64> {
 }
 
 /// Mirrors the first selected shape layer's paint into the shape tool (as in After Effects).
-fn sync_layer_paint(app: &mut EffectcraftApp, shape_layers: &[u64]) {
+fn sync_layer_paint(app: &mut PulsoApp, shape_layers: &[u64]) {
     let layer_paint = shape_layers.first().and_then(|id| app.session.active_comp()?.layer(LayerId(*id))).map(|l| {
         let lt = l.layer_time(app.session.time());
-        (effectcraft_engine::commands::shape_stroke::first_paint(l, lt), effectcraft_engine::commands::shape_stroke::first_paint_kinds(l, lt))
+        (pulso_engine::commands::shape_stroke::first_paint(l, lt), pulso_engine::commands::shape_stroke::first_paint_kinds(l, lt))
     });
     if let Some(((fill, stroke, width), (fill_kind, stroke_kind))) = layer_paint {
         let rgb = |c: [f64; 4]| [c[0] as f32, c[1] as f32, c[2] as f32];
@@ -237,7 +292,7 @@ fn sync_layer_paint(app: &mut EffectcraftApp, shape_layers: &[u64]) {
 }
 
 /// Options for the active tool (shape creation, fill and stroke, puppet, roto); returns the x after them.
-fn tool_options_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, mut x: f32, cy: f32) -> f32 {
+fn tool_options_bar(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, mut x: f32, cy: f32) -> f32 {
     // Selected shape layers: the options show their paint and edit it (as in After Effects).
     let shape_layers = selected_shape_layers(app);
     sync_layer_paint(app, &shape_layers);
@@ -266,7 +321,7 @@ fn tool_options_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Paint
 }
 
 /// The Snapping checkbox, its label and options menu; returns the x where it started.
-fn snapping_toggle(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, x: f32, cy: f32) -> f32 {
+fn snapping_toggle(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, x: f32, cy: f32) -> f32 {
     let t = app.tokens;
     let snap = Rect::from_min_size(pos2(x, cy - 10.0), vec2(20.0, 20.0));
     // The engine owns snapping (View ▸ Snapping); the checkbox mirrors it.
@@ -283,154 +338,59 @@ fn snapping_toggle(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painte
     x
 }
 
-/// Right side: community buttons, appearance and workspaces; `left` is where the tools end.
-fn right_side(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, rect: Rect, left: f32, cy: f32) {
+/// Right side, from the right: the window controls (Linux) and the creator suite's workspace
+/// selector with the workspace actions. `left` is where the tools end.
+fn right_side(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, rect: Rect, left: f32, cy: f32) {
     let t = app.tokens;
-    let rx = community_buttons(app, ui, p, rect.max.x - 10.0, cy);
-    let mut rx = appearance_button(app, ui, rx, cy);
-    rx -= 10.0;
-    p.line_segment([pos2(rx, cy - 10.0), pos2(rx, cy + 10.0)], Stroke::new(1.0, t.separator));
-    rx -= 10.0;
-    let rx = workspace_menu(app, ui, p, rx, cy);
-    workspace_tabs(app, ui, p, rx, left, cy);
-}
-
-/// The Discord pill and the GitHub and website buttons, right to left from `rx`; returns the new `rx`.
-fn community_buttons(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, mut rx: f32, cy: f32) -> f32 {
-    let t = app.tokens;
-    // The pill fits its label (icon, gap, text) with even padding: it was a fixed 104 px with the
-    // text at its left, which left a wide gap on the right (#581).
-    let label = p.layout_no_wrap(tr("Discord").to_string(), Tokens::semibold(12.0), Color32::WHITE);
-    let discord = Rect::from_min_max(pos2(rx - (10.0 + 14.0 + 6.0 + label.size().x + 12.0), cy - 13.0), pos2(rx, cy + 13.0));
-    let dresp = ui.interact(discord, egui::Id::unique("hdr-discord"), Sense::click());
-    let dc = Color32::from_rgb(0x58, 0x65, 0xf2);
-    p.rect_filled(discord, 13.0, if dresp.hovered() { dc.gamma_multiply(1.2) } else { dc });
-    icons::paint(p, Rect::from_center_size(pos2(discord.min.x + 17.0, cy), vec2(14.0, 14.0)), Icon::Chat, Color32::WHITE);
-    p.galley(pos2(discord.min.x + 30.0, cy - label.size().y / 2.0), label, Color32::WHITE);
-    app.auto.add("header.discord", discord, "Join the ArtCraft Discord");
-    if dresp.on_hover_text(tr("Join the ArtCraft community on Discord")).clicked() {
-        let _ = app.session.execute("help.discord", json!({}));
+    let rx = rect.max.x - if app.custom_titlebar { crate::titlebar::WIDTH + 8.0 } else { crate::theme::ISLAND_GAP + 2.0 };
+    if app.custom_titlebar {
+        crate::titlebar::window_controls(app, ui, rect);
     }
-    rx = discord.min.x - 6.0;
-    for (id, icon, tip, cmd) in
-        [("hdr-github", Icon::Code, "EffectCraft on GitHub", "help.github"), ("hdr-web", Icon::Globe, "EffectCraft on getartcraft.com", "help.appPage")]
-    {
-        let r = Rect::from_min_max(pos2(rx - 26.0, cy - 13.0), pos2(rx, cy + 13.0));
-        if widgets::icon_button(ui, r, icon, false, &t, egui::Id::unique(id)).on_hover_text(tip).clicked() {
-            let _ = app.session.execute(cmd, json!({}));
+    let look = t.creator();
+    let names = app.workspace_names();
+    let shown: Vec<String> = names.iter().map(|w| workspace_label(w).to_string()).collect();
+    let current = workspace_label(&app.ui.workspace).to_string();
+    let ws_w = (p.layout_no_wrap(current.clone(), Tokens::ui(13.0), t.text).size().x + 44.0).clamp(130.0, 200.0);
+    if rx - ws_w < left + 8.0 {
+        return;
+    }
+    let ws_rect = Rect::from_min_size(pos2(rx - ws_w, cy - 15.0), vec2(ws_w, 30.0));
+    let mut wu = ui.new_child(egui::UiBuilder::new().max_rect(ws_rect).layout(egui::Layout::left_to_right(egui::Align::Center)));
+    let saved_from = crate::dock::WORKSPACES.len().min(names.len());
+    let refs: Vec<&str> = shown.iter().map(String::as_str).collect();
+    let actions = ["window.resetWorkspace", "window.saveWorkspace", "window.saveWorkspaceAs", "window.editWorkspaces"];
+    let action_labels = [
+        crate::i18n::command_label("window.resetWorkspace", "Reset to Saved Layout"),
+        crate::i18n::command_label("window.saveWorkspace", "Save Changes to this Workspace"),
+        crate::i18n::command_label("window.saveWorkspaceAs", "Save as New Workspace..."),
+        crate::i18n::command_label("window.editWorkspaces", "Edit Workspaces..."),
+    ];
+    let pick = nodalia_theme::creator::workspace_selector(&mut wu, &look, "pulso", &current, &refs, saved_from, &action_labels, ws_w);
+    app.auto.add("header.workspaces", wu.min_rect(), &current);
+    // Automation ids for the open list's rows, which the shared selector draws: its clickable
+    // widgets that take focus, in order, are the workspaces and then the actions.
+    let popup = egui::Id::NULL.with(("ndl_creator_workspace", "pulso"));
+    if egui::Popup::is_id_open(ui.ctx(), popup) {
+        let layer = egui::LayerId::new(egui::Order::Foreground, popup);
+        let rows: Vec<Rect> =
+            ui.ctx().viewport(|v| v.prev_pass.widgets.get_layer(layer).filter(|w| w.sense.senses_click() && w.sense.is_focusable()).map(|w| w.rect).collect());
+        let ids = names.iter().map(|w| format!("header.workspace.{w}")).chain(actions.iter().map(|a| format!("header.{a}")));
+        for (id, r) in ids.zip(rows) {
+            app.auto.add(&id, r, &id);
         }
-        app.auto.add(&format!("header.{}", &id[4..]), r, tip);
-        rx = r.min.x - 4.0;
     }
-    rx
-}
-
-/// Appearance: Sync with System, Light, Dark (a monitor, sun or moon), one click to the next;
-/// returns the new `rx`.
-fn appearance_button(app: &mut EffectcraftApp, ui: &mut egui::Ui, rx: f32, cy: f32) -> f32 {
-    let t = app.tokens;
-    let (icon, mode) = match app.session.prefs.appearance.appearance_mode.as_str() {
-        "auto" => (Icon::Monitor, tr("Sync with System")),
-        "light" => (Icon::Sun, tr("Light")),
-        _ => (Icon::Moon, tr("Dark")),
-    };
-    let tip = tr_args("Appearance Mode: {}", &[&mode]);
-    let r = Rect::from_min_max(pos2(rx - 26.0, cy - 13.0), pos2(rx, cy + 13.0));
-    let response = widgets::icon_button(ui, r, icon, false, &t, egui::Id::unique("hdr-appearance")).on_hover_text(&tip);
-    if response.clicked() {
-        app.cycle_appearance(ui.ctx());
-    }
-    response.context_menu(|ui| appearance_menu(app, ui));
-    app.auto.add("header.appearance", r, &tip);
-    r.min.x - 4.0
-}
-
-/// The appearance button's context menu: settings and the favorite themes.
-fn appearance_menu(app: &mut EffectcraftApp, ui: &mut egui::Ui) {
-    let settings = ui.button(tr("Appearance Settings…"));
-    app.auto.add("header.appearanceSettings", settings.rect, "Appearance Settings…");
-    if settings.clicked() {
-        crate::panels::settings::open(app, "appearance");
-        ui.close();
-    }
-    let favorites = app.session.prefs.appearance.favorite_themes.clone();
-    for options in [effectcraft_engine::prefs::LIGHT_THEMES, effectcraft_engine::prefs::DARK_THEMES] {
-        let group: Vec<_> = options.iter().filter(|(_, id)| favorites.iter().any(|saved| saved == id)).collect();
-        if !group.is_empty() {
-            ui.separator();
-        }
-        for (label, id) in group {
-            let r = ui.selectable_label(app.ui.theme.name() == *id, tr(label));
-            app.auto.add(&format!("header.favoriteTheme.{id}"), r.rect, label);
-            if r.clicked() {
-                if let Some(kind) = crate::theme::ThemeKind::from_name(id) {
-                    app.set_theme(ui.ctx(), kind);
-                }
-                ui.close();
+    match pick {
+        Some(nodalia_theme::creator::WorkspacePick::Workspace(i)) => {
+            if let Some(w) = names.get(i) {
+                app.set_workspace(w);
             }
         }
-    }
-}
-
-/// The » button with the menu of all workspaces; returns the new `rx`.
-fn workspace_menu(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, rx: f32, cy: f32) -> f32 {
-    let t = app.tokens;
-    let more = Rect::from_min_max(pos2(rx - 20.0, cy - 11.0), pos2(rx, cy + 11.0));
-    let mresp = ui.interact(more, egui::Id::unique("ws-more"), Sense::click());
-    p.text(more.center(), Align2::CENTER_CENTER, "»", Tokens::ui(15.0), if mresp.hovered() { t.text } else { t.text_dim });
-    app.auto.add("header.workspaces", more, "Workspaces");
-    let current = app.ui.workspace.clone();
-    crate::widgets::context_menu(&mresp, |ui| ws_menu(app, ui, &current));
-    if mresp.clicked() {
-        widgets::open_popup(ui, egui::Id::unique("ws-pop"));
-    }
-    let names: Vec<String> = crate::dock::WORKSPACES.iter().map(|s| crate::i18n::command_label("window.workspace", s).to_string()).collect();
-    if let Some(i) = widgets::popup_menu(
-        ui,
-        egui::Id::unique("ws-pop"),
-        more.left_bottom() - vec2(140.0, 0.0),
-        &names,
-        crate::dock::WORKSPACES.iter().position(|w| *w == app.ui.workspace),
-    ) {
-        app.set_workspace(crate::dock::WORKSPACES[i]);
-    }
-    more.min.x - 6.0
-}
-
-/// Workspace tabs, right to left from `rx`, stopping 120 px right of `left`.
-/// After Effects 2026's order (right to left here): Default, Review, Learn, Small Screen, Standard.
-fn workspace_tabs(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, mut rx: f32, left: f32, cy: f32) {
-    let t = app.tokens;
-    let shown = ["Standard", "Small Screen", "Learn", "Review", "Default"];
-    for name in shown {
-        let g = p.layout_no_wrap(crate::i18n::command_label("window.workspace", name).to_string(), Tokens::ui(12.0), t.text);
-        let w = g.size().x + 16.0;
-        let r = Rect::from_min_max(pos2(rx - w, cy - 13.0), pos2(rx, cy + 13.0));
-        if r.min.x < left + 120.0 {
-            break;
+        Some(nodalia_theme::creator::WorkspacePick::Action(i)) => {
+            if let Some(id) = actions.get(i) {
+                run_workspace_command(app, ui, id);
+            }
         }
-        let active = app.ui.workspace == name;
-        let resp = ui.interact(r, egui::Id::unique(("ws", name)), Sense::click());
-        let col = if active {
-            t.hot_text
-        } else if resp.hovered() {
-            t.text
-        } else {
-            t.text_dim
-        };
-        p.galley_with_override_text_color(pos2(r.min.x + 8.0, cy - g.size().y / 2.0), g, col);
-        if active {
-            p.line_segment([pos2(r.min.x + 8.0, r.max.y - 3.0), pos2(r.max.x - 8.0, r.max.y - 3.0)], Stroke::new(2.0, t.hot_text));
-        }
-        app.auto.add(&format!("header.workspace.{name}"), r, name);
-        if resp.clicked() {
-            app.set_workspace(name);
-        }
-        rx = r.min.x - 2.0;
-        // Right-clicking a workspace opens the same options as the » button, which is where After
-        // Effects keeps them (reset, save, save a copy, edit).
-        let target = name.to_string();
-        crate::widgets::context_menu(&resp, |ui| ws_menu(app, ui, &target));
+        None => {}
     }
 }
 
@@ -438,7 +398,7 @@ fn workspace_tabs(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter
 /// After Effects (#1072): a text layer from the Type tools; from the shape tools, a shape that
 /// fills the comp — into the selected shape layer's Contents, as a mask on the selected layer
 /// (any non-shape layer, or Tool Creates Mask), or as a new shape layer when neither applies.
-fn create_on_double_click(app: &EffectcraftApp, tool: Tool) -> Option<(&'static str, serde_json::Value)> {
+fn create_on_double_click(app: &PulsoApp, tool: Tool) -> Option<(&'static str, serde_json::Value)> {
     match tool {
         // `invoke` turns empty params into an insertion point in the comp centre that starts
         // editing (#866), which is what double-clicking the Type tool should do.
@@ -466,8 +426,8 @@ fn create_on_double_click(app: &EffectcraftApp, tool: Tool) -> Option<(&'static 
                 // The box in layer space, so a moved, scaled or rotated layer still gets a
                 // comp-filling mask: all four corners are mapped, and their bounds are the
                 // smallest axis-aligned box around the comp box.
-                let ctx = effectcraft_engine::render::EvalCtx::new(&app.session.project, app.session.active_comp_id()?, comp, app.session.time());
-                let inv = ctx.layer_to_comp(l).0.inverse().unwrap_or(effectcraft_engine::geom::Mat3::IDENTITY);
+                let ctx = pulso_engine::render::EvalCtx::new(&app.session.project, app.session.active_comp_id()?, comp, app.session.time());
+                let inv = ctx.layer_to_comp(l).0.inverse().unwrap_or(pulso_engine::geom::Mat3::IDENTITY);
                 let (x0, y0, x1, y1) = (cw / 2.0 - w / 2.0, ch / 2.0 - h / 2.0, cw / 2.0 + w / 2.0, ch / 2.0 + h / 2.0);
                 let pts = [gv2(x0, y0), gv2(x1, y0), gv2(x1, y1), gv2(x0, y1)].map(|p| inv.apply(p));
                 let (mut lo, mut hi) = ([f64::INFINITY; 2], [f64::NEG_INFINITY; 2]);
@@ -488,7 +448,7 @@ fn create_on_double_click(app: &EffectcraftApp, tool: Tool) -> Option<(&'static 
 
 /// The Snapping options menu beside the checkbox: After Effects' Snap Edges Extended and Snap to
 /// Features in Collapsed Compositions and Text Layers (`view.snappingOptions`).
-fn snapping_options(app: &mut EffectcraftApp, ui: &mut egui::Ui, r: Rect) {
+fn snapping_options(app: &mut PulsoApp, ui: &mut egui::Ui, r: Rect) {
     let t = app.tokens;
     let pop = egui::Id::unique("snap-options");
     if widgets::icon_button(ui, r, Icon::ChevronDown, false, &t, egui::Id::unique("snap-options-button")).on_hover_text(tr("Snapping options")).clicked() {
@@ -508,7 +468,7 @@ fn snapping_options(app: &mut EffectcraftApp, ui: &mut egui::Ui, r: Rect) {
 }
 
 /// Set the shape tools' options (`shape.toolOptions`).
-fn tool_options(app: &mut EffectcraftApp, v: serde_json::Value) {
+fn tool_options(app: &mut PulsoApp, v: serde_json::Value) {
     if let Err(e) = app.session.execute("shape.toolOptions", v) {
         app.ui.status = e.to_string();
     }
@@ -517,7 +477,7 @@ fn tool_options(app: &mut EffectcraftApp, v: serde_json::Value) {
 /// The Colors property of the first Gradient Fill (`gfill`) or Gradient Stroke (`gstroke`) on the
 /// shape `layers`, in contents order through nested groups: (layer, property uid). The toolbar's
 /// gradient swatch edits it in the Gradient Editor.
-fn gradient_colors(app: &EffectcraftApp, layers: &[u64], paint: &str) -> Option<(u64, u64)> {
+fn gradient_colors(app: &PulsoApp, layers: &[u64], paint: &str) -> Option<(u64, u64)> {
     fn find(g: &PropGroup, paint: &str, depth: usize) -> Option<u64> {
         if depth >= 16 {
             return None;
@@ -539,7 +499,7 @@ fn picker_id(key: &str) -> egui::Id {
 
 /// Tool Creates Shape / Tool Creates Mask: with a shape layer selected, whether the shape tools
 /// and the Pen draw shapes into it or masks on it. Returns the next x.
-fn creates_buttons(app: &mut EffectcraftApp, ui: &mut egui::Ui, mut x: f32, cy: f32) -> f32 {
+fn creates_buttons(app: &mut PulsoApp, ui: &mut egui::Ui, mut x: f32, cy: f32) -> f32 {
     let t = app.tokens;
     for (mask, icon, tip, key) in [(false, Icon::ShapeLayer, "Tool Creates Shape", "createsShape"), (true, Icon::MaskVis, "Tool Creates Mask", "createsMask")] {
         let r = Rect::from_min_size(pos2(x, cy - 13.0), vec2(26.0, 26.0));
@@ -555,11 +515,11 @@ fn creates_buttons(app: &mut EffectcraftApp, ui: &mut egui::Ui, mut x: f32, cy: 
 
 /// Fill and Stroke (the words open Fill Options / Stroke Options), their swatches and the
 /// Stroke Width: for new shapes, and for the selected shape layers. Returns the next x.
-fn fill_stroke_options(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, shape_layers: &[u64], mut x: f32, cy: f32) -> f32 {
+fn fill_stroke_options(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, shape_layers: &[u64], mut x: f32, cy: f32) -> f32 {
     let t = app.tokens;
     // The selected shape layers take the colours and the width too, one undo step per picker
     // session or drag.
-    let paint = |app: &mut EffectcraftApp, key: &str, v: serde_json::Value| {
+    let paint = |app: &mut PulsoApp, key: &str, v: serde_json::Value| {
         if shape_layers.is_empty() {
             return;
         }
@@ -638,7 +598,7 @@ fn fill_stroke_options(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Pa
 
 /// A Fill or Stroke kind: for new shapes, and (as in After Effects) for the selected shape
 /// layers' fills or strokes, which None switches off (#732).
-fn paint_kind(app: &mut EffectcraftApp, shape_layers: &[u64], key: &str, kind: PaintKind) {
+fn paint_kind(app: &mut PulsoApp, shape_layers: &[u64], key: &str, kind: PaintKind) {
     let k_type = format!("{key}Type");
     tool_options(app, json!({&k_type: kind.id()}));
     if shape_layers.is_empty() {
@@ -657,7 +617,7 @@ fn paint_kind(app: &mut EffectcraftApp, shape_layers: &[u64], key: &str, kind: P
 
 /// Fill Options / Stroke Options: None, Solid Color, Linear Gradient or Radial Gradient, and the
 /// blend mode and opacity new shapes get (After Effects' dialogs, applied as they change).
-fn paint_options_popup(app: &mut EffectcraftApp, ui: &mut egui::Ui, shape_layers: &[u64], key: &str, title: &str, pos: egui::Pos2) {
+fn paint_options_popup(app: &mut PulsoApp, ui: &mut egui::Ui, shape_layers: &[u64], key: &str, title: &str, pos: egui::Pos2) {
     let id = egui::Id::unique(("tool-paint-options", key));
     if !widgets::popup_is_open(ui, id) {
         return;
@@ -764,7 +724,7 @@ fn paint_swatch(p: &egui::Painter, r: Rect, paint: &ToolPaint, hovered: bool, t:
 
 /// Roto Brush / Refine Edge tool options: the brush Diameter (⌘/Ctrl-drag in the Layer panel
 /// sets it too, as in After Effects). Returns the next x.
-fn roto_options(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, mut x: f32, cy: f32) -> f32 {
+fn roto_options(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, mut x: f32, cy: f32) -> f32 {
     let t = app.tokens;
     let refine = app.ui.tool.roto_kind(false).is_some_and(|k| k.starts_with("refine"));
     let o = &app.session.state.roto;
@@ -791,7 +751,7 @@ fn roto_options(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, 
 
 /// Puppet tool options: Mesh: Show, Expansion, Density (for new meshes and the selected
 /// layer's meshes). Returns the next x.
-fn puppet_options(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, mut x: f32, cy: f32) -> f32 {
+fn puppet_options(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, mut x: f32, cy: f32) -> f32 {
     let t = app.tokens;
     let o = app.session.state.puppet.clone();
     p.text(pos2(x, cy), Align2::LEFT_CENTER, tr("Mesh:"), Tokens::ui(12.0), t.text_dim);
@@ -858,69 +818,10 @@ fn workspace_label(name: &str) -> &str {
     if crate::dock::WORKSPACES.contains(&name) { crate::i18n::command_label("window.workspace", name) } else { name }
 }
 
-fn ws_menu(app: &mut EffectcraftApp, ui: &mut egui::Ui, target: &str) {
-    for w in app.workspace_names() {
-        if ui.selectable_label(app.ui.workspace == w, workspace_label(&w)).clicked() {
-            app.set_workspace(&w);
-            ui.close();
-        }
-    }
-    ui.separator();
-    // The workspace options After Effects puts at the foot of its workspace menu, in its order and
-    // grouping: reset the current layout, save over it, save a copy, then edit the list. All four
-    // are engine commands, so a script drives the same things from the command line.
-    for (id, source) in [
-        ("window.resetWorkspace", "Reset to Saved Layout"),
-        ("window.saveWorkspace", "Save Changes to this Workspace"),
-        ("window.saveWorkspaceAs", "Save as New Workspace..."),
-    ] {
-        if ui.button(crate::i18n::command_label(id, source)).clicked() {
-            // The menu belongs to the tab it was opened on, so resetting or saving from a right
-            // click acts on that workspace. Save As and Edit keep working on the workspace that is
-            // showing: Save As would otherwise switch the layout before the user has named the
-            // copy, and cancelling the dialog would leave the switch behind.
-            let acts_on_its_tab = matches!(id, "window.resetWorkspace" | "window.saveWorkspace");
-            if acts_on_its_tab && app.ui.workspace != target {
-                app.set_workspace(target);
-            }
-            run_workspace_command(app, ui, id);
-            ui.close();
-        }
-    }
-    ui.separator();
-    if ui.button(crate::i18n::command_label("window.editWorkspaces", "Edit Workspaces...")).clicked() {
-        run_workspace_command(app, ui, "window.editWorkspaces");
-        ui.close();
-    }
-}
-
 /// Runs a workspace command, showing a failure in the status line as the menu bar does.
-fn run_workspace_command(app: &mut EffectcraftApp, ui: &egui::Ui, id: &str) {
+fn run_workspace_command(app: &mut PulsoApp, ui: &egui::Ui, id: &str) {
     if let Err(e) = crate::menus::invoke(app, ui.ctx(), id, json!({})) {
         app.ui.status = e;
-    }
-}
-
-/// The ArtCraft mark as supplied in `docs/brand` (the README's and getartcraft.com's logo; used
-/// unmodified, see `docs/brand/LICENSE-brand.txt`).
-static ARTCRAFT_MARK: &[u8] = include_bytes!("../../../docs/brand/artcraft-mark.png");
-
-/// The ArtCraft mark in `r` (decoded once into a mipmapped texture, so it stays crisp from the
-/// 24 px Tools bar to the About dialog). Nothing is drawn if it can't be decoded.
-pub fn paint_logo(p: &egui::Painter, r: Rect) {
-    let ctx = p.ctx();
-    let id = egui::Id::unique("artcraft-mark");
-    let tex = ctx.data(|d| d.get_temp::<Option<egui::TextureHandle>>(id)).unwrap_or_else(|| {
-        let tex = image::load_from_memory_with_format(ARTCRAFT_MARK, image::ImageFormat::Png).ok().map(|img| {
-            let img = img.to_rgba8();
-            let ci = egui::ColorImage::from_rgba_unmultiplied([img.width() as usize, img.height() as usize], img.as_raw());
-            ctx.load_texture("artcraft-mark", ci, egui::TextureOptions::LINEAR.with_mipmap_mode(Some(egui::TextureFilter::Linear)))
-        });
-        ctx.data_mut(|d| d.insert_temp(id, tex.clone()));
-        tex
-    });
-    if let Some(t) = tex {
-        p.image(t.id(), r, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
     }
 }
 
@@ -928,7 +829,7 @@ pub fn paint_logo(p: &egui::Painter, r: Rect) {
 mod tests {
     use super::*;
 
-    fn frame(app: &mut EffectcraftApp, ctx: &egui::Context, time: f64, events: Vec<egui::Event>) {
+    fn frame(app: &mut PulsoApp, ctx: &egui::Context, time: f64, events: Vec<egui::Event>) {
         app.auto.begin_frame();
         let mut out = ctx.run_ui(
             egui::RawInput { time: Some(time), events, screen_rect: Some(Rect::from_min_size(egui::Pos2::ZERO, vec2(1400.0, 500.0))), ..Default::default() },
@@ -950,7 +851,7 @@ mod tests {
 
     #[test]
     fn long_press_type_keeps_the_tool_until_vertical_is_selected() {
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = PulsoApp::new(pulso_engine::Session::default());
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         frame(&mut app, &ctx, 0.0, vec![]);
@@ -978,7 +879,7 @@ mod tests {
     /// Alt/Option-click cycles a Tools-bar flyout slot without opening the menu.
     #[test]
     fn alt_click_cycles_the_type_slot() {
-        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut app = PulsoApp::new(pulso_engine::Session::default());
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         frame(&mut app, &ctx, 0.0, vec![]);
@@ -1008,9 +909,9 @@ mod tests {
     /// create a text layer: the first click was modified.
     #[test]
     fn mixed_modifier_same_frame_double_click_does_not_create() {
-        let mut s = effectcraft_engine::Session::default();
+        let mut s = pulso_engine::Session::default();
         s.execute("comp.new", json!({"width": 640, "height": 360, "duration": 2})).unwrap();
-        let mut app = EffectcraftApp::new(s);
+        let mut app = PulsoApp::new(s);
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         frame(&mut app, &ctx, 0.0, vec![]);
@@ -1038,16 +939,16 @@ mod tests {
     /// Tools that create nothing stay quiet.
     #[test]
     fn double_clicking_creation_tools_makes_instances() {
-        let mut s = effectcraft_engine::Session::default();
+        let mut s = pulso_engine::Session::default();
         s.execute("comp.new", json!({"width": 640, "height": 360, "duration": 2})).unwrap();
-        let mut app = EffectcraftApp::new(s);
+        let mut app = PulsoApp::new(s);
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         frame(&mut app, &ctx, 0.0, vec![]);
         frame(&mut app, &ctx, 0.1, vec![]);
         let pointer = |pos, pressed| egui::Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed, modifiers: Default::default() };
         // Both click pairs in one frame, as egui counts a double-click.
-        let double_click = |app: &mut EffectcraftApp, ctx: &egui::Context, t: f64, id: &str| {
+        let double_click = |app: &mut PulsoApp, ctx: &egui::Context, t: f64, id: &str| {
             let e = app.auto.elements.iter().find(|w| w.id == id).unwrap_or_else(|| panic!("no {id}"));
             let at = egui::pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0);
             frame(app, ctx, t, vec![egui::Event::PointerMoved(at), pointer(at, true), pointer(at, false), pointer(at, true), pointer(at, false)]);
@@ -1090,7 +991,7 @@ mod tests {
             assert_eq!(comp.layers.len(), 2, "a mask, not a layer");
             let p = comp.layers[0].props.prop("masks/Mask 1/path").expect("Mask 1");
             let sh = p.value.as_path().expect("a mask path");
-            let b = effectcraft_path::bounds(&[effectcraft_path::to_kurbo(sh)]).expect("bounds");
+            let b = pulso_path::bounds(&[pulso_path::to_kurbo(sh)]).expect("bounds");
             // The text layer is anchored top-left and centred in the comp: layer = comp - centre.
             for (got, want) in [(b.x0, -320.0), (b.y0, -180.0), (b.x1, 320.0), (b.y1, 180.0)] {
                 assert!((got - want).abs() < 1.0, "the mask fills the comp: {got} vs {want}");
@@ -1101,7 +1002,7 @@ mod tests {
         assert_eq!(app.session.active_comp().unwrap().layers.len(), 2, "the Hand tool creates nothing");
         assert!(app.ui.status.is_empty(), "{}", app.ui.status);
         // Without a comp the command fails with the status line, never a panic.
-        let mut bare = EffectcraftApp::new(effectcraft_engine::Session::default());
+        let mut bare = PulsoApp::new(pulso_engine::Session::default());
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &bare.tokens, crate::i18n::language(&bare));
         frame(&mut bare, &ctx, 0.0, vec![]);
@@ -1114,9 +1015,9 @@ mod tests {
     /// the size of the comp, as the Rectangle does.
     #[test]
     fn double_click_ellipse_with_no_selection_makes_a_layer() {
-        let mut s = effectcraft_engine::Session::default();
+        let mut s = pulso_engine::Session::default();
         s.execute("comp.new", json!({"width": 640, "height": 360, "duration": 2})).unwrap();
-        let mut app = EffectcraftApp::new(s);
+        let mut app = PulsoApp::new(s);
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         frame(&mut app, &ctx, 0.0, vec![]);
@@ -1140,15 +1041,15 @@ mod tests {
     /// layer instead of adding to its Contents.
     #[test]
     fn double_click_masks_a_shape_layer_while_tool_creates_mask() {
-        let mut s = effectcraft_engine::Session::default();
+        let mut s = pulso_engine::Session::default();
         s.execute("comp.new", json!({"width": 640, "height": 360, "duration": 2})).unwrap();
-        let mut app = EffectcraftApp::new(s);
+        let mut app = PulsoApp::new(s);
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         frame(&mut app, &ctx, 0.0, vec![]);
         frame(&mut app, &ctx, 0.1, vec![]);
         let pointer = |pos, pressed| egui::Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed, modifiers: Default::default() };
-        let double_click = |app: &mut EffectcraftApp, ctx: &egui::Context, t: f64, id: &str| {
+        let double_click = |app: &mut PulsoApp, ctx: &egui::Context, t: f64, id: &str| {
             let e = app.auto.elements.iter().find(|w| w.id == id).unwrap_or_else(|| panic!("no {id}"));
             let at = egui::pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0);
             frame(app, ctx, t, vec![egui::Event::PointerMoved(at), pointer(at, true), pointer(at, false), pointer(at, true), pointer(at, false)]);
@@ -1177,21 +1078,21 @@ mod tests {
     /// Radius is a quarter of its Outer Radius.
     #[test]
     fn double_click_shape_tool_geometry_defaults() {
-        let mut s = effectcraft_engine::Session::default();
+        let mut s = pulso_engine::Session::default();
         s.execute("comp.new", json!({"width": 640, "height": 360, "duration": 2})).unwrap();
-        let mut app = EffectcraftApp::new(s);
+        let mut app = PulsoApp::new(s);
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         frame(&mut app, &ctx, 0.0, vec![]);
         frame(&mut app, &ctx, 0.1, vec![]);
         let pointer = |pos, pressed| egui::Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed, modifiers: Default::default() };
-        let double_click = |app: &mut EffectcraftApp, ctx: &egui::Context, t: f64, id: &str| {
+        let double_click = |app: &mut PulsoApp, ctx: &egui::Context, t: f64, id: &str| {
             let e = app.auto.elements.iter().find(|w| w.id == id).unwrap_or_else(|| panic!("no {id}"));
             let at = egui::pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0);
             frame(app, ctx, t, vec![egui::Event::PointerMoved(at), pointer(at, true), pointer(at, false), pointer(at, true), pointer(at, false)]);
         };
         // Each shape on its own layer: deselect so the next double-click makes a new one.
-        let deselected = |app: &mut EffectcraftApp, ctx: &egui::Context, t: f64| {
+        let deselected = |app: &mut PulsoApp, ctx: &egui::Context, t: f64| {
             app.session.execute("edit.deselectAll", json!({})).unwrap();
             frame(app, ctx, t, vec![]);
         };
@@ -1239,15 +1140,15 @@ mod tests {
     /// has its Stroke off.
     #[test]
     fn double_click_paints_with_the_shape_tools_fill_and_stroke() {
-        let mut s = effectcraft_engine::Session::default();
+        let mut s = pulso_engine::Session::default();
         s.execute("comp.new", json!({"width": 640, "height": 360, "duration": 2})).unwrap();
-        let mut app = EffectcraftApp::new(s);
+        let mut app = PulsoApp::new(s);
         let ctx = egui::Context::default();
         crate::theme::install(&ctx, &app.tokens, crate::i18n::language(&app));
         frame(&mut app, &ctx, 0.0, vec![]);
         frame(&mut app, &ctx, 0.1, vec![]);
         let pointer = |pos, pressed| egui::Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed, modifiers: Default::default() };
-        let double_click = |app: &mut EffectcraftApp, ctx: &egui::Context, t: f64, id: &str| {
+        let double_click = |app: &mut PulsoApp, ctx: &egui::Context, t: f64, id: &str| {
             let e = app.auto.elements.iter().find(|w| w.id == id).unwrap_or_else(|| panic!("no {id}"));
             let at = egui::pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0);
             frame(app, ctx, t, vec![egui::Event::PointerMoved(at), pointer(at, true), pointer(at, false), pointer(at, true), pointer(at, false)]);

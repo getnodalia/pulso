@@ -2,11 +2,11 @@
 //! the values it was made with.
 
 use crate::import::helpers::comp;
-use effectcraft_aep::import::LossCategory;
-use effectcraft_keyframe::{Gradient, Value};
-use effectcraft_project::{Layer, LayerSource, Project, PropGroup};
+use pulso_aep::import::LossCategory;
+use pulso_keyframe::{Gradient, Value};
+use pulso_project::{Layer, LayerSource, Project, PropGroup};
 
-fn shape_layer(p: &Project, r: &effectcraft_aep::import::ImportResult) -> Layer {
+fn shape_layer(p: &Project, r: &pulso_aep::import::ImportResult) -> Layer {
     let (_, c) = comp(p, r, "C");
     c.layers.iter().find(|l| matches!(l.source, LayerSource::Shape)).cloned().expect("a shape layer")
 }

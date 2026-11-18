@@ -1,18 +1,18 @@
 //! ProRes `colr` atom (#2801): it describes the frames the render path made, read back with
-//! FilmCraft's demuxer and, when installed, ffprobe as an external oracle. A PQ or HLG render
+//! Toma's demuxer and, when installed, ffprobe as an external oracle. A PQ or HLG render
 //! read back into a managed project has the colours it was rendered from (#2849).
 
 use std::path::Path;
 use std::process::Command;
 
-use effectcraft_color::Label;
-use effectcraft_export::render_queue::{Channels, OutputFormat, OutputModule, RenderSettings, TimeSpan, sequence_path};
-use effectcraft_export::{Job, export};
-use effectcraft_media::MediaPool;
-use effectcraft_project::{ColorSpace, Comp, ItemKind, LayerSource, Project, Solid, build};
-use effectcraft_render::{FootageSource, NoFootage};
-use effectcraft_time::{FrameRate, Tick};
 use filmcraft_isobmff::{ColorInfo, TrackKind};
+use pulso_color::Label;
+use pulso_export::render_queue::{Channels, OutputFormat, OutputModule, RenderSettings, TimeSpan, sequence_path};
+use pulso_export::{Job, export};
+use pulso_media::MediaPool;
+use pulso_project::{ColorSpace, Comp, ItemKind, LayerSource, Project, Solid, build};
+use pulso_render::{FootageSource, NoFootage};
+use pulso_time::{FrameRate, Tick};
 
 struct Row {
     name: &'static str,
@@ -72,7 +72,7 @@ fn render(row: &Row, path: &Path) {
     run(&p, comp, &NoFootage, &output, path);
 }
 
-fn run(p: &Project, comp: effectcraft_project::ItemId, footage: &dyn FootageSource, output: &OutputModule, path: &Path) {
+fn run(p: &Project, comp: pulso_project::ItemId, footage: &dyn FootageSource, output: &OutputModule, path: &Path) {
     let settings = RenderSettings { time_span: TimeSpan::LengthOfComp, ..Default::default() };
     let out = path.to_string_lossy().to_string();
     let job = Job {
@@ -139,7 +139,7 @@ fn hdr_renders_reimport_with_their_colours() {
         let movie = dir.join(format!("{name}.mov"));
         render(row, &movie);
 
-        let footage = effectcraft_media::probe(&movie).expect("probe");
+        let footage = pulso_media::probe(&movie).expect("probe");
         let profile = footage.color_profile;
         let mut p = Project::default();
         p.settings.working_space = SRGB;

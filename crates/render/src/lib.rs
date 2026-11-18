@@ -1,4 +1,4 @@
-//! The EffectCraft compositor (CPU reference path).
+//! The Pulso compositor (CPU reference path).
 //!
 //! `Renderer::comp_frame` renders a composition at a time:
 //! bottom-to-top over visible layers → **source** (solid, footage, text, shapes, precomp) →
@@ -28,14 +28,14 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 pub use auto::{AutoKey, AutoPick};
 pub use cache::{CacheStats, LayerCache, LayerStore, PrefetchStore};
-use effectcraft_color::BlendMode;
-use effectcraft_effects::{Buf, EffectCtx, EffectEnv, EffectHost, LayerPixels, Params};
-use effectcraft_geom::{Mat3, Mat4, vec2};
-use effectcraft_project::{Comp, Footage, FootageKind, FrameBlend, GroupKind, ItemId, ItemKind, Layer, LayerSource, MatteKind, Project, Quality, Sampling};
-pub use effectcraft_raster::Image;
-use effectcraft_raster::{WarpOpts, composite_warp_changed};
-use effectcraft_time::{FrameRate, TICKS_PER_SECOND, Tick};
 pub use eval::{EvalCtx, ExprHost, effect_bounds, source_size};
+use pulso_color::BlendMode;
+use pulso_effects::{Buf, EffectCtx, EffectEnv, EffectHost, LayerPixels, Params};
+use pulso_geom::{Mat3, Mat4, vec2};
+use pulso_project::{Comp, Footage, FootageKind, FrameBlend, GroupKind, ItemId, ItemKind, Layer, LayerSource, MatteKind, Project, Quality, Sampling};
+pub use pulso_raster::Image;
+use pulso_raster::{WarpOpts, composite_warp_changed};
+use pulso_time::{FrameRate, TICKS_PER_SECOND, Tick};
 use rayon::prelude::*;
 
 mod accel;

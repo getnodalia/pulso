@@ -4,11 +4,11 @@
 //! The fixture-free tests edit the committed `synthetic.aep` (saved by 26.2.1x2). The fixture tests
 //! read, per family of the corpus, the same-session 2026 save `<family>-26.aep` and its copies
 //! `<family>-25x.aep` (File ▸ Save a Copy As 25.x) and `<family>-24x.aep` (24.x) from
-//! `EFFECTCRAFT_AEP_FIXTURES`; they are ignored until the corpus holds those files.
+//! `PULSO_AEP_FIXTURES`; they are ignored until the corpus holds those files.
 
-use effectcraft_aep::import::{AeVersionInfo, ImportOptions, ImportReport, ImportResult, TESTED_MAJORS, UNKNOWN, analyze, import};
-use effectcraft_aep::{AepFile, Body, Chunk, parse, write};
-use effectcraft_project::Project;
+use pulso_aep::import::{AeVersionInfo, ImportOptions, ImportReport, ImportResult, TESTED_MAJORS, UNKNOWN, analyze, import};
+use pulso_aep::{AepFile, Body, Chunk, parse, write};
+use pulso_project::Project;
 
 const SYNTHETIC: &[u8] = include_bytes!("../../fixtures/synthetic.aep");
 
@@ -136,7 +136,7 @@ const FAMILIES: &[&str] =
     &["1200-lumetri", "3d", "effects", "footage-precomp", "keyframes", "layers-comps", "markers", "masks", "settings-a", "shapes", "styles", "text"];
 
 /// The import of a file: the project as JSON, the report and the parsed versions.
-fn import_file(name: &str) -> Option<(serde_json::Value, ImportReport, effectcraft_project::ProjectSettings)> {
+fn import_file(name: &str) -> Option<(serde_json::Value, ImportReport, pulso_project::ProjectSettings)> {
     let bytes = crate::common::try_file(name)?;
     let mut project = Project::default();
     let none = |_: &str| false;

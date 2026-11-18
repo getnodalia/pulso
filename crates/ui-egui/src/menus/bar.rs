@@ -1,7 +1,7 @@
 use super::entries::{entry_checked, entry_enabled, entry_label, entry_shortcut, menu_choice};
 use super::invoke::invoke;
 use super::shortcuts::shortcut_text;
-use super::{EffectcraftApp, MenuEntry, MenuNode, Value, json};
+use super::{MenuEntry, MenuNode, PulsoApp, Value, json};
 
 /// The id under which [`menu_bar`] remembers which of its menus was open at the end of the last
 /// frame (its title's open look, and the hover that switches between the titles).
@@ -30,7 +30,7 @@ fn last_pointer_id() -> egui::Id {
 /// egui (only the cursor leaving), so there is no click to close on and a graze must not drop the
 /// menu. The closing press itself still reaches the widget under it, as a click does in After
 /// Effects.
-pub fn menu_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui) {
+pub fn menu_bar(app: &mut PulsoApp, ui: &mut egui::Ui) {
     let ctx = ui.ctx().clone();
     let mut clicked: Option<(String, Value)> = None;
     let mut nav = crate::menu_keys::Nav::default();
@@ -50,7 +50,7 @@ pub fn menu_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui) {
     ui.horizontal_centered(|ui| {
         ui.add_space(6.0);
         egui::MenuBar::new().config(egui::containers::menu::MenuConfig::new().style(crate::widgets::menu_style)).ui(ui, |ui| {
-            for node in effectcraft_engine::menus::menu_bar() {
+            for node in pulso_engine::menus::menu_bar() {
                 let MenuNode::Submenu { label, children } = node else { continue };
                 // The open title takes the open button's look while its menu is up (as in AE).
                 let inactive = ui.style().visuals.widgets.inactive;
@@ -132,10 +132,10 @@ pub fn menu_bar(app: &mut EffectcraftApp, ui: &mut egui::Ui) {
 
 /// The entries of top-level menu `name` (the Effect menu is the Effect Controls panel's context
 /// menu); returns the chosen command and its params.
-pub(crate) fn menu_contents(app: &mut EffectcraftApp, ui: &mut egui::Ui, name: &str) -> Option<(String, Value)> {
+pub(crate) fn menu_contents(app: &mut PulsoApp, ui: &mut egui::Ui, name: &str) -> Option<(String, Value)> {
     let mut clicked = None;
     if let Some(MenuNode::Submenu { children, .. }) =
-        effectcraft_engine::menus::menu_bar().iter().find(|n| matches!(n, MenuNode::Submenu { label, .. } if label == name))
+        pulso_engine::menus::menu_bar().iter().find(|n| matches!(n, MenuNode::Submenu { label, .. } if label == name))
     {
         menu_nodes(app, ui, children, &mut clicked, &mut crate::menu_keys::Nav::default(), 0);
     }
@@ -143,14 +143,7 @@ pub(crate) fn menu_contents(app: &mut EffectcraftApp, ui: &mut egui::Ui, name: &
 }
 
 /// The entries `nodes` of a menu `depth` submenus deep, registered with `nav` for the keyboard.
-fn menu_nodes(
-    app: &mut EffectcraftApp,
-    ui: &mut egui::Ui,
-    nodes: &[MenuNode],
-    clicked: &mut Option<(String, Value)>,
-    nav: &mut crate::menu_keys::Nav,
-    depth: usize,
-) {
+fn menu_nodes(app: &mut PulsoApp, ui: &mut egui::Ui, nodes: &[MenuNode], clicked: &mut Option<(String, Value)>, nav: &mut crate::menu_keys::Nav, depth: usize) {
     for n in nodes {
         match n {
             MenuNode::Separator => {
@@ -161,7 +154,7 @@ fn menu_nodes(
                 // saved workspaces.
                 let ws = app.ui.workspace.clone();
                 let saved = app.saved_workspace_names();
-                let (nodes, empty) = effectcraft_engine::menus::dynamic_nodes(&app.session, name, &dyn_ctx(&ws, &saved));
+                let (nodes, empty) = pulso_engine::menus::dynamic_nodes(&app.session, name, &dyn_ctx(&ws, &saved));
                 if nodes.is_empty()
                     && let Some(e) = empty
                 {
@@ -204,7 +197,7 @@ fn menu_nodes(
                 // The generated Effect menu's category submenus draw the catalog's name (#821);
                 // every other submenu goes through the menu catalog.
                 let shown = crate::i18n::effect_category(children, label)
-                    .unwrap_or_else(|| crate::i18n::submenu(app, label, effectcraft_engine::menus::submenu_label(&app.session, label, &dyn_ctx(&ws, &[]))));
+                    .unwrap_or_else(|| crate::i18n::submenu(app, label, pulso_engine::menus::submenu_label(&app.session, label, &dyn_ctx(&ws, &[]))));
                 let browsing = nav.browsing();
                 let egui::InnerResponse { inner, response } = ui.menu_button((gutter(false), shown.as_str()), |ui| {
                     ui.set_min_width(if children.len() > 30 { 200.0 } else { 240.0 });
@@ -253,8 +246,8 @@ fn browse_pick(nav: &crate::menu_keys::Nav, ui: &egui::Ui, r: &egui::Response) -
 
 /// The menu bar's submenu at `path` (`["File", "Interpret Footage"]`) in a panel's context menu,
 /// with the menu bar's labels, shortcuts and enabled state; a chosen entry goes to `clicked`.
-pub(crate) fn submenu_at(app: &mut EffectcraftApp, ui: &mut egui::Ui, path: &[&str], clicked: &mut Option<(String, Value)>) {
-    let mut nodes = effectcraft_engine::menus::menu_bar();
+pub(crate) fn submenu_at(app: &mut PulsoApp, ui: &mut egui::Ui, path: &[&str], clicked: &mut Option<(String, Value)>) {
+    let mut nodes = pulso_engine::menus::menu_bar();
     let mut found = None;
     for label in path {
         let Some(n) = nodes.iter().find(|n| matches!(n, MenuNode::Submenu { label: l, .. } if l == label)) else { return };
@@ -274,8 +267,8 @@ pub(crate) fn submenu_at(app: &mut EffectcraftApp, ui: &mut egui::Ui, path: &[&s
 }
 
 /// The menu bar's entry for `command` in a panel's context menu (see [`submenu_at`]).
-pub(crate) fn entry_for(app: &EffectcraftApp, ui: &mut egui::Ui, command: &str, clicked: &mut Option<(String, Value)>) {
-    if let Some((_, e)) = effectcraft_engine::menus::entries().into_iter().find(|(_, e)| e.command == command)
+pub(crate) fn entry_for(app: &PulsoApp, ui: &mut egui::Ui, command: &str, clicked: &mut Option<(String, Value)>) {
+    if let Some((_, e)) = pulso_engine::menus::entries().into_iter().find(|(_, e)| e.command == command)
         && menu_entry(app, ui, e).clicked()
     {
         *clicked = Some((e.command.clone(), e.params_or_empty()));
@@ -284,8 +277,8 @@ pub(crate) fn entry_for(app: &EffectcraftApp, ui: &mut egui::Ui, command: &str, 
 }
 
 /// Frontend state for dynamic menus (the current workspace and the saved ones).
-pub(crate) fn dyn_ctx<'a>(workspace: &'a str, saved_workspaces: &'a [String]) -> effectcraft_engine::menus::DynCtx<'a> {
-    effectcraft_engine::menus::DynCtx { workspace: Some(workspace), saved_workspaces }
+pub(crate) fn dyn_ctx<'a>(workspace: &'a str, saved_workspaces: &'a [String]) -> pulso_engine::menus::DynCtx<'a> {
+    pulso_engine::menus::DynCtx { workspace: Some(workspace), saved_workspaces }
 }
 
 /// The check-mark column every menu row reserves (like macOS / After Effects menus).
@@ -294,11 +287,11 @@ fn gutter(checked: bool) -> egui::Atom<'static> {
     (if checked { "✔" } else { "" }).atom_size(egui::vec2(14.0, 14.0))
 }
 
-fn menu_entry(app: &EffectcraftApp, ui: &mut egui::Ui, e: &MenuEntry) -> egui::Response {
+fn menu_entry(app: &PulsoApp, ui: &mut egui::Ui, e: &MenuEntry) -> egui::Response {
     let (label, check, enabled) = (entry_label(app, e), gutter(entry_checked(app, e) == Some(true)), entry_enabled(app, e));
     // Edit ▸ Label's entries show the label's colour before its name.
     if e.command == "edit.label"
-        && let Some(l) = e.params.get("label").and_then(Value::as_str).and_then(effectcraft_engine::color::Label::from_name)
+        && let Some(l) = e.params.get("label").and_then(Value::as_str).and_then(pulso_engine::color::Label::from_name)
     {
         let out = ui.add_enabled_ui(enabled, |ui| egui::Button::new((check, crate::widgets::label_swatch(), label)).atom_ui(ui)).inner;
         crate::widgets::paint_label_swatch(ui, &out, l, &app.tokens);
