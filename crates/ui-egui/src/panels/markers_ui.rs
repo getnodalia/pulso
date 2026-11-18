@@ -210,7 +210,7 @@ pub fn dialog(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
             app.auto.add("dialog.marker.delete", r.rect, "Delete");
             delete = r.clicked();
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                let r = ui.add(egui::Button::new(egui::RichText::new(tr("   OK   ")).color(Color32::WHITE)).fill(app.tokens.accent));
+                let r = ui.add(egui::Button::new(egui::RichText::new(tr("   OK   ")).color(app.tokens.on_accent())).fill(app.tokens.accent));
                 app.auto.add("dialog.marker.ok", r.rect, "OK");
                 ok = r.clicked();
                 let r = ui.button(tr("Cancel"));
@@ -302,7 +302,8 @@ fn marker(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, comp: &Comp,
         let box_w = galley.size().x + 8.0;
         let box_x = name_box_x(x, box_w, end, p.clip_rect());
         let box_rect = Rect::from_min_size(pos2(box_x, y0), vec2(box_w, h.max(galley.size().y + 2.0)));
-        p.rect(box_rect, t.radius_sm, t.field_bg, Stroke::new(1.0, t.field_border), egui::StrokeKind::Inside);
+        // A box this short keeps small corners: NDL's 8-point radius would round it into a pill.
+        p.rect(box_rect, t.radius_sm.min(3.0), t.field_bg, Stroke::new(1.0, t.field_border), egui::StrokeKind::Inside);
         p.galley(pos2(box_rect.min.x + 4.0, box_rect.center().y - galley.size().y / 2.0), galley, t.text);
     }
     let hit = Rect::from_min_max(pos2(x - 5.0, y0 - 1.0), pos2(x + 5.0, y1));

@@ -37,7 +37,7 @@ fn pairs(t: &Tokens) -> Vec<(&'static str, Color32, Color32, f64)> {
         ("active tab text on panel", t.tab_text_active, t.panel_bg, 4.5),
         ("tab text on header", t.tab_text, t.header_bg, 4.5),
         ("hot text on panel", t.hot_text, t.panel_bg, 4.5),
-        ("white on accent (primary button)", Color32::WHITE, t.accent, 4.5),
+        ("text on accent (primary button)", t.on_accent(), t.accent, 4.5),
         ("danger text on panel", t.danger, t.panel_bg, 4.5),
         ("warning text on panel", t.warning, t.panel_bg, 4.5),
         ("accent (focus ring) on panel", t.accent, t.panel_bg, 3.0),
@@ -50,18 +50,9 @@ fn pairs(t: &Tokens) -> Vec<(&'static str, Color32, Color32, f64)> {
 /// (theme, pair, ratio measured when written). Ratchet: never below the number; remove the entry
 /// when the pair reaches its target.
 const KNOWN_BELOW: &[(&str, &str, f64)] = &[
-    ("dark", "white on accent (primary button)", 3.46),
-    ("dark", "danger text on panel", 3.90),
     ("dark", "field border on panel", 1.38),
-    ("darker", "white on accent (primary button)", 3.46),
-    ("darker", "danger text on panel", 4.37),
     ("darker", "field border on panel", 1.55),
-    ("light", "faint text on panel", 4.46),
-    ("light", "white on accent (primary button)", 3.46),
-    ("light", "danger text on panel", 3.23),
     ("light", "warning text on panel", 1.85),
-    ("light", "accent (focus ring) on panel", 2.78),
-    ("light", "focus colour on panel", 2.78),
     ("light", "field border on panel", 1.86),
 ];
 

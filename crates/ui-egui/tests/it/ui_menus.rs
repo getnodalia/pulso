@@ -391,14 +391,17 @@ fn outside_presses_and_focus_loss_close_the_menus() {
     // A press in the empty part of the bar, outside every title and menu.
     click_at(&mut h, pos2(1100.0, 12.0));
     assert!(!shown(&h, "Open Project"), "a press outside the menus closes them");
-    // The press reaches the header's workspace tab behind the open menu: the menu closes and the
-    // tab still acts (the menus don't swallow input).
+    // The press reaches the header's workspace selector behind the open menu: the menu closes and
+    // the selector still opens (the menus don't swallow input).
     click_at(&mut h, file.center());
     assert!(shown(&h, "Open Project"));
-    let tab = rect(&h, "header.workspace.Review");
-    click_at(&mut h, tab.center());
-    assert_eq!(h.state().ui.workspace, "Review", "the press reached the tab behind the open menu");
-    assert!(!shown(&h, "Open Project"), "and closed the menu");
+    let selector = rect(&h, "header.workspaces");
+    click_at(&mut h, selector.center());
+    assert!(!shown(&h, "Open Project"), "the press closed the menu");
+    h.run_steps(3);
+    let row = rect(&h, "header.workspace.Review");
+    click_at(&mut h, row.center());
+    assert_eq!(h.state().ui.workspace, "Review", "and reached the selector behind it");
     // Moving onto the OS title bar fires the cursor-left event — its clicks are never forwarded
     // to egui — which egui reports as `PointerGone`. It must not close the menus, however long
     // the pointer stays away.

@@ -7,7 +7,7 @@
 //! `templates.newName`, `templates.saveFromItem`, `templates.ok`.
 
 use crate::i18n::{tr, tr_args};
-use egui::{Color32, vec2};
+use egui::vec2;
 use pulso_engine::project::render_templates::{RenderTemplates, TemplateKind, TemplateSlot};
 use serde_json::{Value, json};
 
@@ -156,7 +156,7 @@ pub fn show(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
         });
         ui.add_space(12.0);
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            let r = ui.add(egui::Button::new(egui::RichText::new(tr("   OK   ")).color(Color32::WHITE)).fill(t.accent));
+            let r = ui.add(egui::Button::new(egui::RichText::new(tr("   OK   ")).color(t.on_accent())).fill(t.accent));
             app.auto.add("templates.ok", r.rect, "OK");
             close = r.clicked();
         });

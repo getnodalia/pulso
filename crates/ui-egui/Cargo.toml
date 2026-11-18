@@ -10,6 +10,7 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
+nodalia-theme = { workspace = true, features = ["creator"] }
 craft-ui = { workspace = true }
 craft-quit = { workspace = true, features = ["egui"] }
 pulso-time = { workspace = true }
@@ -41,7 +42,6 @@ bytemuck = { workspace = true }
 # Floating panels open in OS windows of their own on desktop; the web keeps them in the page.
 craft-ui = { workspace = true, features = ["native-windows"] }
 nodalia-update = { workspace = true }
-nodalia-theme = { workspace = true, features = ["creator"] }
 # Waits for the display pass's error scopes (immediately ready on native wgpu).
 pollster = { workspace = true }
 sys-locale = { workspace = true }

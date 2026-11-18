@@ -5,7 +5,7 @@
 use std::collections::BTreeMap;
 
 use crate::i18n::tr;
-use egui::{Color32, vec2};
+use egui::vec2;
 use pulso_engine::project::build::{Ids, primitive_geometry_options};
 use pulso_engine::project::{ItemId, ParamUi, PrimitiveKind, Property};
 use serde_json::{Value, json};
@@ -90,7 +90,7 @@ pub fn dialog(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
         });
         ui.add_space(14.0);
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            let b = ui.add(egui::Button::new(egui::RichText::new(tr("   OK   ")).color(Color32::WHITE)).fill(t.accent));
+            let b = ui.add(egui::Button::new(egui::RichText::new(tr("   OK   ")).color(t.on_accent())).fill(t.accent));
             app.auto.add("dialog.primitive.ok", b.rect, "OK");
             ok |= b.clicked();
             let c = ui.button(tr("Cancel"));

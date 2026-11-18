@@ -1015,7 +1015,7 @@ pub fn show(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
                     page = all[idx + 1].id.to_string();
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let r = ui.add(egui::Button::new(RichText::new(tr("   OK   ")).color(Color32::WHITE)).fill(t.accent));
+                    let r = ui.add(egui::Button::new(RichText::new(tr("   OK   ")).color(t.on_accent())).fill(t.accent));
                     app.auto.add("settings.ok", r.rect, "OK");
                     ok |= r.clicked();
                     let r = ui.button(tr("Cancel"));
@@ -1211,7 +1211,7 @@ pub fn recovery(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
         }
         ui.add_space(14.0);
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            let b = ui.add(egui::Button::new(RichText::new(tr(" Open Auto-Save ")).color(Color32::WHITE)).fill(t.accent));
+            let b = ui.add(egui::Button::new(RichText::new(tr(" Open Auto-Save ")).color(t.on_accent())).fill(t.accent));
             app.auto.add("recovery.openAutoSave", b.rect, "Open Auto-Save");
             if b.clicked() {
                 choice = Some("autosave");

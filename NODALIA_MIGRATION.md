@@ -50,7 +50,9 @@ menus exported over D-Bus to the shell's top bar on Linux (`apps/pulso/src/linux
 app icon (Eadweard Muybridge) in About.
 
 Pending: Pulso's own icons that NDL has no glyph for yet (the After Effects-style tools and the
-Timeline switches) move to nodalia-design as they are drawn there.
+Timeline switches) move to nodalia-design as they are drawn there. Favourite themes are still
+starred in Preferences > Appearance, but with the header's Appearance button gone nothing offers
+them yet; they come back when the main menu gets a theme submenu, or the setting goes.
 
 ## Risks and priorities
 

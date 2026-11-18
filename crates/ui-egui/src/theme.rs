@@ -111,6 +111,19 @@ pub struct Tokens {
     pub gradients: bool,
 }
 
+/// WCAG 2 contrast ratio of two opaque colours.
+fn contrast(a: Color32, b: Color32) -> f32 {
+    let lum = |c: Color32| {
+        let lin = |v: u8| {
+            let v = f32::from(v) / 255.0;
+            if v <= 0.039_28 { v / 12.92 } else { ((v + 0.055) / 1.055).powf(2.4) }
+        };
+        0.2126 * lin(c.r()) + 0.7152 * lin(c.g()) + 0.0722 * lin(c.b())
+    };
+    let (la, lb) = (lum(a), lum(b));
+    (la.max(lb) + 0.05) / (la.min(lb) + 0.05)
+}
+
 /// A vertical gradient fill (`top` → `bottom`) over `rect`.
 pub fn gradient_rect(painter: &egui::Painter, rect: egui::Rect, top: Color32, bottom: Color32) {
     let mut m = egui::Mesh::default();
@@ -124,6 +137,13 @@ pub fn gradient_rect(painter: &egui::Painter, rect: egui::Rect, top: Color32, bo
 }
 
 impl Tokens {
+    /// Text drawn on an accent fill (a primary button): white or NDL's near-black, whichever reads
+    /// better on this accent. Pulso's lime needs dark text in the dark themes.
+    pub fn on_accent(&self) -> Color32 {
+        let dark = Color32::from_rgb(11, 12, 16);
+        if contrast(dark, self.accent) > contrast(Color32::WHITE, self.accent) { dark } else { Color32::WHITE }
+    }
+
     /// The gradient top colour for a fill (a little lighter), or the fill itself when gradients
     /// are off.
     pub fn grad_top(&self, c: Color32) -> Color32 {
@@ -276,7 +296,8 @@ impl Tokens {
             text_dim: c(p.text_secondary),
             // NDL's tertiary text is a shade too light for line numbers on a matched bracket in
             // the light theme's expression field; darken it there just enough to stay readable.
-            text_faint: if light { c(p.text_tertiary).lerp_to_gamma(Color32::BLACK, 0.12) } else { c(p.text_tertiary) },
+            text_faint: if light { c(p.text_tertiary).lerp_to_gamma(Color32::BLACK, 0.12) } else { c(p.text_tertiary).lerp_to_gamma(Color32::WHITE, 0.06) },
+            danger: c(p.status_danger_fg),
             icon: c(p.text_secondary),
             icon_active: c(p.text_primary),
             hover: c(p.control_bg_hover),

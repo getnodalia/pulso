@@ -3,7 +3,7 @@
 //! or `layer.cameraSettings` / `layer.lightSettings` with the dialog's values.
 
 use crate::i18n::tr;
-use egui::{Color32, vec2};
+use egui::vec2;
 use pulso_engine::project::{AutoOrient, LayerSource, LightKind};
 use pulso_engine::render::three_d::camera::{PRESETS, angle_of_view, default_aperture, focal_for_zoom, zoom_for_focal};
 use serde_json::{Value, json};
@@ -169,7 +169,7 @@ pub fn open_light(app: &mut PulsoApp, layer: Option<u64>) -> Result<(), String> 
 fn buttons(ui: &mut egui::Ui, t: &Tokens, ok: &mut bool, close: &mut bool, preview: Option<&mut bool>) -> (egui::Rect, egui::Rect, egui::Rect) {
     let mut r = (egui::Rect::NOTHING, egui::Rect::NOTHING, egui::Rect::NOTHING);
     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-        let b = ui.add(egui::Button::new(egui::RichText::new(tr("   OK   ")).color(Color32::WHITE)).fill(t.accent));
+        let b = ui.add(egui::Button::new(egui::RichText::new(tr("   OK   ")).color(t.on_accent())).fill(t.accent));
         r.0 = b.rect;
         if b.clicked() {
             *ok = true;

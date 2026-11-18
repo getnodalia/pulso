@@ -33,7 +33,7 @@ fn favorites_validate_and_survive_settings_reload() {
     assert_eq!(loaded.appearance.favorite_themes, p.appearance.favorite_themes);
 }
 #[test]
-fn star_controls_save_and_favorite_menu_selects_the_family() {
+fn star_controls_save_the_favorite_themes() {
     let store = Arc::new(MemoryConfig::default());
     let mut session = Session { config: Some(store.clone()), ..Default::default() };
     session.execute("comp.new", json!({"width":32,"height":32,"duration":2})).unwrap();
@@ -58,12 +58,4 @@ fn star_controls_save_and_favorite_menu_selects_the_family() {
     let mut saved = Session { config: Some(store), ..Default::default() };
     saved.load_settings();
     assert_eq!(saved.prefs.appearance.favorite_themes, vec!["light"]);
-    h.state_mut().set_pref("appearance.favoriteThemes", json!(["darker", "light"])).unwrap();
-    let p = at(&h, "header.appearance");
-    click(&mut h, p, PointerButton::Secondary);
-    let p = at(&h, "header.favoriteTheme.light");
-    assert!(p.y < at(&h, "header.favoriteTheme.darker").y);
-    click(&mut h, p, PointerButton::Primary);
-    assert_eq!(h.state().session.prefs.appearance.appearance_mode, "light");
-    assert_eq!(h.state().session.prefs.appearance.dark_theme, "dark");
 }

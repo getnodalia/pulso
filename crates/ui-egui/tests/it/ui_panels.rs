@@ -30,6 +30,12 @@ fn open(h: &mut Harness<'_, PulsoApp>, panel: &str) {
 }
 
 fn click(h: &mut Harness<'_, PulsoApp>, id: &str) {
+    // A workspace is a row of the workspace selector's list, so open the list first.
+    if id.starts_with("header.workspace.") && h.state().auto.find(id).is_none() {
+        click(h, "header.workspaces");
+        // The list settles into place on the frames after it opens.
+        h.run_steps(3);
+    }
     let e = h.state().auto.find(id).unwrap_or_else(|| panic!("no {id}")).clone();
     let p: Pos2 = pos2(e.rect[0] + e.rect[2] / 2.0, e.rect[1] + e.rect[3] / 2.0);
     h.input_mut().events.push(Event::PointerMoved(p));
