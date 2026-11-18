@@ -31,7 +31,7 @@ with no account and no cloud. It runs on Linux, macOS and Windows, and ships 308
 of its own.
 
 > [!IMPORTANT]
-> **Pulso is at an early stage.** Version 0.1.0 is the first published build: download it from
+> **Pulso is at an early stage.** Version 0.1.1 is the latest published build: download it from
 > [Releases](https://github.com/getnodalia/pulso/releases). Expect rough edges.
 
 ## Build and run
