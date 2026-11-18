@@ -4340,7 +4340,7 @@ checksum = "1d8f70e07b9c3962945a74e59ca1c511bba65b6419468acc217c457d93f3c740"
 
 [[package]]
 name = "pulso"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "cpal",
@@ -4367,7 +4367,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-aep"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "pulso-color",
  "pulso-effects",
@@ -4381,7 +4381,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-automation"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "image",
  "pulso-engine",
@@ -4395,14 +4395,14 @@ dependencies = [
 
 [[package]]
 name = "pulso-av1enc"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "filmcraft-av1",
 ]
 
 [[package]]
 name = "pulso-cli"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "cpu-time",
  "image",
@@ -4421,7 +4421,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-color"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "proptest",
  "serde",
@@ -4429,7 +4429,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-effects"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "log",
@@ -4447,7 +4447,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-engine"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "craft-docpath",
@@ -4486,7 +4486,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-export"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "exr",
  "filmcraft-aac",
@@ -4517,7 +4517,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-expr"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "boa_engine",
  "pulso-color",
@@ -4534,7 +4534,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-geom"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "proptest",
  "serde",
@@ -4542,7 +4542,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-gpu"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "bytemuck",
  "js-sys",
@@ -4565,7 +4565,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-helper-host"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "bytemuck",
  "log",
@@ -4576,14 +4576,14 @@ dependencies = [
 
 [[package]]
 name = "pulso-hevcenc"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "filmcraft-hevc",
 ]
 
 [[package]]
 name = "pulso-host"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "exr",
  "gif",
@@ -4610,7 +4610,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-interchange"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "filmcraft-color",
  "filmcraft-geom",
@@ -4629,7 +4629,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-keyframe"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "proptest",
  "pulso-color",
@@ -4641,7 +4641,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-lottie"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "craft-docpath",
  "kurbo",
@@ -4659,7 +4659,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-media"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "craft-docpath",
  "exr",
@@ -4692,7 +4692,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-model"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "image",
  "log",
@@ -4705,14 +4705,14 @@ dependencies = [
 
 [[package]]
 name = "pulso-opusenc"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "filmcraft-opus",
 ]
 
 [[package]]
 name = "pulso-path"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "kurbo",
  "linesweeper",
@@ -4724,7 +4724,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-pdf"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "craft-pdf",
  "image",
@@ -4740,7 +4740,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-plugin"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "pulso-effects",
  "pulso-keyframe",
@@ -4752,7 +4752,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-project"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "craft-ecproj-format",
  "pulso-color",
@@ -4766,14 +4766,14 @@ dependencies = [
 
 [[package]]
 name = "pulso-psd"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "miniz_oxide 0.9.1",
 ]
 
 [[package]]
 name = "pulso-raster"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "pulso-color",
  "pulso-geom",
@@ -4783,7 +4783,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-render"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "kurbo",
  "log",
@@ -4806,7 +4806,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-sam2"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "bytemuck",
  "candle-core",
@@ -4821,7 +4821,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-script"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "boa_engine",
  "pulso-engine",
@@ -4839,7 +4839,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-segment"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "miniz_oxide 0.9.1",
  "ndarray",
@@ -4848,7 +4848,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-svg"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "kurbo",
  "pulso-geom",
@@ -4860,7 +4860,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-text"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "harfrust",
  "kurbo",
@@ -4872,7 +4872,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-time"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "proptest",
  "serde",
@@ -4880,7 +4880,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-track"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "pulso-raster",
  "pulso-segment",
@@ -4892,7 +4892,7 @@ dependencies = [
 
 [[package]]
 name = "pulso-ui-egui"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "bytemuck",
  "chrono",
@@ -4934,11 +4934,11 @@ dependencies = [
 
 [[package]]
 name = "pulso-vp9enc"
-version = "0.23.1"
+version = "0.1.0"
 
 [[package]]
 name = "pulso-web"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "eframe",
  "egui",
@@ -7742,7 +7742,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
 
 [[package]]
 name = "xtask"
-version = "0.23.1"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "pkg-config",

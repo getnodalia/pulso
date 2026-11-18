@@ -350,7 +350,7 @@ fn home_page(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, area: Rec
         ("New from Template", "templates", Icon::Grid),
     ];
     let gap = 12.0;
-    let tw = ((w - gap * 3.0) / 4.0).clamp(120.0, 220.0);
+    let tw = ((w - gap * 3.0) / 4.0).clamp(120.0, 280.0);
     for (k, (label, id, icon)) in tiles.into_iter().enumerate() {
         let r = Rect::from_min_size(pos2(x0 + k as f32 * (tw + gap), y), vec2(tw, 64.0));
         let resp = ui.interact(r, egui::Id::unique(("home-tile", id)), Sense::click());
