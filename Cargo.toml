@@ -16,7 +16,7 @@ craft-docpath = { version = "0.1.0", git = "https://github.com/getnodalia/founda
 craft-quit = { version = "0.1.0", git = "https://github.com/getnodalia/foundation", rev = "e11f9d9aebea5f6b8e74643c1ea1ed172ba5f545" }
 craft-ecproj-format = { version = "0.1.0", git = "https://github.com/getnodalia/foundation", rev = "ca1b5e2edb8568335c6c14f390307bd5beae8238" }
 # In-app updates from this app's GitHub releases, with the update windows for egui.
-nodalia-update = { git = "https://github.com/danielmigueltejedor/nodalia-design", rev = "f71ade677551928eb48467f4c67d96e42267e1f3", features = ["egui"] }
+nodalia-update = { git = "https://github.com/danielmigueltejedor/nodalia-design", rev = "114848a2ff1a7c29c9a5432fb12e955fbe0aeef2", features = ["egui"] }
 nodalia-theme = { git = "https://github.com/danielmigueltejedor/nodalia-design", rev = "78c44503e877ad748fd21c4e36e65e7bfc3efc81" }
 # internal
 pulso-time = { path = "crates/time" }
