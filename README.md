@@ -30,6 +30,15 @@
 with no account and no cloud. It runs on Linux, macOS and Windows, and ships 308 effects
 of its own.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/getnodalia/nodalia-web/main/assets/screens/pulso/pulso-dark.jpg" width="900" alt="The demo composition open in Pulso in the dark theme, with the viewer and the timeline">
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/getnodalia/nodalia-web/main/assets/screens/pulso/pulso-light.jpg" width="440" alt="The same composition in the light theme">
+  <img src="https://raw.githubusercontent.com/getnodalia/nodalia-web/main/assets/screens/pulso/pulso-home-light.jpg" width="440" alt="Pulso's start screen">
+</p>
+
 > [!IMPORTANT]
 > **Pulso is at an early stage.** Version 0.1.1 is the latest published build: download it from
 > [Releases](https://github.com/getnodalia/pulso/releases). Expect rough edges.
