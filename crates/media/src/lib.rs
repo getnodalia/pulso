@@ -30,10 +30,10 @@ mod stream;
 mod wav_markers;
 mod webp_anim;
 
-/// Video decoder counters (time in decoders, samples decoded, seeks, cache hits), for benchmarks.
-pub use filmcraft_codecs::{GopStats, gop_stats};
 pub use pool::{DEFAULT_BUDGET, MediaPool, PoolStats};
 pub use probe::{DEFAULT_SEQUENCE_RATE, probe, probe_bytes, probe_model};
+/// Video decoder counters (time in decoders, samples decoded, seeks, cache hits), for benchmarks.
+pub use toma_codecs::{GopStats, gop_stats};
 
 /// Errors from probing or decoding footage.
 #[derive(Debug, thiserror::Error)]
@@ -51,9 +51,9 @@ pub enum MediaError {
 
 pub type Result<T> = std::result::Result<T, MediaError>;
 
-impl From<filmcraft_media::MediaError> for MediaError {
-    fn from(e: filmcraft_media::MediaError) -> Self {
-        use filmcraft_media::MediaError as F;
+impl From<toma_media::MediaError> for MediaError {
+    fn from(e: toma_media::MediaError) -> Self {
+        use toma_media::MediaError as F;
         match e {
             F::Unsupported(s) => MediaError::Unsupported(s),
             F::Io(s) | F::Offline(s) => MediaError::Io(s),
@@ -67,7 +67,7 @@ impl From<filmcraft_media::MediaError> for MediaError {
 pub const STILL_EXTENSIONS: &[&str] =
     &["png", "jpg", "jpeg", "gif", "webp", "tif", "tiff", "bmp", "exr", "tga", "hdr", "psd", "psb", "svg", "pdf", "ai", "eps"];
 /// File extensions recognised as audio-only files.
-pub const AUDIO_EXTENSIONS: &[&str] = filmcraft_media::AUDIO_EXTENSIONS;
+pub const AUDIO_EXTENSIONS: &[&str] = toma_media::AUDIO_EXTENSIONS;
 pub use pulso_project::VIDEO_EXTENSIONS;
 
 /// File extensions recognised as 3D models (Advanced 3D model layers).
@@ -139,7 +139,7 @@ pub(crate) fn still_format(path: &str, bytes: &[u8]) -> Option<image::ImageForma
     }
 }
 
-pub(crate) fn rate_from_fc(r: filmcraft_time::FrameRate) -> pulso_time::FrameRate {
+pub(crate) fn rate_from_fc(r: toma_time::FrameRate) -> pulso_time::FrameRate {
     if r.num > 0 && r.den > 0 { pulso_time::FrameRate::new(r.num, r.den) } else { pulso_time::FrameRate::FPS_30 }
 }
 

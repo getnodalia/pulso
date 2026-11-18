@@ -868,11 +868,11 @@ fn perf_sequential_1080p_h264() {
     let n = 60;
     // Toma alone (decode only, YUV frames)
     let bytes: Arc<[u8]> = std::fs::read(&p).expect("read").into();
-    let src = filmcraft_codecs::open_bytes("a.mp4", bytes).expect("open");
+    let src = toma_codecs::open_bytes("a.mp4", bytes).expect("open");
     let t0 = Instant::now();
     for i in 0..n {
-        let t = filmcraft_time::Tick(f.frame_rate.tick_of(i).0 + f.frame_rate.frame_duration().0 / 2);
-        src.video_frame(filmcraft_media::FrameRequest::full(t)).expect("frame");
+        let t = toma_time::Tick(f.frame_rate.tick_of(i).0 + f.frame_rate.frame_duration().0 / 2);
+        src.video_frame(toma_media::FrameRequest::full(t)).expect("frame");
     }
     let raw = n as f64 / t0.elapsed().as_secs_f64();
     // Through the pool (decode + conversion to f32 RGBA), cold cache, without and with read-ahead
@@ -898,7 +898,7 @@ fn perf_sequential_1080p_h264() {
     let cached = 20.0 / t0.elapsed().as_secs_f64();
     assert!(pool.stats().hits >= 20);
     eprintln!(
-        "1080p H.264 sequential: filmcraft decode {raw:.1} fps; MediaPool (decode + RGBA f32) {plain:.1} fps, with read-ahead {ours:.1} fps; cached {cached:.0} fps"
+        "1080p H.264 sequential: Toma decode {raw:.1} fps; MediaPool (decode + RGBA f32) {plain:.1} fps, with read-ahead {ours:.1} fps; cached {cached:.0} fps"
     );
 }
 

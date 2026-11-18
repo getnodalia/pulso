@@ -1,4 +1,4 @@
-//! Pulso's panels in craft-ui's shared docking. craft-ui draws the frames, tab strips,
+//! Pulso's panels in nodalia-ui's shared docking. nodalia-ui draws the frames, tab strips,
 //! stacked panels, floating windows, dividers and drop previews and owns the gestures (drag a tab
 //! onto a group to tab it there or split it off to a side; hold Cmd/Ctrl at the release, or drop
 //! outside every group, to float it). Pulso draws the panel bodies, the ≡ panel menu, the
@@ -7,10 +7,10 @@
 //! share one route.
 
 use crate::state::UiState;
-use craft_ui::docking::{
+use egui::{Rect, Sense, Stroke, StrokeKind, pos2, vec2};
+use nodalia_ui::docking::{
     Action, Divider, DockArea, DockCommand, DockContent, DockError, DockEvent, DockStyle, FloatSpace, Floating, Hit, Node, ResizeEdge, UiDock,
 };
-use egui::{Rect, Sense, Stroke, StrokeKind, pos2, vec2};
 use serde_json::{Value, json};
 
 use crate::dock::{self, DocAction, DocTab, PanelKind, Workspace, WorkspaceExt as _};
@@ -93,7 +93,7 @@ fn check_raw_action(action: &Action<PanelKind>) -> Result<(), String> {
     Ok(())
 }
 
-/// The docking commands: `window.dockAction {action}`, craft-ui's `window.panel.*` commands,
+/// The docking commands: `window.dockAction {action}`, nodalia-ui's `window.panel.*` commands,
 /// `ui.dock` and `ui.dock.reset`. `None` for any other id.
 pub(crate) fn route(app: &mut PulsoApp, ctx: &egui::Context, id: &str, params: &Value) -> Option<Result<Value, String>> {
     match id {
@@ -122,7 +122,7 @@ pub(crate) fn route(app: &mut PulsoApp, ctx: &egui::Context, id: &str, params: &
             let mut tagged = if params.is_object() { params.clone() } else { json!({}) };
             if let Some(fields) = tagged.as_object_mut() {
                 fields.insert("command".into(), json!(id));
-                // Pulso's panel names ("Effect Controls") as well as craft-ui's ids.
+                // Pulso's panel names ("Effect Controls") as well as nodalia-ui's ids.
                 for key in ["panel", "anchor", "before"] {
                     if let Some(name) = fields.get(key).and_then(Value::as_str) {
                         let panel = PanelKind::from_name(name).ok_or(format!("unknown panel `{name}`"))?;
@@ -155,7 +155,7 @@ impl PulsoApp {
         crate::menus::invoke(self, ctx, "window.dockAction", json!({"action": value})).map(|_| ())
     }
 
-    /// Run a craft-ui docking command on the current workspace, all or nothing. Named
+    /// Run a nodalia-ui docking command on the current workspace, all or nothing. Named
     /// workspaces and Reset are Pulso's own (`window.workspace`, `window.resetWorkspace`).
     pub(crate) fn run_dock_command(&mut self, ctx: &egui::Context, command: DockCommand<PanelKind>) -> Result<(), String> {
         if let DockCommand::Layout { action } | DockCommand::UiDock(UiDock::Action { action }) = &command {
@@ -172,15 +172,15 @@ impl PulsoApp {
         // A closed panel opens through Pulso's own path, which puts it in its usual place
         // and runs the viewer and ScriptUI lifecycles.
         let shown = match &command {
-            DockCommand::Activate { panel } | DockCommand::UiDock(UiDock::Operation(craft_ui::docking::DockOperation::Open { panel })) => Some(*panel),
-            DockCommand::UiDock(UiDock::Operation(craft_ui::docking::DockOperation::Activate { panel })) => Some(*panel),
+            DockCommand::Activate { panel } | DockCommand::UiDock(UiDock::Operation(nodalia_ui::docking::DockOperation::Open { panel })) => Some(*panel),
+            DockCommand::UiDock(UiDock::Operation(nodalia_ui::docking::DockOperation::Activate { panel })) => Some(*panel),
             _ => None,
         };
         if let Some(panel) = shown.filter(|panel| !self.ui.dock.is_open(*panel)) {
             self.show_panel(panel);
             return Ok(());
         }
-        let space = craft_ui::docking::float_space(ctx, area_id()).unwrap_or_else(|| FloatSpace::new(ctx.content_rect()));
+        let space = nodalia_ui::docking::float_space(ctx, area_id()).unwrap_or_else(|| FloatSpace::new(ctx.content_rect()));
         match command.to_actions(&self.ui.dock, false, &space) {
             Ok(actions) => self.apply_dock_all(actions),
             // Showing a hidden panel at an edge, and Lock, change more than the layout.
@@ -261,7 +261,7 @@ impl PulsoApp {
     }
 
     /// Whether panel `p` is in a floating window with a desktop place: its own OS window on
-    /// desktop (craft-ui `native-windows`); on the web and in embedded viewports the window
+    /// desktop (nodalia-ui `native-windows`); on the web and in embedded viewports the window
     /// stays in the page and the place is kept for a desktop session.
     pub fn in_panel_window(&self, p: PanelKind) -> bool {
         self.ui.dock.layout.floating.iter().any(|w| w.contains(&p) && w.native.is_some())
@@ -286,7 +286,7 @@ impl PulsoApp {
                 panels.into_iter().find(|panel| *panel != p)
             });
             let actions = match anchor {
-                Some(anchor) => vec![Action::Move { panel: p, anchor, placement: craft_ui::docking::Placement::Tab { before: None } }],
+                Some(anchor) => vec![Action::Move { panel: p, anchor, placement: nodalia_ui::docking::Placement::Tab { before: None } }],
                 // Nothing is docked: the panel becomes the docked layout.
                 None => vec![Action::Close { panel: p }, Action::Open { panel: p, anchor: None }],
             };
@@ -422,7 +422,7 @@ impl PulsoApp {
         self.dialog.is_some() || panels::dialogs::modal_open(ctx) || file_dialog
     }
 
-    /// Draw the Home screen or workspace in `body`. Shared craft-ui docking owns the dock tree,
+    /// Draw the Home screen or workspace in `body`. Shared nodalia-ui docking owns the dock tree,
     /// group chrome, tab dragging and floating native windows; this adapter draws panel bodies,
     /// applies the returned events/actions and shows the panel menu.
     pub(crate) fn dock_area(&mut self, ui: &mut egui::Ui, body: Rect) {
@@ -539,7 +539,7 @@ impl PulsoApp {
     /// window's next frame ([`crate::PulsoApp::raw_input_hook`]), so its shortcuts and
     /// file import handle them. Text is not forwarded, and nothing is while a text field in
     /// the main window has the keyboard.
-    fn forward_window_input(&mut self, ctx: &egui::Context, events: Vec<egui::Event>, files: Vec<craft_ui::docking::WindowFiles<PanelKind>>) {
+    fn forward_window_input(&mut self, ctx: &egui::Context, events: Vec<egui::Event>, files: Vec<nodalia_ui::docking::WindowFiles<PanelKind>>) {
         let typing = ctx.egui_wants_keyboard_input();
         let events = events.into_iter().filter(|event| !typing && !matches!(event, egui::Event::Text(_) | egui::Event::Ime(_)));
         self.forwarded.events.extend(events);
@@ -552,7 +552,7 @@ impl PulsoApp {
         }
     }
 
-    /// Automation ids for craft-ui's gesture sources: `panel.tab.<Panel>`, `panel.drag.<Panel>`
+    /// Automation ids for nodalia-ui's gesture sources: `panel.tab.<Panel>`, `panel.drag.<Panel>`
     /// (the group's drag bar), `panel.border.<Panel>` (the top border above its tabs),
     /// `panel.tabs.more.<Panel>`, `panel.header.<Panel>` (a stacked panel's open/close button),
     /// `panel.float.<n>.move`, `.close`, `.resize` (bottom-right
@@ -771,7 +771,7 @@ pub(crate) fn drop_menu_of_closed_window(ctx: &egui::Context, windows: &[egui::V
     });
 }
 
-/// The OS window craft-ui opens for the floating window `id`.
+/// The OS window nodalia-ui opens for the floating window `id`.
 #[cfg(not(target_arch = "wasm32"))]
 fn window_viewport(id: u64) -> Option<egui::ViewportId> {
     Some(DockArea::<PanelKind>::window_viewport(area_id(), id))
@@ -783,7 +783,7 @@ fn window_viewport(_id: u64) -> Option<egui::ViewportId> {
     None
 }
 
-/// The panel bodies craft-ui draws in a floating window: the active panel of each group and each
+/// The panel bodies nodalia-ui draws in a floating window: the active panel of each group and each
 /// open stack entry. A minimized window shows its bar only.
 fn window_bodies(window: &Floating<PanelKind>) -> usize {
     if window.minimized {

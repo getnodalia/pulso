@@ -367,9 +367,9 @@ impl Project {
     /// [`Project::to_file_json`] that also records the open compositions ([`SavedView`]), on one
     /// line when `compact` (Settings ▸ Project ▸ Save Compact Project Files).
     pub fn to_file_json_with_view(&self, view: &SavedView, compact: bool) -> Result<String, ProjectError> {
-        craft_ecproj_format::check_schema(self.schema)
+        nodalia_ecproj_format::check_schema(self.schema)
             .map_err(|e| ProjectError::Invalid(format!("the project can't be saved: it holds a value a project file can't store ({e})")))?;
-        let file = craft_ecproj_format::File::new(APP_VERSION, view, self);
+        let file = nodalia_ecproj_format::File::new(APP_VERSION, view, self);
         file_check::check(&file)
             .map_err(|e| ProjectError::Invalid(format!("the project can't be saved: it holds a value a project file can't store ({e})")))?;
         let text =
@@ -394,7 +394,7 @@ impl Project {
     /// hostile file still opens, within bounds, and the user can be told what changed.
     pub fn from_json_repaired(s: &str) -> Result<(Project, Vec<String>), ProjectError> {
         let mut p: Project = serde_json::from_str(s).map_err(|e| ProjectError::Invalid(e.to_string()))?;
-        craft_ecproj_format::check_schema(p.schema).map_err(|e| ProjectError::Invalid(e.to_string()))?;
+        nodalia_ecproj_format::check_schema(p.schema).map_err(|e| ProjectError::Invalid(e.to_string()))?;
         p.fix_next_id();
         let mut notes = vec![];
         for item in p.items.values_mut() {

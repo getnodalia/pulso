@@ -7,8 +7,8 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 
-use craft_pdf::syntax::object::{Dict as PdfDict, MaybeRef, Name, ObjRef, Object, ObjectIdentifier, Stream};
-use craft_pdf::syntax::xref::XRef;
+use nodalia_pdf::syntax::object::{Dict as PdfDict, MaybeRef, Name, ObjRef, Object, ObjectIdentifier, Stream};
+use nodalia_pdf::syntax::xref::XRef;
 
 use crate::Error;
 use crate::object::{Dict, File, Lexer, Obj, is_delim, is_white, name_bytes};
@@ -35,15 +35,15 @@ fn allocation() -> Error {
     Error::Read("PDF object storage could not be allocated".into())
 }
 
-fn open_options() -> craft_pdf::OpenOptions {
-    craft_pdf::OpenOptions {
-        decode_limits: craft_pdf::syntax::DecodeLimits::default().with_max_decoded_stream(crate::object::MAX_OBJECT_STREAM),
+fn open_options() -> nodalia_pdf::OpenOptions {
+    nodalia_pdf::OpenOptions {
+        decode_limits: nodalia_pdf::syntax::DecodeLimits::default().with_max_decoded_stream(crate::object::MAX_OBJECT_STREAM),
         ..Default::default()
     }
 }
 
 pub(crate) fn open(bytes: &[u8]) -> Result<File, Error> {
-    craft_pdf::check_input_size_with(bytes.len(), &open_options()).map_err(|e| Error::Read(e.to_string()))?;
+    nodalia_pdf::check_input_size_with(bytes.len(), &open_options()).map_err(|e| Error::Read(e.to_string()))?;
     catch_unwind(AssertUnwindSafe(|| open_inner(bytes))).map_err(|_| Error::Read("PDF parser failed internally".into()))?
 }
 
@@ -93,9 +93,9 @@ fn open_inner(bytes: &[u8]) -> Result<File, Error> {
             }
         }
     }
-    let pdf = craft_pdf::open_slice_with_options(bytes, None, &open_options()).map_err(|error| match error {
-        craft_pdf::OpenError::Load(craft_pdf::syntax::LoadPdfError::Decryption(_)) => Error::Encrypted,
-        craft_pdf::OpenError::Load(craft_pdf::syntax::LoadPdfError::Invalid) => Error::NoPages,
+    let pdf = nodalia_pdf::open_slice_with_options(bytes, None, &open_options()).map_err(|error| match error {
+        nodalia_pdf::OpenError::Load(nodalia_pdf::syntax::LoadPdfError::Decryption(_)) => Error::Encrypted,
+        nodalia_pdf::OpenError::Load(nodalia_pdf::syntax::LoadPdfError::Invalid) => Error::NoPages,
         other => Error::Read(other.to_string()),
     })?;
     let mut object_streams = Vec::new();
@@ -382,7 +382,7 @@ mod limit_tests {
         assert_eq!(options.decode_limits.max_decoded_stream(), expected);
         assert_eq!(options.max_input_bytes, 512 << 20);
         let bytes = b"%PDF-1.7\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 40 20] >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF";
-        let pdf = craft_pdf::open_slice_with_options(bytes, None, &options).unwrap();
+        let pdf = nodalia_pdf::open_slice_with_options(bytes, None, &options).unwrap();
         assert_eq!(pdf.decode_limits().max_decoded_stream(), expected);
     }
 }

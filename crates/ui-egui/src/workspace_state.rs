@@ -17,7 +17,7 @@ const MAX_BYTES: usize = 1024 * 1024;
 const MAX_WORKSPACES: usize = 64;
 /// Leave room for new viewers without approaching the u32 allocator limit.
 const MAX_VIEWER_ID: u32 = 65_535;
-/// The snapshot version: 2 holds craft-ui docking workspaces.
+/// The snapshot version: 2 holds nodalia-ui docking workspaces.
 const VERSION: u32 = 2;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -84,7 +84,7 @@ impl Snapshot {
             return Err("workspace viewer ID is outside the supported range 1–65535".into());
         }
         for workspace in std::iter::once(&self.dock).chain(self.saved_workspaces.values()) {
-            // craft-ui checks the trees, selections, sizes, rects and limits.
+            // nodalia-ui checks the trees, selections, sizes, rects and limits.
             workspace.validate().map_err(|error| error.to_string())?;
             if crate::dock::referenced_panels(workspace).into_iter().any(|panel| !panel_ok(panel)) {
                 return Err("workspace viewer ID is outside the supported range 1–65535".into());

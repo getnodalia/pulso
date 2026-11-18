@@ -73,7 +73,7 @@ pub fn on_close_requested(app: &mut PulsoApp, ctx: &egui::Context) {
 /// `PulsoApp::tick` (which runs [`on_close_requested`]) and its own work. Returns whether
 /// that quit was scheduled; other platforms close the window as before.
 pub fn quit_on_close(ctx: &egui::Context) -> bool {
-    craft_quit::on_close_request(ctx)
+    nodalia_quit::on_close_request(ctx)
 }
 
 /// The project's display name: its file name, or `Untitled Project.ecproj`.

@@ -783,7 +783,7 @@ pub(super) fn font_picker(app: &mut PulsoApp, ui: &mut egui::Ui, id: egui::Id, r
     let changed = search.changed();
     let mut open = true;
     // The search lives in the field; the menu's header is the filter row, its list the fonts.
-    let menu = craft_ui::combo::Menu::new(ui, &search)
+    let menu = nodalia_ui::combo::Menu::new(ui, &search)
         .open(&mut open)
         .height(380.0)
         .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)

@@ -506,7 +506,7 @@ fn closing_the_render_queue_reveals_the_panel_receiving_focus() {
         assert!(!app.ui.dock.is_visible(PanelKind::Project));
         app.show_panel(PanelKind::RenderQueue);
         if maximized {
-            app.apply_dock(craft_ui::docking::Action::Float { panel: PanelKind::RenderQueue, rect: [50.0, 60.0, 400.0, 200.0] }).unwrap();
+            app.apply_dock(nodalia_ui::docking::Action::Float { panel: PanelKind::RenderQueue, rect: [50.0, 60.0, 400.0, 200.0] }).unwrap();
             app.toggle_maximize(PanelKind::EffectControls);
             app.ui.focused = PanelKind::RenderQueue;
             assert!(app.ui.dock.is_floating(PanelKind::RenderQueue));
@@ -529,7 +529,7 @@ fn closing_a_floating_queue_preserves_the_maximized_composition() {
     let app = h.state_mut();
     app.show_panel(PanelKind::Composition);
     app.show_panel(PanelKind::RenderQueue);
-    app.apply_dock(craft_ui::docking::Action::Float { panel: PanelKind::RenderQueue, rect: [50.0, 60.0, 400.0, 200.0] }).unwrap();
+    app.apply_dock(nodalia_ui::docking::Action::Float { panel: PanelKind::RenderQueue, rect: [50.0, 60.0, 400.0, 200.0] }).unwrap();
     app.toggle_maximize(PanelKind::Composition);
     app.ui.focused = PanelKind::RenderQueue;
     assert!(app.ui.dock.is_visible(PanelKind::Timeline), "the hidden underlying tab triggers the regression");
@@ -573,10 +573,10 @@ fn queue_close_preserves_viewer_command_target() {
     app.ui.viewers.insert(0, Some(a));
     app.ui.viewers.insert(1, Some(b));
     app.ui.active_viewer = 1;
-    app.apply_dock(craft_ui::docking::Action::Move {
+    app.apply_dock(nodalia_ui::docking::Action::Move {
         panel: PanelKind::Timeline,
         anchor: PanelKind::Composition,
-        placement: craft_ui::docking::Placement::Tab { before: None },
+        placement: nodalia_ui::docking::Placement::Tab { before: None },
     })
     .unwrap();
     app.close_panel(PanelKind::Timeline);
@@ -605,10 +605,10 @@ fn queue_close_keeps_passive_viewer_focus_across_frames() {
     app.ui.viewers.insert(0, Some(a));
     app.ui.viewers.insert(1, Some(b));
     app.ui.active_viewer = 1;
-    app.apply_dock(craft_ui::docking::Action::Move {
+    app.apply_dock(nodalia_ui::docking::Action::Move {
         panel: PanelKind::Timeline,
         anchor: PanelKind::Composition,
-        placement: craft_ui::docking::Placement::Tab { before: None },
+        placement: nodalia_ui::docking::Placement::Tab { before: None },
     })
     .unwrap();
     app.close_panel(PanelKind::Timeline);

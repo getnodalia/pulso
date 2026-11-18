@@ -104,8 +104,8 @@ try {
         foreach ($installed in @('', '1')) {
           Set-SessionProperty $session 'ALLUSERS' $scope
           Set-SessionProperty $session 'Installed' $installed
-          Set-SessionProperty $session 'CRAFT_USER_DIR' $user
-          Set-SessionProperty $session 'CRAFT_MACHINE_DIR' $machine
+          Set-SessionProperty $session 'NODALIA_USER_DIR' $user
+          Set-SessionProperty $session 'NODALIA_MACHINE_DIR' $machine
           $allowed = $true
           foreach ($guard in $guards) {
             $value = $session.EvaluateCondition($guard[0])
@@ -125,8 +125,8 @@ try {
     foreach ($explicit in @('', 'F:\Chosen exact app')) {
       Set-SessionProperty $session 'ALLUSERS' $scope
       Set-SessionProperty $session 'INSTALLFOLDER' $explicit
-      Set-SessionProperty $session 'CRAFT_USER_DIR' 'D:\Existing user app'
-      Set-SessionProperty $session 'CRAFT_MACHINE_DIR' 'E:\Existing machine app'
+      Set-SessionProperty $session 'NODALIA_USER_DIR' 'D:\Existing user app'
+      Set-SessionProperty $session 'NODALIA_MACHINE_DIR' 'E:\Existing machine app'
       $action = if ($scope -eq '1') { 'CraftRestoreMachineFolder' } else { 'CraftRestoreUserFolder' }
       # Evaluate the compiled condition, so the test exercises it instead of calling the action directly.
       $restore = @(Read-Rows $database ('SELECT `Condition` FROM `InstallExecuteSequence` WHERE `Action` = ''{0}''' -f $action) 1)[0]
@@ -166,8 +166,8 @@ try {
   foreach ($scope in @('1', '')) {
     Set-SessionProperty $session 'ALLUSERS' $scope
     Set-SessionProperty $session 'INSTALLFOLDER' ''
-    Set-SessionProperty $session 'CRAFT_MACHINE_DIR' ''
-    Set-SessionProperty $session 'CRAFT_USER_DIR' ''
+    Set-SessionProperty $session 'NODALIA_MACHINE_DIR' ''
+    Set-SessionProperty $session 'NODALIA_USER_DIR' ''
     foreach ($row in @($defaults | Sort-Object { [int]$_[1] })) {
       if ($session.EvaluateCondition($row[2]) -eq 1 -and $session.DoAction($row[0]) -ne 1) { throw "$($row[0]) failed." }
     }
@@ -188,8 +188,8 @@ try {
       @('1', 'D:\Remembered user app', 'E:\Remembered machine app', 'F:\Chosen exact app', 'F:\Chosen exact app'))) {
     Set-SessionProperty $session 'Installed' ''
     Set-SessionProperty $session 'ALLUSERS' $case[0]
-    Set-SessionProperty $session 'CRAFT_USER_DIR' $case[1]
-    Set-SessionProperty $session 'CRAFT_MACHINE_DIR' $case[2]
+    Set-SessionProperty $session 'NODALIA_USER_DIR' $case[1]
+    Set-SessionProperty $session 'NODALIA_MACHINE_DIR' $case[2]
     Set-SessionProperty $session 'INSTALLFOLDER' $case[3]
     foreach ($row in $uiFolderActions) {
       if ($session.EvaluateCondition($row[2]) -eq 1 -and $session.DoAction($row[0]) -ne 1) { throw "$($row[0]) failed." }
@@ -230,7 +230,7 @@ try {
     @{ name = 'legacy exe folder is last';     dir = '';        folder = '';           path = '';         exeFolder = 'D:\Exe\'; exe = 'D:\Exe\app.exe'; existing = '';            expected = 'D:\Exe\' },
     @{ name = 'legacy folder needs the exe';   dir = '';        folder = '';           path = '';         exeFolder = 'D:\Exe\'; exe = '';               existing = '';            expected = '' },
     @{ name = 'a preset folder is kept';       dir = 'D:\Dir\'; folder = 'D:\Folder\'; path = 'D:\Path\'; exeFolder = 'D:\Exe\'; exe = 'D:\Exe\app.exe'; existing = 'P:\Preset\'; expected = 'P:\Preset\' })
-  foreach ($scopeSpec in @(@('U', '1', 'CRAFT_USER_DIR'), @('M', '2', 'CRAFT_MACHINE_DIR'))) {
+  foreach ($scopeSpec in @(@('U', '1', 'NODALIA_USER_DIR'), @('M', '2', 'NODALIA_MACHINE_DIR'))) {
     $letter = $scopeSpec[0]; $target = $scopeSpec[2]
     foreach ($item in $searchContract) {
       $property = "CRAFT_${letter}_$($item[0])"
@@ -265,16 +265,16 @@ try {
   # Model the full-UI upgrade entry with an existing machine-wide copy. Run
   # the actual preference action, then the compiled Next events before discovery.
   Set-SessionProperty $session 'ALLUSERS' '2'
-  Set-SessionProperty $session 'CRAFT_SCOPE' 'user'
-  Set-SessionProperty $session 'CRAFT_USER_DIR' ''
-  Set-SessionProperty $session 'CRAFT_MACHINE_DIR' 'E:\Existing machine app'
+  Set-SessionProperty $session 'NODALIA_SCOPE' 'user'
+  Set-SessionProperty $session 'NODALIA_USER_DIR' ''
+  Set-SessionProperty $session 'NODALIA_MACHINE_DIR' 'E:\Existing machine app'
   $preference = @(Read-Rows $database 'SELECT `Condition` FROM `InstallUISequence` WHERE `Action` = ''CraftPreferMachineScope''' 1)[0]
   if ($session.EvaluateCondition($preference[0]) -ne 1 -or $session.DoAction('CraftPreferMachineScope') -ne 1 -or
-      (Get-SessionProperty $session 'CRAFT_SCOPE') -ne 'machine') {
+      (Get-SessionProperty $session 'NODALIA_SCOPE') -ne 'machine') {
     throw 'Full-UI machine upgrades must initially select the existing machine context.'
   }
   foreach ($choice in @('machine','user','machine','user')) {
-    Set-SessionProperty $session 'CRAFT_SCOPE' $choice
+    Set-SessionProperty $session 'NODALIA_SCOPE' $choice
     foreach ($event in $events) {
       if ($event[0] -notmatch '^\[([^\]]+)\]$') { continue }
       $property = $Matches[1]
@@ -296,8 +296,8 @@ try {
     $number = [regex]::Match($option[0], '[0-9]+').Value
     foreach ($scope in @('2','1')) {
       Set-SessionProperty $session 'ALLUSERS' $scope
-      Set-SessionProperty $session "CRAFT_OPTION_${number}_M" 'saved-machine-choice'
-      Set-SessionProperty $session "CRAFT_OPTION_${number}_U" 'saved-user-choice'
+      Set-SessionProperty $session "NODALIA_OPTION_${number}_M" 'saved-machine-choice'
+      Set-SessionProperty $session "NODALIA_OPTION_${number}_U" 'saved-user-choice'
       Set-SessionProperty $session $option[1] ''
       $action = "CraftLoadOption$number" + $(if ($scope -eq '1') { 'M' } else { 'U' })
       if ($session.DoAction($action) -ne 1) { throw 'Saved-option property action failed.' }

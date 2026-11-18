@@ -91,6 +91,18 @@ jobs:
           tree_dir="${RUNNER_TEMP}/upstream-tree"
           git worktree add -q --detach "$tree_dir" "$up"
           python3 scripts/rebrand.py apply --root "$tree_dir" --pin-from .
+          # The shared libraries upstream names (craft-*, filmcraft-*) come out under Nodalia's
+          # names, pinned to the Nodalia commits made from the same upstream commits
+          # (getnodalia/foundation, scripts/nodalia_libs.py). A missing one stops the sync.
+          libs="${RUNNER_TEMP}/foundation"
+          git init -q "$libs"
+          git -C "$libs" remote add origin https://github.com/getnodalia/foundation
+          git -C "$libs" fetch -q --no-tags --filter=blob:none origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            '+refs/heads/vendor/*:refs/remotes/origin/vendor/*' \
+            '+refs/heads/nodalia/*:refs/remotes/origin/nodalia/*'
+          git -C "$libs" show origin/main:scripts/nodalia_libs.py > "${RUNNER_TEMP}/nodalia_libs.py"
+          python3 "${RUNNER_TEMP}/nodalia_libs.py" app "$tree_dir" --repo "$libs"
           git -C "$tree_dir" add -A
           tree="$(git -C "$tree_dir" write-tree)"
           git worktree remove --force "$tree_dir"

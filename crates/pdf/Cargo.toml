@@ -10,7 +10,7 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-craft-pdf.workspace = true
+nodalia-pdf.workspace = true
 pulso-svg = { workspace = true }
 kurbo = { workspace = true }
 pulso-text = { workspace = true }

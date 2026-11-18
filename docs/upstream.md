@@ -20,7 +20,11 @@ keep opening. The media crates vendored from Toma's upstream keep their `filmcra
 ## How the sync works
 
 Upstream's code arrives renamed: `scripts/rebrand.py` applies `.github/rebrand.toml` (EffectCraft
-becomes Pulso, internal names included) to upstream's tree, and the weekly sync
+becomes Pulso, internal names included) to upstream's tree. Then getnodalia/foundation's
+`scripts/nodalia_libs.py app` renames the shared libraries upstream depends on (`craft-*` becomes
+`nodalia-*`, Toma's `filmcraft-*` crates become `toma-*`) and moves each pin to the Nodalia
+commit made from the same upstream commit; the sync stops if that commit does not exist yet (run
+foundation's Nodalia libraries workflow for it). The weekly sync
 (`.github/workflows/upstream-sync.yml`) records the result on the `upstream-pulso` branch. Each
 commit there has the previous mirror commit and the upstream commit it renames as parents, and
 names that commit in an `Upstream-Commit:` trailer. The sync merges the newest mirror commit

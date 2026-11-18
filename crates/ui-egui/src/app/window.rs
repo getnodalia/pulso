@@ -105,10 +105,10 @@ impl PulsoApp {
             let opened = if p == PanelKind::Composition && near.is_none() && !known && self.ui.dock.is_docked(PanelKind::Timeline) {
                 workspace
                     .apply(
-                        craft_ui::docking::Action::OpenAt {
+                        nodalia_ui::docking::Action::OpenAt {
                             panel: p,
                             anchor: PanelKind::Timeline,
-                            placement: craft_ui::docking::Placement::Split(craft_ui::docking::Zone::Top),
+                            placement: nodalia_ui::docking::Placement::Split(nodalia_ui::docking::Zone::Top),
                         },
                         dock::permissions,
                     )
@@ -116,7 +116,7 @@ impl PulsoApp {
             } else if known {
                 workspace.set_visible(p, true, near, dock::permissions)
             } else {
-                workspace.apply(craft_ui::docking::Action::Open { panel: p, anchor: near }, dock::permissions).map(|_| ())
+                workspace.apply(nodalia_ui::docking::Action::Open { panel: p, anchor: near }, dock::permissions).map(|_| ())
             };
             match opened {
                 Ok(()) => self.ui.dock = workspace,
@@ -126,7 +126,7 @@ impl PulsoApp {
                 }
             }
         }
-        let _ = self.ui.dock.apply(craft_ui::docking::Action::Activate { panel: p }, dock::permissions);
+        let _ = self.ui.dock.apply(nodalia_ui::docking::Action::Activate { panel: p }, dock::permissions);
         if self.ui.dock.is_floating(p) {
             self.pending_panel_raise = Some(p);
         }

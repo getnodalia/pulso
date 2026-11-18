@@ -384,7 +384,7 @@ pub fn state_key(app: &PulsoApp) -> u64 {
 /// window, where any widget that holds the keyboard counts (the Viewer's text editor is not an
 /// egui text field).
 pub fn text_field_window(ctx: &egui::Context) -> Option<egui::ViewportId> {
-    craft_ui::docking::typing_window(ctx).or_else(|| ctx.egui_wants_keyboard_input().then_some(egui::ViewportId::ROOT))
+    nodalia_ui::docking::typing_window(ctx).or_else(|| ctx.egui_wants_keyboard_input().then_some(egui::ViewportId::ROOT))
 }
 
 /// Whether a focused text field takes the menu command `command` ([`activate`]): the native menu
@@ -418,7 +418,7 @@ fn text_field_event(command: &str) -> Option<Vec<egui::Event>> {
 /// Hand a text field's Edit command to the window `window` whose field has the keyboard. The
 /// main window gets the clipboard text itself and the events through the synthetic queue; a
 /// floating panel's OS window gets each key pressed and released, and asks for the clipboard
-/// text on Cmd+V (`craft_ui::docking::send_keys`).
+/// text on Cmd+V (`nodalia_ui::docking::send_keys`).
 fn send_to_text_field(app: &mut PulsoApp, ctx: &egui::Context, window: egui::ViewportId, events: Vec<egui::Event>) {
     if window == egui::ViewportId::ROOT {
         for event in events {
@@ -446,7 +446,7 @@ fn send_to_text_field(app: &mut PulsoApp, ctx: &egui::Context, window: egui::Vie
             std::iter::once(event).chain(release)
         })
         .collect();
-    craft_ui::docking::send_keys(ctx, window, events);
+    nodalia_ui::docking::send_keys(ctx, window, events);
 }
 
 /// Run a native menu item (by id) the way the in-window menu bar does. While a text field has

@@ -1,9 +1,9 @@
-//! Pulso's workspaces in craft-ui's shared docking: transactions, the command path, pointer
+//! Pulso's workspaces in nodalia-ui's shared docking: transactions, the command path, pointer
 //! gestures and persistence.
-use craft_ui::docking::{Action, Node, Placement, StackEntry, Zone};
 use egui::{Event, Modifiers, PointerButton, Rect, pos2, vec2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
+use nodalia_ui::docking::{Action, Node, Placement, StackEntry, Zone};
 use pulso_engine::Session;
 use pulso_ui_egui::{
     PulsoApp,
@@ -237,7 +237,7 @@ fn catalog_docking_action_supports_resize_reorder_and_floating_geometry() {
 }
 
 #[test]
-fn ui_dock_and_window_panel_commands_parse_craft_ui_commands() {
+fn ui_dock_and_window_panel_commands_parse_nodalia_ui_commands() {
     let mut app = PulsoApp::new(Session::default());
     app.ui.dock = dock::docked(dock::hsplit(
         SplitSize::FixedFirst(300.0),
@@ -362,7 +362,7 @@ fn failed_close_preserves_viewer_lifecycle_and_maximize_state() {
 }
 
 /// A panel never laid out opens at Pulso's default place for it (History beside the
-/// Project panel, Render Queue with the Timeline), not where craft-ui's fallback puts it; a panel
+/// Project panel, Render Queue with the Timeline), not where nodalia-ui's fallback puts it; a panel
 /// the user closed comes back where it was.
 #[test]
 fn never_placed_panels_open_at_their_default_place() {

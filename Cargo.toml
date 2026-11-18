@@ -11,10 +11,10 @@ rust-version = "1.95"
 repository = "https://github.com/getnodalia/pulso"
 
 [workspace.dependencies]
-craft-pdf = { git = "https://github.com/getnodalia/foundation", rev = "e11f9d9aebea5f6b8e74643c1ea1ed172ba5f545", version = "=0.1.0", default-features = false, features = ["read"] }
-craft-docpath = { version = "0.1.0", git = "https://github.com/getnodalia/foundation", rev = "e11f9d9aebea5f6b8e74643c1ea1ed172ba5f545" }
-craft-quit = { version = "0.1.0", git = "https://github.com/getnodalia/foundation", rev = "e11f9d9aebea5f6b8e74643c1ea1ed172ba5f545" }
-craft-ecproj-format = { version = "0.1.0", git = "https://github.com/getnodalia/foundation", rev = "ca1b5e2edb8568335c6c14f390307bd5beae8238" }
+nodalia-pdf = { git = "https://github.com/getnodalia/foundation", rev = "7e52986747f361f86799feaaacc5af8281bdcaa5", version = "=0.1.0", default-features = false, features = ["read"] }
+nodalia-docpath = { version = "0.1.0", git = "https://github.com/getnodalia/foundation", rev = "7e52986747f361f86799feaaacc5af8281bdcaa5" }
+nodalia-quit = { version = "0.1.0", git = "https://github.com/getnodalia/foundation", rev = "7e52986747f361f86799feaaacc5af8281bdcaa5" }
+nodalia-ecproj-format = { version = "0.1.0", git = "https://github.com/getnodalia/foundation", rev = "d39185ad063a4aadec2cad783a5d143366ae9010" }
 # In-app updates from this app's GitHub releases, with the update windows for egui.
 nodalia-update = { git = "https://github.com/danielmigueltejedor/nodalia-design", rev = "78c44503e877ad748fd21c4e36e65e7bfc3efc81", features = ["egui"] }
 nodalia-theme = { git = "https://github.com/danielmigueltejedor/nodalia-design", rev = "78c44503e877ad748fd21c4e36e65e7bfc3efc81" }
@@ -85,29 +85,29 @@ tempfile = "3.27"
 
 # media codecs + containers: Toma's pure-Rust crates, pinned to a revision (plan/adr/0001).
 # Only `crates/media`, `crates/export` and `crates/interchange` may depend on these.
-filmcraft-codecs = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
-filmcraft-media = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
-filmcraft-frame = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
-filmcraft-color = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
-filmcraft-time = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
+toma-codecs = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
+toma-media = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
+toma-frame = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
+toma-color = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
+toma-time = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
 # encoders + muxer (crates/export)
-filmcraft-h264enc = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
-filmcraft-prores = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
-filmcraft-aac = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
-filmcraft-isobmff = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
+toma-h264enc = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
+toma-prores = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
+toma-aac = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
+toma-isobmff = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
 # container headers read for AAC channel layouts (crates/media)
-filmcraft-matroska = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
-filmcraft-mpegts = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
+toma-matroska = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
+toma-mpegts = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
 # decoder used as the round-trip oracle of pulso-opusenc (crates/export dev-dependency)
-filmcraft-opus = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
-filmcraft-vp9 = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
+toma-opus = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
+toma-vp9 = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
 # decoders used as the round-trip oracles of pulso-hevcenc / pulso-av1enc (dev-dependencies only)
-filmcraft-hevc = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
-filmcraft-av1 = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
+toma-hevc = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
+toma-av1 = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
 # timeline interchange (EDL, FCP7 XML, FCPXML, OTIO) for Premiere Pro interop (crates/interchange only)
-filmcraft-interchange = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
-filmcraft-project = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
-filmcraft-geom = { git = "https://github.com/getnodalia/foundation", rev = "d5ead4ba1ee2f1cd13cb86a4239aee2730a3d9f5" }
+toma-interchange = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
+toma-project = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
+toma-geom = { git = "https://github.com/getnodalia/foundation", rev = "76d536d49eb5aa15ea637764e2294fddbae1f622" }
 
 # gpu (the same wgpu eframe / egui-wgpu use)
 wgpu = { version = "30.0.1", features = ["fragile-send-sync-non-atomic-wasm"] }
@@ -118,7 +118,7 @@ half = "2.7"
 # ui
 # Shared frontend components; keep this dependency above the engine boundary.
 # Shared UI and the complete egui family select reviewed immutable commits below.
-craft-ui = { version = "0.1.0", git = "https://github.com/getnodalia/foundation", rev = "e11f9d9aebea5f6b8e74643c1ea1ed172ba5f545", features = ["serde"] }
+nodalia-ui = { version = "0.1.0", git = "https://github.com/getnodalia/foundation", rev = "7e52986747f361f86799feaaacc5af8281bdcaa5", features = ["serde"] }
 # `default_fonts` and `monochrome_emoji_fonts` are explicit: the app's `FontDefinitions::default()`
 # and its `✔`/`▣` chrome glyphs need both, and kittest's own dev-dependencies do not propagate.
 egui = { version = "0.37", default-features = false, features = ["default_fonts", "monochrome_emoji_fonts"] }
@@ -133,17 +133,17 @@ sys-locale = "0.3"
 
 # Local co-development against a Toma checkout next to this repo: uncomment.
 # [patch."https://github.com/getnodalia/foundation"]
-# filmcraft-codecs = { path = "../filmcraft/crates/codecs" }
-# filmcraft-media = { path = "../filmcraft/crates/media" }
-# filmcraft-frame = { path = "../filmcraft/crates/frame" }
-# filmcraft-color = { path = "../filmcraft/crates/color" }
-# filmcraft-time = { path = "../filmcraft/crates/time" }
-# filmcraft-h264enc = { path = "../filmcraft/crates/h264enc" }
-# filmcraft-prores = { path = "../filmcraft/crates/prores" }
-# filmcraft-aac = { path = "../filmcraft/crates/aac" }
-# filmcraft-isobmff = { path = "../filmcraft/crates/isobmff" }
-# filmcraft-matroska = { path = "../filmcraft/crates/matroska" }
-# filmcraft-mpegts = { path = "../filmcraft/crates/mpegts" }
+# toma-codecs = { path = "../toma/crates/codecs" }
+# toma-media = { path = "../toma/crates/media" }
+# toma-frame = { path = "../toma/crates/frame" }
+# toma-color = { path = "../toma/crates/color" }
+# toma-time = { path = "../toma/crates/time" }
+# toma-h264enc = { path = "../toma/crates/h264enc" }
+# toma-prores = { path = "../toma/crates/prores" }
+# toma-aac = { path = "../toma/crates/aac" }
+# toma-isobmff = { path = "../toma/crates/isobmff" }
+# toma-matroska = { path = "../toma/crates/matroska" }
+# toma-mpegts = { path = "../toma/crates/mpegts" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -211,31 +211,31 @@ opt-level = 3
 opt-level = 3
 
 # Toma codec hot loops (same settings as Toma's own workspace).
-[profile.dev.package.filmcraft-h264]
+[profile.dev.package.toma-h264]
 opt-level = 3
 
-[profile.dev.package.filmcraft-h264enc]
+[profile.dev.package.toma-h264enc]
 opt-level = 3
 
-[profile.dev.package.filmcraft-hevc]
+[profile.dev.package.toma-hevc]
 opt-level = 3
 
-[profile.dev.package.filmcraft-vp9]
+[profile.dev.package.toma-vp9]
 opt-level = 3
 
-[profile.dev.package.filmcraft-prores]
+[profile.dev.package.toma-prores]
 opt-level = 3
 
-[profile.dev.package.filmcraft-dnx]
+[profile.dev.package.toma-dnx]
 opt-level = 3
 
-[profile.dev.package.filmcraft-av1]
+[profile.dev.package.toma-av1]
 opt-level = 3
 
-[profile.dev.package.filmcraft-aac]
+[profile.dev.package.toma-aac]
 opt-level = 3
 
-[profile.dev.package.filmcraft-opus]
+[profile.dev.package.toma-opus]
 opt-level = 3
 
 [profile.release]
@@ -243,8 +243,8 @@ lto = "thin"
 codegen-units = 1
 
 [patch.crates-io]
-hayro-syntax = { git = "https://github.com/getnodalia/foundation", rev = "e11f9d9aebea5f6b8e74643c1ea1ed172ba5f545", version = "=0.7.2" }
-hayro-jbig2 = { git = "https://github.com/getnodalia/foundation", rev = "e11f9d9aebea5f6b8e74643c1ea1ed172ba5f545", version = "=0.3.0" }
+hayro-syntax = { git = "https://github.com/getnodalia/foundation", rev = "7e52986747f361f86799feaaacc5af8281bdcaa5", version = "=0.7.2" }
+hayro-jbig2 = { git = "https://github.com/getnodalia/foundation", rev = "7e52986747f361f86799feaaacc5af8281bdcaa5", version = "=0.3.0" }
 ecolor = { git = "https://github.com/getnodalia/foundation", rev = "6d518fc799681571963842f95b55a6b68431b15a" }
 emath = { git = "https://github.com/getnodalia/foundation", rev = "6d518fc799681571963842f95b55a6b68431b15a" }
 epaint = { git = "https://github.com/getnodalia/foundation", rev = "6d518fc799681571963842f95b55a6b68431b15a" }
@@ -259,7 +259,3 @@ eframe = { git = "https://github.com/getnodalia/foundation", rev = "6d518fc79968
 # Patch a crate only together with the dependency that needs it: an unused patch makes the Nix
 # build, which uses vendored sources, fail (`cargo xtask lock-patches`).
 winit = { git = "https://github.com/getnodalia/foundation", rev = "a517b3846ee8457d84ee4975110bfda6797c44dc" }
-
-# A vendored library still names this by its old home; the same commits are kept in foundation.
-[patch."https://github.com/storytold/craft-libs"]
-craft-media = { git = "https://github.com/getnodalia/foundation", rev = "f0ad6c1e1d297908915f4be315b0fcfc9be7b5d4" }

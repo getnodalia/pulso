@@ -10,7 +10,7 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-craft-docpath = { workspace = true }
+nodalia-docpath = { workspace = true }
 pulso-time = { workspace = true }
 pulso-color = { workspace = true }
 pulso-project = { workspace = true }
@@ -20,15 +20,15 @@ pulso-psd = { workspace = true }
 pulso-svg = { workspace = true }
 pulso-pdf = { workspace = true }
 pulso-model = { workspace = true }
-filmcraft-codecs = { workspace = true }
-filmcraft-media = { workspace = true }
-filmcraft-aac = { workspace = true }
-filmcraft-isobmff = { workspace = true }
-filmcraft-matroska = { workspace = true }
-filmcraft-mpegts = { workspace = true }
-filmcraft-frame = { workspace = true }
-filmcraft-color = { workspace = true }
-filmcraft-time = { workspace = true }
+toma-codecs = { workspace = true }
+toma-media = { workspace = true }
+toma-aac = { workspace = true }
+toma-isobmff = { workspace = true }
+toma-matroska = { workspace = true }
+toma-mpegts = { workspace = true }
+toma-frame = { workspace = true }
+toma-color = { workspace = true }
+toma-time = { workspace = true }
 exr = { workspace = true }
 gif = { workspace = true }
 image = { workspace = true, features = ["gif", "webp", "tiff", "bmp", "exr", "tga", "hdr"] }

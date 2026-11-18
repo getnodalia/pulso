@@ -5,7 +5,6 @@
 use std::path::Path;
 use std::process::Command;
 
-use filmcraft_isobmff::{ColorInfo, TrackKind};
 use pulso_color::Label;
 use pulso_export::render_queue::{Channels, OutputFormat, OutputModule, RenderSettings, TimeSpan, sequence_path};
 use pulso_export::{Job, export};
@@ -13,6 +12,7 @@ use pulso_media::MediaPool;
 use pulso_project::{ColorSpace, Comp, ItemKind, LayerSource, Project, Solid, build};
 use pulso_render::{FootageSource, NoFootage};
 use pulso_time::{FrameRate, Tick};
+use toma_isobmff::{ColorInfo, TrackKind};
 
 struct Row {
     name: &'static str,
@@ -114,7 +114,7 @@ fn prores_colr_describes_the_frames() {
         render(row, &path);
 
         let bytes = std::fs::read(&path).expect("read movie");
-        let mov = filmcraft_isobmff::open(bytes.as_slice()).expect("demux");
+        let mov = toma_isobmff::open(bytes.as_slice()).expect("demux");
         let track = mov.tracks.iter().find(|t| t.kind == TrackKind::Video).expect("video track");
         let [primaries, transfer, matrix] = row.codes;
         let colr = track.entries[0].video.as_ref().and_then(|v| v.color.clone());

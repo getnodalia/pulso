@@ -1,5 +1,5 @@
-//! Workspace files of earlier versions: Pulso's own dock tree (craft-libs 5c874d51 and
-//! before), read into private copies of its types and turned into craft-ui workspaces.
+//! Workspace files of earlier versions: Pulso's own dock tree (nodalia-libs 5c874d51 and
+//! before), read into private copies of its types and turned into nodalia-ui workspaces.
 //!
 //! - Version 1 (`{version: 1, workspace, dock, floating, …, panel_windows}`) keeps the current
 //!   arrangement, the named workspaces, focus and the maximized panel.
@@ -17,8 +17,8 @@
 
 use std::collections::BTreeMap;
 
-use craft_ui::docking::{Floating, Node};
-use craft_ui::layout::{SplitAxis, SplitSize};
+use nodalia_ui::docking::{Floating, Node};
+use nodalia_ui::layout::{SplitAxis, SplitSize};
 use serde::Deserialize;
 
 use super::{Snapshot, VERSION};
@@ -154,7 +154,7 @@ fn workspace(root: OldNode, floating: Vec<OldFloating>, windows: &[OldPanelWindo
 }
 
 fn node(old: OldNode, depth: usize) -> Result<Node<PanelKind>, String> {
-    if depth > craft_ui::docking::MAX_DEPTH {
+    if depth > nodalia_ui::docking::MAX_DEPTH {
         return Err("workspace dock tree exceeds supported limits".into());
     }
     Ok(match old {
@@ -202,7 +202,7 @@ fn column(entries: Vec<OldStackEntry>, depth: usize) -> Result<Node<PanelKind>, 
         }
         let active = entry.active.min(panels.len().saturating_sub(1));
         if entry.open {
-            if depth.saturating_add(frames.len()) > craft_ui::docking::MAX_DEPTH {
+            if depth.saturating_add(frames.len()) > nodalia_ui::docking::MAX_DEPTH {
                 return Err("workspace dock tree exceeds supported limits".into());
             }
             let height = entry.height.filter(|h| h.is_finite() && *h > 0.0).map(|h| h.min(MAX_FRAME));

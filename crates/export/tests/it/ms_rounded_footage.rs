@@ -9,7 +9,6 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use filmcraft_isobmff::{AvcConfig, Brand, Mp4Writer, SampleEntry, TrackConfig, WriteSample, WriterOptions};
 use pulso_color::Label;
 use pulso_export::render_queue::{OutputFormat, OutputModule, RenderSettings, TimeSpan};
 use pulso_export::{Job, export};
@@ -17,6 +16,7 @@ use pulso_media::MediaPool;
 use pulso_project::{Comp, Footage, ItemKind, LayerSource, Project, build};
 use pulso_raster::Image;
 use pulso_time::{FrameRate, Tick};
+use toma_isobmff::{AvcConfig, Brand, Mp4Writer, SampleEntry, TrackConfig, WriteSample, WriterOptions};
 
 const W: u32 = 128;
 const H: u32 = 32;
@@ -38,18 +38,18 @@ fn ms_rounded(rate: FrameRate, n: i64) -> Vec<u32> {
 /// An H.264 MP4 (video track timescale 1000) with one frame per entry of `durations` (ms);
 /// frame k shows k in binary.
 fn write_movie(path: &Path, durations: &[u32]) {
-    let mut cfg = filmcraft_h264enc::EncoderConfig::new(W, H, 30, 1);
-    cfg.format = filmcraft_h264enc::PacketFormat::LengthPrefixed;
+    let mut cfg = toma_h264enc::EncoderConfig::new(W, H, 30, 1);
+    cfg.format = toma_h264enc::PacketFormat::LengthPrefixed;
     cfg.aud = false;
     cfg.bframes = 0;
     cfg.keyint = 30;
     cfg.scenecut = false;
-    let mut enc = filmcraft_h264enc::Encoder::new(cfg).expect("encoder");
+    let mut enc = toma_h264enc::Encoder::new(cfg).expect("encoder");
     let (u, v) = (vec![128u8; (W * H / 4) as usize], vec![128u8; (W * H / 4) as usize]);
     let mut packets = Vec::new();
     for k in 0..durations.len() {
         let y: Vec<u8> = (0..W * H).map(|i| if (k >> (i % W * BARS / W)) & 1 == 1 { 235 } else { 16 }).collect();
-        let frame = filmcraft_h264enc::YuvFrame { y: &y, u: &u, v: &v, y_stride: W as usize, uv_stride: W as usize / 2 };
+        let frame = toma_h264enc::YuvFrame { y: &y, u: &u, v: &v, y_stride: W as usize, uv_stride: W as usize / 2 };
         packets.extend(enc.try_encode(&frame, k as i64).expect("encode"));
     }
     packets.extend(enc.flush());

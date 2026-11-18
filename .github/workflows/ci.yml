@@ -18,11 +18,11 @@ concurrency:
 
 jobs:
   gate:
-    uses: getnodalia/foundation/.github/workflows/rust-gate.yml@976581262c95c0d95c0184149c0e1ba55485ccb3 # foundation main
+    uses: getnodalia/foundation/.github/workflows/rust-gate.yml@5321115b86797dd193181f889f0155c986959231 # foundation main
     with:
       # The fonts commit the inherited gate used by default.
       fonts-repository: getnodalia/foundation
-      fonts-ref: bfcbf714e45a3ea8e98f88ab2b7971372a576414
+      fonts-ref: ae3de29f5af46e008e511d39cd664cbdf3236a83
       packages: >-
         pkg-config libxkbcommon-dev libwayland-dev libx11-dev libxcb1-dev libxcursor-dev
         libxrandr-dev libxi-dev libfontconfig1-dev libfreetype-dev mesa-vulkan-drivers
@@ -31,7 +31,7 @@ jobs:
   # Every git dependency in Cargo.lock comes from getnodalia or nodalia-design.
   git-sources:
     name: git-sources
-    uses: getnodalia/foundation/.github/workflows/git-sources.yml@976581262c95c0d95c0184149c0e1ba55485ccb3 # foundation main
+    uses: getnodalia/foundation/.github/workflows/git-sources.yml@5321115b86797dd193181f889f0155c986959231 # foundation main
 
   # Pulso's own names everywhere; upstream's arrive renamed by the weekly sync.
   names:

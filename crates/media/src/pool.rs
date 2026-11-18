@@ -4,13 +4,13 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, OnceLock};
 
-use filmcraft_media::{FrameRequest, SharedSource};
 use image::metadata::Orientation;
 use pulso_project::{AlphaMode, Footage, FootageKind, ItemId};
 use pulso_raster::{Image, Px};
 use pulso_render::reads::{FileStamp, ReadFile, ReadFiles, ReadLog};
 use pulso_render::{FloatCurve, FootageSource};
 use pulso_time::{FrameRate, TICKS_PER_SECOND, Tick};
+use toma_media::{FrameRequest, SharedSource};
 
 use crate::convert::{AlphaOp, dynamic_to_image, frame_to_image_in, frame_to_image_scaled, turned};
 use crate::downmix::Order;
@@ -204,7 +204,7 @@ struct Opened {
 impl Opened {
     /// `src` with what its container says: `header` is an MP4/MOV's ftyp and moov (or the whole
     /// file), `file` the file for other containers' AAC configuration.
-    fn new(src: SharedSource, header: Option<&[u8]>, file: Option<&dyn filmcraft_media::ByteReader>) -> Opened {
+    fn new(src: SharedSource, header: Option<&[u8]>, file: Option<&dyn toma_media::ByteReader>) -> Opened {
         let turn = header.map_or(Orientation::NoTransforms, crate::probe::video_turn);
         Opened { order: channel_order(&src, header, file), src, turn }
     }
@@ -212,7 +212,7 @@ impl Opened {
 
 /// The order `src`'s audio channels decode in; multichannel AAC's by its configuration, where
 /// the container's header shows it ([`crate::aac::config`]).
-fn channel_order(src: &SharedSource, header: Option<&[u8]>, file: Option<&dyn filmcraft_media::ByteReader>) -> Order {
+fn channel_order(src: &SharedSource, header: Option<&[u8]>, file: Option<&dyn toma_media::ByteReader>) -> Order {
     match src.info().audio() {
         Some(a) if a.codec.contains("AAC") && a.channels > 2 => crate::aac::config(header, file).map_or(Order::Aac, |asc| crate::downmix::aac_order(&asc)),
         _ => Order::Wav,
@@ -633,7 +633,7 @@ impl Inner {
             self.read(path).map_err(|e| e.to_string()).and_then(|bytes| {
                 // Files the model names are read only when local or on the model's own network share.
                 let resolve = |uri: &str| -> Option<Vec<u8>> {
-                    let p = craft_docpath::resolve_absolute(uri, Some(std::path::Path::new(path))).ok()?;
+                    let p = nodalia_docpath::resolve_absolute(uri, Some(std::path::Path::new(path))).ok()?;
                     self.read(&p.to_string_lossy()).ok().map(|b| b.to_vec())
                 };
                 pulso_model::load(path, &bytes, &resolve).map_err(|e| e.to_string())
@@ -700,8 +700,8 @@ impl Inner {
             let (bytes, read) = self.read_file(path);
             let opened = bytes.and_then(|bytes| {
                 let name = std::path::Path::new(&**path).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-                let src = filmcraft_codecs::open_bytes(&name, bytes.clone()).map_err(MediaError::from)?;
-                Ok(Opened::new(src, Some(&bytes), Some(&filmcraft_media::reader::MemReader(bytes.clone()))))
+                let src = toma_codecs::open_bytes(&name, bytes.clone()).map_err(MediaError::from)?;
+                Ok(Opened::new(src, Some(&bytes), Some(&toma_media::reader::MemReader(bytes.clone()))))
             });
             (opened, read)
         });
@@ -972,7 +972,7 @@ impl Inner {
             Some(mt) => {
                 let Opened { src, turn, .. } = self.opened(path).ok_or_else(|| MediaError::Io(format!("{path}: cannot open")))?;
                 let vf = src
-                    .video_frame(FrameRequest::full(filmcraft_time::Tick(mt.0)))
+                    .video_frame(FrameRequest::full(toma_time::Tick(mt.0)))
                     .map_err(MediaError::from)
                     .inspect_err(|e| self.note_problem(path, &footage.codec, e))?;
                 // A movie shown turned a quarter (a phone held upright): the footage's size and
@@ -1020,7 +1020,7 @@ impl FootageSource for MediaPool {
     /// forward from the keyframe) once `cancel` is set: a scrub's superseded frames no longer
     /// hold the decoder the frame under the pointer waits for (#329).
     fn cancellable(&self, cancel: &Arc<AtomicBool>, f: &mut dyn FnMut()) {
-        filmcraft_media::cancel::with_cancel(cancel, f)
+        toma_media::cancel::with_cancel(cancel, f)
     }
     /// Every read of a file notes it (see [`crate::reads`]): a frame's image file or sequence
     /// frame, a movie, a model and the files it names, an EXR's channels, a movie's audio. A

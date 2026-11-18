@@ -1,6 +1,6 @@
 [package]
 name = "pulso-interchange"
-description = "Premiere Pro interop through timeline interchange: Final Cut Pro 7 XML (xmeml), FCPXML, OpenTimelineIO and CMX 3600 EDL sequences to and from compositions (via filmcraft-interchange)"
+description = "Premiere Pro interop through timeline interchange: Final Cut Pro 7 XML (xmeml), FCPXML, OpenTimelineIO and CMX 3600 EDL sequences to and from compositions (via toma-interchange)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -14,12 +14,12 @@ pulso-time = { workspace = true }
 pulso-color = { workspace = true }
 pulso-keyframe = { workspace = true }
 pulso-project = { workspace = true }
-filmcraft-interchange = { workspace = true }
-filmcraft-project = { workspace = true }
-filmcraft-media = { workspace = true }
-filmcraft-time = { workspace = true }
-filmcraft-geom = { workspace = true }
-filmcraft-color = { workspace = true }
+toma-interchange = { workspace = true }
+toma-project = { workspace = true }
+toma-media = { workspace = true }
+toma-time = { workspace = true }
+toma-geom = { workspace = true }
+toma-color = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

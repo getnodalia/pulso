@@ -38,7 +38,7 @@ pub fn probe(path: impl AsRef<Path>) -> Result<Footage> {
 fn side_file_reader(model: &Path) -> impl Fn(&str) -> Option<Vec<u8>> + use<> {
     let model = std::path::absolute(model).unwrap_or_else(|_| model.to_path_buf());
     move |uri| {
-        let p = craft_docpath::resolve_absolute(uri, Some(&model)).ok()?;
+        let p = nodalia_docpath::resolve_absolute(uri, Some(&model)).ok()?;
         crate::read_regular_file(&p).ok()
     }
 }
@@ -111,7 +111,7 @@ pub fn probe_bytes(path: &str, bytes: Arc<[u8]>) -> Result<Footage> {
     let shown = video_shown(&bytes);
     // A WAV's cue points and XMP markers become the footage's markers.
     let markers = crate::wav_markers::read(&bytes);
-    let src = filmcraft_codecs::open_bytes(&name, bytes)?;
+    let src = toma_codecs::open_bytes(&name, bytes)?;
     let mut f = footage_from_info(path, src.info());
     f.markers = markers;
     turn_footage(&mut f, turn);
@@ -134,12 +134,12 @@ fn trim_to_edits(f: &mut Footage, shown: Option<Tick>) {
 /// How long the video track's edit list shows its media (`elst` segments, movie timescale):
 /// `None` without edits, or with an empty edit (a delayed start keeps the reader's duration).
 fn video_shown(bytes: &[u8]) -> Option<Tick> {
-    let file = filmcraft_isobmff::open(bytes).ok()?;
-    let t = file.tracks.iter().find(|t| t.kind == filmcraft_isobmff::TrackKind::Video && !t.samples.is_empty())?;
+    let file = toma_isobmff::open(bytes).ok()?;
+    let t = file.tracks.iter().find(|t| t.kind == toma_isobmff::TrackKind::Video && !t.samples.is_empty())?;
     edits_shown(&t.edits, file.timescale)
 }
 
-fn edits_shown(edits: &[filmcraft_isobmff::Edit], timescale: u32) -> Option<Tick> {
+fn edits_shown(edits: &[toma_isobmff::Edit], timescale: u32) -> Option<Tick> {
     if edits.is_empty() || timescale == 0 || edits.iter().any(|e| e.media_time < 0) {
         return None;
     }
@@ -167,10 +167,10 @@ fn turn_footage(f: &mut Footage, turn: Orientation) {
     }
 }
 
-pub(crate) fn footage_from_info(path: &str, info: &filmcraft_media::MediaInfo) -> Footage {
+pub(crate) fn footage_from_info(path: &str, info: &toma_media::MediaInfo) -> Footage {
     let v = info.video.as_ref();
     let kind = match (info.kind, v) {
-        (filmcraft_media::MediaKind::Still, _) => FootageKind::Still,
+        (toma_media::MediaKind::Still, _) => FootageKind::Still,
         (_, Some(_)) => FootageKind::Video,
         (_, None) => FootageKind::Audio,
     };
@@ -207,9 +207,9 @@ pub(crate) fn footage_from_info(path: &str, info: &filmcraft_media::MediaInfo) -
 /// The colour profile a video stream declares (H.273 primaries / transfer from the bitstream or
 /// container). `None` (interpreted as sRGB) for Rec. 709 primaries with an sRGB curve. BT.2020
 /// with a PQ or HLG curve is Rec. 2100 (HDR10, HLG), not Rec. 2020's 2.4 gamma (#2849).
-fn profile_of(c: &filmcraft_color::ColorInfo) -> Option<pulso_project::ColorSpace> {
-    use filmcraft_color::{Primaries, Transfer};
+fn profile_of(c: &toma_color::ColorInfo) -> Option<pulso_project::ColorSpace> {
     use pulso_project::ColorSpace;
+    use toma_color::{Primaries, Transfer};
     match (c.primaries, c.transfer) {
         (Primaries::Bt2020, Transfer::Pq) => Some(ColorSpace::Rec2100Pq),
         (Primaries::Bt2020, Transfer::Hlg) => Some(ColorSpace::Rec2100Hlg),
@@ -303,8 +303,8 @@ pub(crate) fn load_oriented(bytes: &[u8], fmt: Option<image::ImageFormat>) -> im
 /// containers have none. Toma turns the frames of a pure 0/90/180/270° header itself, so this
 /// is only the quarter turn nearest to a header it does not turn.
 pub(crate) fn video_turn(bytes: &[u8]) -> Orientation {
-    let Ok(file) = filmcraft_isobmff::open(bytes) else { return Orientation::NoTransforms };
-    let Some(track) = file.tracks.iter().find(|t| t.kind == filmcraft_isobmff::TrackKind::Video) else {
+    let Ok(file) = toma_isobmff::open(bytes) else { return Orientation::NoTransforms };
+    let Some(track) = file.tracks.iter().find(|t| t.kind == toma_isobmff::TrackKind::Video) else {
         return Orientation::NoTransforms;
     };
     // A pure rotation is already applied by Toma's decoder (frames and size come out
@@ -329,8 +329,8 @@ pub(crate) fn video_turn(bytes: &[u8]) -> Orientation {
 /// median reads as 30.303 or 58.824 fps. `None` for other containers and for movies the median
 /// reads right.
 fn video_rate(bytes: &[u8]) -> Option<FrameRate> {
-    let file = filmcraft_isobmff::open(bytes).ok()?;
-    let t = file.tracks.iter().find(|t| t.kind == filmcraft_isobmff::TrackKind::Video && !t.samples.is_empty())?;
+    let file = toma_isobmff::open(bytes).ok()?;
+    let t = file.tracks.iter().find(|t| t.kind == toma_isobmff::TrackKind::Video && !t.samples.is_empty())?;
     averaged_rate(t.timescale, t.samples.iter().take(240).map(|s| s.duration))
 }
 
@@ -368,7 +368,7 @@ mod tests {
     /// 1000 timescale), though its media runs a frame longer; empty edits and no edits leave it.
     #[test]
     fn the_edit_list_trims_a_movie_to_the_frames_it_shows() {
-        let edit = |segment_duration, media_time| filmcraft_isobmff::Edit { segment_duration, media_time, media_rate: 0x0001_0000 };
+        let edit = |segment_duration, media_time| toma_isobmff::Edit { segment_duration, media_time, media_rate: 0x0001_0000 };
         let shown = edits_shown(&[edit(3000, 1024)], 1000);
         assert_eq!(shown, Some(Tick::from_units(3, 1)));
         let mut f = Footage { kind: FootageKind::Video, duration: Tick::from_units(76, 25), ..Footage::default() };
@@ -391,8 +391,8 @@ mod tests {
     /// #2849: a stream's primaries and curve pick its profile; BT.2020 with PQ or HLG is Rec. 2100.
     #[test]
     fn stream_colour_picks_the_profile() {
-        use filmcraft_color::{Primaries, Transfer};
         use pulso_project::ColorSpace;
+        use toma_color::{Primaries, Transfer};
         let rows = [
             (Primaries::Bt2020, Transfer::Pq, Some(ColorSpace::Rec2100Pq)),
             (Primaries::Bt2020, Transfer::Hlg, Some(ColorSpace::Rec2100Hlg)),
@@ -402,7 +402,7 @@ mod tests {
             (Primaries::Bt709, Transfer::Srgb, None),
         ];
         for (primaries, transfer, want) in rows {
-            let c = filmcraft_color::ColorInfo { primaries, transfer, ..filmcraft_color::ColorInfo::REC709 };
+            let c = toma_color::ColorInfo { primaries, transfer, ..toma_color::ColorInfo::REC709 };
             assert_eq!(profile_of(&c), want, "{primaries:?} + {transfer:?}");
         }
     }

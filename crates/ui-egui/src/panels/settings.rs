@@ -82,7 +82,7 @@ fn page_ui(app: &mut PulsoApp, ui: &mut egui::Ui, page: &Page, cur: &Value, t: &
                     ui.add_sized(vec2(label_w, 18.0), egui::Label::new(tr("Default Output:")));
                     let shown = if sel.is_empty() { tr("System Default").to_string() } else { sel.clone() };
                     let shown_name = shown.clone();
-                    let r = craft_ui::ComboBox::from_id_salt(("settings", key)).selected_text(shown).width(260.0).show_ui(ui, |ui| {
+                    let r = nodalia_ui::ComboBox::from_id_salt(("settings", key)).selected_text(shown).width(260.0).show_ui(ui, |ui| {
                         if ui.selectable_label(sel.is_empty(), tr("System Default")).clicked() {
                             acts.push(Act::Set(key.into(), json!("")));
                         }
@@ -170,7 +170,7 @@ fn page_ui(app: &mut PulsoApp, ui: &mut egui::Ui, page: &Page, cur: &Value, t: &
                                     let curv = v.as_str().map_or_else(|| v.to_string(), str::to_string);
                                     let shown = opts.iter().find(|o| o.1 == curv).map(|o| o.0).unwrap_or(curv.as_str()).to_string();
                                     value_text = tr(&shown).to_string();
-                                    craft_ui::ComboBox::from_id_salt(("settings", key))
+                                    nodalia_ui::ComboBox::from_id_salt(("settings", key))
                                         .selected_text(tr(&shown))
                                         .width(220.0)
                                         .show_ui(ui, |ui| {
@@ -455,7 +455,7 @@ fn appearance_ui(app: &mut PulsoApp, ui: &mut egui::Ui, cur: &Value, t: &Tokens,
     ui.horizontal(|ui| {
         ui.add_sized(vec2(250.0, 18.0), egui::Label::new(format!("{}:", tr("Appearance Mode"))).truncate());
         let shown = APPEARANCE_MODES.iter().find(|(_, v)| *v == mode).map_or(mode.as_str(), |(l, _)| *l);
-        let r = craft_ui::ComboBox::from_id_salt(("settings", "appearance.appearanceMode"))
+        let r = nodalia_ui::ComboBox::from_id_salt(("settings", "appearance.appearanceMode"))
             .selected_text(tr(shown))
             .width(220.0)
             .show_ui(ui, |ui| {
