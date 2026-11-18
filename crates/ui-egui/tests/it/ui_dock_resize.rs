@@ -39,7 +39,7 @@ fn focused_dock_resize_owns_arrows_and_keeps_pointer_dragging() {
     session.execute("layer.newSolid", json!({"name": "Selected", "color": [1.0, 0.0, 0.0, 1.0]})).unwrap();
     let mut app = PulsoApp::new(session);
     app.ui.start_screen = false;
-    let directory = std::env::var_os("NODALIA_UI_PANES_SNAPSHOT_DIR").map(std::path::PathBuf::from);
+    let directory = std::env::var_os("CRAFT_UI_PANES_SNAPSHOT_DIR").map(std::path::PathBuf::from);
     let mut builder = Harness::builder().with_size(vec2(1400.0, 900.0)).with_max_steps(10_000);
     if directory.is_some() {
         builder = builder.wgpu();
