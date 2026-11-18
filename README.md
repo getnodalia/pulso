@@ -31,8 +31,8 @@ with no account and no cloud. It runs on Linux, macOS and Windows, and ships 308
 of its own.
 
 > [!IMPORTANT]
-> **Pulso is at an early stage.** There are no published builds yet, and the Nodalia interface is
-> not wired in.
+> **Pulso is at an early stage.** Version 0.1.0 is the first published build: download it from
+> [Releases](https://github.com/getnodalia/pulso/releases). Expect rough edges.
 
 ## Build and run
 
@@ -50,9 +50,9 @@ cargo run --release -p pulso
 |---|---|
 | Package and binary names | Done: the desktop binary is called `pulso` |
 | App icon | Done: portrait of Eadweard Muybridge |
-| Nodalia interface | Not started |
-| Shared interface resources | Planned: the Nodalia apps will share interface components and styles |
-| Installable packages | None published |
+| Nodalia interface | Done: creator-suite app bar, islands and window controls; Pulso's own icons are still to come |
+| Shared interface resources | Done: theme, icons and controls come from nodalia-design |
+| Installable packages | 0.1.0: DMG, MSI, AppImage, deb, rpm and tar.gz |
 
 ## App icon
 
