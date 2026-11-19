@@ -7553,6 +7553,22 @@ const POLISH: &[(&str, &str, &str)] = &[
     ("file.openDemoProject", "Open Demo Project", "Otwórz projekt demonstracyjny"),
     ("", "Recent Script Files", "Ostatnie pliki skryptów"),
     ("layer.newPrimitive", "3D Primitive...", "Bryła podstawowa 3D..."),
+    ("", "Quick Set Anchor", "Szybkie ustawienie punktu zakotwiczenia"),
+    ("layer.quickSetAnchor", "Top Left", "Lewy górny"),
+    ("layer.quickSetAnchor", "Top", "Górny"),
+    ("layer.quickSetAnchor", "Top Right", "Prawy górny"),
+    ("layer.quickSetAnchor", "Left", "Lewy"),
+    ("layer.quickSetAnchor", "Center", "Środek"),
+    ("layer.quickSetAnchor", "Right", "Prawy"),
+    ("layer.quickSetAnchor", "Bottom Left", "Lewy dolny"),
+    ("layer.quickSetAnchor", "Bottom", "Dolny"),
+    ("layer.quickSetAnchor", "Bottom Right", "Prawy dolny"),
+    ("layer.unprecompose", "Un-precompose", "Cofnij prekompozycję"),
+    ("effect.plugins.install", "Install Effect Plug-in...", "Zainstaluj wtyczkę efektu..."),
+    ("effect.plugins.install", "Install Effect Plug-in Bundle (Folder)...", "Zainstaluj pakiet wtyczek efektów (folder)..."),
+    ("prefs.open", "Plug-in Library...", "Biblioteka wtyczek..."),
+    ("keys.setMuted", "Mute Keyframes", "Wycisz klatki kluczowe"),
+    ("keys.setMuted", "Unmute Keyframes", "Wyłącz wyciszenie klatek kluczowych"),
 ];
 
 /// Czech (cs): original phrase translations of every fixed menu entry.
