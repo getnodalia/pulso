@@ -6970,6 +6970,20 @@ const GERMAN: &[(&str, &str, &str)] = &[
     ("help.appPage", "Pulso Home Page", "Pulso-Startseite"),
     ("help.github", "Pulso on GitHub", "Pulso auf GitHub"),
     ("file.openDemoProject", "Open Demo Project", "Demoprojekt öffnen"),
+    ("", "Quick Set Anchor", "Schnelles Festlegen des Ankerpunkts"),
+    ("layer.quickSetAnchor", "Top Left", "Oben links"),
+    ("layer.quickSetAnchor", "Top", "Oben"),
+    ("layer.quickSetAnchor", "Top Right", "Oben rechts"),
+    ("layer.quickSetAnchor", "Left", "Links"),
+    ("layer.quickSetAnchor", "Center", "Mitte"),
+    ("layer.quickSetAnchor", "Right", "Rechts"),
+    ("layer.quickSetAnchor", "Bottom Left", "Unten links"),
+    ("layer.quickSetAnchor", "Bottom", "Unten"),
+    ("layer.quickSetAnchor", "Bottom Right", "Unten rechts"),
+    ("layer.unprecompose", "Un-precompose", "Vorkomposition auflösen"),
+    ("effect.plugins.install", "Install Effect Plug-in...", "Effekt-Plug-in installieren..."),
+    ("effect.plugins.install", "Install Effect Plug-in Bundle (Folder)...", "Effekt-Plug-in-Paket installieren (Ordner)..."),
+    ("prefs.open", "Plug-in Library...", "Plug-in-Bibliothek..."),
 ];
 
 // <<< generated i18n catalogs
