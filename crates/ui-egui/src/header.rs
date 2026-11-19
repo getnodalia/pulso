@@ -37,7 +37,17 @@ pub fn show(app: &mut PulsoApp, ui: &mut egui::Ui, rect: Rect) {
         crate::titlebar::drag_area(ui, rect);
     }
     let cy = rect.center().y;
-    let x = rect.min.x + if app.integrated_titlebar && !app.ui.show_menu_bar { 80.0 } else { crate::theme::ISLAND_GAP + 2.0 };
+    // Nodalia's window controls at the left (the desktop's choice on Linux) take the bar's first
+    // stretch and the right end is free.
+    let controls_left = crate::titlebar::side(app) == Some(nodalia_theme::titlebar::Side::Left);
+    let x = rect.min.x
+        + if app.integrated_titlebar && !app.ui.show_menu_bar {
+            nodalia_theme::titlebar::MAC_LIGHTS
+        } else if controls_left {
+            crate::titlebar::WIDTH + nodalia_theme::titlebar::CONTENT_GAP
+        } else {
+            crate::theme::ISLAND_GAP + 2.0
+        };
     let x = menu_and_home(app, ui, &p, x, cy);
     let x = tool_slots(app, ui, &p, x, cy);
     let x = tool_options_bar(app, ui, &p, x + 10.0, cy);
@@ -342,7 +352,8 @@ fn snapping_toggle(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, x: 
 /// selector with the workspace actions. `left` is where the tools end.
 fn right_side(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, rect: Rect, left: f32, cy: f32) {
     let t = app.tokens;
-    let rx = rect.max.x - if app.custom_titlebar { crate::titlebar::WIDTH + 8.0 } else { crate::theme::ISLAND_GAP + 2.0 };
+    let controls_left = crate::titlebar::side(app) == Some(nodalia_theme::titlebar::Side::Left);
+    let rx = rect.max.x - if app.custom_titlebar && !controls_left { crate::titlebar::WIDTH + 8.0 } else { crate::theme::ISLAND_GAP + 2.0 };
     if app.custom_titlebar {
         crate::titlebar::window_controls(app, ui, rect);
     }
