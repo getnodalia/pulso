@@ -5676,6 +5676,20 @@ const RUSSIAN: &[(&str, &str, &str)] = &[
     ("help.appPage", "Pulso Home Page", "Главная страница Pulso"),
     ("help.github", "Pulso on GitHub", "Pulso на GitHub"),
     ("file.openDemoProject", "Open Demo Project", "Открыть демонстрационный проект"),
+    ("", "Quick Set Anchor", "Быстрая установка опорной точки"),
+    ("layer.quickSetAnchor", "Top Left", "Вверху слева"),
+    ("layer.quickSetAnchor", "Top", "Вверху"),
+    ("layer.quickSetAnchor", "Top Right", "Вверху справа"),
+    ("layer.quickSetAnchor", "Left", "Слева"),
+    ("layer.quickSetAnchor", "Center", "По центру"),
+    ("layer.quickSetAnchor", "Right", "Справа"),
+    ("layer.quickSetAnchor", "Bottom Left", "Внизу слева"),
+    ("layer.quickSetAnchor", "Bottom", "Внизу"),
+    ("layer.quickSetAnchor", "Bottom Right", "Внизу справа"),
+    ("layer.unprecompose", "Un-precompose", "Распаковать предкомпозицию"),
+    ("effect.plugins.install", "Install Effect Plug-in...", "Установить плагин эффекта..."),
+    ("effect.plugins.install", "Install Effect Plug-in Bundle (Folder)...", "Установить набор плагинов эффектов (папка)..."),
+    ("prefs.open", "Plug-in Library...", "Библиотека плагинов..."),
 ];
 
 /// French (addition): the same (command, English label) keys as `JAPANESE`, one
