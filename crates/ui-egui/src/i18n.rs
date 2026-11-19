@@ -3696,6 +3696,20 @@ const UKRAINIAN: &[(&str, &str, &str)] = &[
     ("help.appPage", "Pulso Home Page", "Домашня сторінка Pulso"),
     ("help.github", "Pulso on GitHub", "Pulso на GitHub"),
     ("file.openDemoProject", "Open Demo Project", "Відкрити демонстраційний проєкт"),
+    ("", "Quick Set Anchor", "Швидке встановлення якоря"),
+    ("layer.quickSetAnchor", "Top Left", "Вгорі ліворуч"),
+    ("layer.quickSetAnchor", "Top", "Вгорі"),
+    ("layer.quickSetAnchor", "Top Right", "Вгорі праворуч"),
+    ("layer.quickSetAnchor", "Left", "Ліворуч"),
+    ("layer.quickSetAnchor", "Center", "Центр"),
+    ("layer.quickSetAnchor", "Right", "Праворуч"),
+    ("layer.quickSetAnchor", "Bottom Left", "Внизу ліворуч"),
+    ("layer.quickSetAnchor", "Bottom", "Внизу"),
+    ("layer.quickSetAnchor", "Bottom Right", "Внизу праворуч"),
+    ("layer.unprecompose", "Un-precompose", "Скасувати попередню композицію"),
+    ("effect.plugins.install", "Install Effect Plug-in...", "Установити плагін ефекту..."),
+    ("effect.plugins.install", "Install Effect Plug-in Bundle (Folder)...", "Установити пакет плагінів ефектів (тека)..."),
+    ("prefs.open", "Plug-in Library...", "Бібліотека плагінів..."),
 ];
 
 /// Spanish (es): the same (command, English label) keys as `JAPANESE`, one entry per fixed menu
@@ -8208,6 +8222,20 @@ const CZECH: &[(&str, &str, &str)] = &[
     ("help.appPage", "Pulso Home Page", "Domovská stránka Pulso"),
     ("help.github", "Pulso on GitHub", "Pulso na GitHubu"),
     ("file.openDemoProject", "Open Demo Project", "Otevřít ukázkový projekt"),
+    ("", "Quick Set Anchor", "Rychlé nastavení kotvy"),
+    ("layer.quickSetAnchor", "Top Left", "Vlevo nahoře"),
+    ("layer.quickSetAnchor", "Top", "Nahoře"),
+    ("layer.quickSetAnchor", "Top Right", "Vpravo nahoře"),
+    ("layer.quickSetAnchor", "Left", "Vlevo"),
+    ("layer.quickSetAnchor", "Center", "Střed"),
+    ("layer.quickSetAnchor", "Right", "Vpravo"),
+    ("layer.quickSetAnchor", "Bottom Left", "Vlevo dole"),
+    ("layer.quickSetAnchor", "Bottom", "Dole"),
+    ("layer.quickSetAnchor", "Bottom Right", "Vpravo dole"),
+    ("layer.unprecompose", "Un-precompose", "Zrušit předkompozici"),
+    ("effect.plugins.install", "Install Effect Plug-in...", "Nainstalovat zásuvný modul efektu..."),
+    ("effect.plugins.install", "Install Effect Plug-in Bundle (Folder)...", "Nainstalovat balík zásuvných modulů efektů (složka)..."),
+    ("prefs.open", "Plug-in Library...", "Knihovna zásuvných modulů..."),
 ];
 
 /// Georgian (ka): the same (command, English label) keys as `JAPANESE`, one entry per fixed menu row.
