@@ -1095,6 +1095,20 @@ const SIMPLIFIED_CHINESE: &[(&str, &str, &str)] = &[
     ("help.appPage", "Pulso Home Page", "Pulso 主页"),
     ("help.github", "Pulso on GitHub", "GitHub 上的 Pulso"),
     ("file.openDemoProject", "Open Demo Project", "打开示例项目"),
+    ("", "Quick Set Anchor", "快速设置锚点"),
+    ("layer.quickSetAnchor", "Top Left", "左上"),
+    ("layer.quickSetAnchor", "Top", "顶部"),
+    ("layer.quickSetAnchor", "Top Right", "右上"),
+    ("layer.quickSetAnchor", "Left", "左"),
+    ("layer.quickSetAnchor", "Center", "中心"),
+    ("layer.quickSetAnchor", "Right", "右"),
+    ("layer.quickSetAnchor", "Bottom Left", "左下"),
+    ("layer.quickSetAnchor", "Bottom", "底部"),
+    ("layer.quickSetAnchor", "Bottom Right", "右下"),
+    ("layer.unprecompose", "Un-precompose", "取消预合成"),
+    ("effect.plugins.install", "Install Effect Plug-in...", "安装效果插件..."),
+    ("effect.plugins.install", "Install Effect Plug-in Bundle (Folder)...", "安装效果插件包 (文件夹)..."),
+    ("prefs.open", "Plug-in Library...", "插件库..."),
 ];
 
 /// Swedish (`sv`), written from the English source.
@@ -2375,6 +2389,20 @@ const TRADITIONAL_CHINESE: &[(&str, &str, &str)] = &[
     ("help.appPage", "Pulso Home Page", "Pulso 首頁"),
     ("help.github", "Pulso on GitHub", "GitHub 上的 Pulso"),
     ("file.openDemoProject", "Open Demo Project", "開啟範例專案"),
+    ("", "Quick Set Anchor", "快速設定錨點"),
+    ("layer.quickSetAnchor", "Top Left", "左上"),
+    ("layer.quickSetAnchor", "Top", "頂部"),
+    ("layer.quickSetAnchor", "Top Right", "右上"),
+    ("layer.quickSetAnchor", "Left", "左"),
+    ("layer.quickSetAnchor", "Center", "中心"),
+    ("layer.quickSetAnchor", "Right", "右"),
+    ("layer.quickSetAnchor", "Bottom Left", "左下"),
+    ("layer.quickSetAnchor", "Bottom", "底部"),
+    ("layer.quickSetAnchor", "Bottom Right", "右下"),
+    ("layer.unprecompose", "Un-precompose", "取消預先合成"),
+    ("effect.plugins.install", "Install Effect Plug-in...", "安裝效果外掛程式..."),
+    ("effect.plugins.install", "Install Effect Plug-in Bundle (Folder)...", "安裝效果外掛程式套件 (資料夾)..."),
+    ("prefs.open", "Plug-in Library...", "外掛程式庫..."),
 ];
 
 const JAPANESE: &[(&str, &str, &str)] = &[
@@ -3013,6 +3041,20 @@ const JAPANESE: &[(&str, &str, &str)] = &[
     ("help.appPage", "Pulso Home Page", "Pulsoホームページ"),
     ("help.github", "Pulso on GitHub", "GitHubのPulso"),
     ("file.openDemoProject", "Open Demo Project", "デモプロジェクトを開く"),
+    ("", "Quick Set Anchor", "アンカーポイントをクイック設定"),
+    ("layer.quickSetAnchor", "Top Left", "左上"),
+    ("layer.quickSetAnchor", "Top", "上"),
+    ("layer.quickSetAnchor", "Top Right", "右上"),
+    ("layer.quickSetAnchor", "Left", "左"),
+    ("layer.quickSetAnchor", "Center", "中央"),
+    ("layer.quickSetAnchor", "Right", "右"),
+    ("layer.quickSetAnchor", "Bottom Left", "左下"),
+    ("layer.quickSetAnchor", "Bottom", "下"),
+    ("layer.quickSetAnchor", "Bottom Right", "右下"),
+    ("layer.unprecompose", "Un-precompose", "プリコンポーズ解除"),
+    ("effect.plugins.install", "Install Effect Plug-in...", "エフェクトプラグインをインストール..."),
+    ("effect.plugins.install", "Install Effect Plug-in Bundle (Folder)...", "エフェクトプラグインバンドルをインストール（フォルダー）..."),
+    ("prefs.open", "Plug-in Library...", "プラグインライブラリ..."),
 ];
 
 /// Ukrainian (uk): original translations of the English menu labels, using ordinary

@@ -120,6 +120,7 @@ can give; only Georgian, contributed by a native speaker (#1843), has had it.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-19 | minor | Japanese, Simplified Chinese and Traditional Chinese reach the full panel source list: 188, 201 and 246 new panel rows (the panel catalogs now carry every string a panel draws, 1,268 sources) and 14 new menu rows each (Quick Set Anchor, Un-precompose, plug-in install and library); AI-assisted, not yet native-speaker proofread |
 | 2026-11-19 | minor | Spanish (`es`): effect names complete, 308 names and 21 categories in `i18n/effects.rs`, written from the meaning of the English ones; panels already at the source list of the other catalogs (1,268 rows). Share rises from ≈ 29% to ≈ 52% |
 | 2026-11-03 | minor | Traditional Chinese (`zh-hant`): effect names complete — 308 names and 21 categories (#2037); the menu and panel catalogs stay at 630 and 951 rows |
 | 2026-10-30 | minor | Recounted on the merged tree after #1774: Japanese 1,923 (46%, 297 effect names), Simplified Chinese 1,935 (46%, 307 effect names), Traditional Chinese 1,581 (38%, 951 panel rows after #2244's prune); overall ≈ 24% |
