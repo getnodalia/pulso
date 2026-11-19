@@ -1,4 +1,4 @@
-//! Modal dialogs: About (community links, Contributors and Models credits), New Composition /
+//! Modal dialogs: About (community links), New Composition /
 //! Composition Settings, Solid Settings and the command palette (Camera/Light Settings live in `dialogs_3d`).
 
 use crate::i18n::{tr, tr_args};
@@ -360,52 +360,21 @@ pub fn show(app: &mut PulsoApp, ctx: &egui::Context) {
     }
 }
 
-/// About tabs: About · Contributors · Models.
-const ABOUT_TABS: [(&str, &str); 3] = [("About", "about"), ("Contributors", "contributors"), ("Models", "models")];
-/// Height of the Contributors / Models tab bodies (they scroll inside it).
-const CREDITS_HEIGHT: f32 = 380.0;
-
 /// The About dialog, the window every Nodalia app shares (`nodalia_theme::about`): the NDL
-/// heading with its round close button, pill tabs, and the About page, with the contributors and
-/// the models listed in a fixed-height body on their own tabs. The tab is kept in egui temp data.
-/// A command the About body asked for is run once the modal has been built.
+/// heading with its round close button and the About page. A command the page asked for is run
+/// once the modal has been built.
 fn about(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
     use nodalia_theme::about as ndl;
     let mut close = false;
     let mut cmd: Option<&'static str> = None;
-    let tab_id = egui::Id::unique("about_tab");
     let look = t.creator();
-    let tab = ctx.data(|d| d.get_temp::<usize>(tab_id)).unwrap_or(0);
-    // Wide enough for every Contributors column at its natural width (modals shrink to the window).
-    let width = if tab == 0 { ndl::measures::WIDTH } else { ndl::measures::WIDE };
-    modal_ndl(ctx, "About Pulso", width, t, |ui| {
+    modal_ndl(ctx, "About Pulso", ndl::measures::WIDTH, t, |ui| {
         let title = tr("About Pulso");
         let heading = ndl::heading(ui, &look, title, egui::Id::unique("about_close"));
         app.auto.add("about.close", heading.close, "Close");
         close |= heading.closed || ui.input(|i| i.key_pressed(egui::Key::Escape));
         ui.add_space(8.0);
-        let labels: Vec<String> = ABOUT_TABS.iter().map(|(label, _)| tr(label).to_string()).collect();
-        let label_refs: Vec<&str> = labels.iter().map(String::as_str).collect();
-        let tabs = ndl::tabs(ui, &look, &label_refs, tab);
-        for ((_, id), rect) in ABOUT_TABS.iter().zip(&tabs.rects) {
-            app.auto.add(&format!("about.tab.{id}"), *rect, id);
-        }
-        ui.data_mut(|d| d.insert_temp(tab_id, tabs.selected));
-        ui.add_space(6.0);
-        match tabs.selected {
-            1 | 2 => {
-                let h = CREDITS_HEIGHT.min(ui.available_height().max(120.0));
-                ui.allocate_ui(vec2(ui.available_width(), h), |ui| {
-                    ui.set_max_height(h);
-                    if tabs.selected == 1 {
-                        crate::credits::contributors_ui(ui, &mut app.auto);
-                    } else {
-                        crate::credits::models_ui(ui);
-                    }
-                });
-            }
-            _ => cmd = about_main(app, ui, &look),
-        }
+        cmd = about_main(app, ui, &look);
     });
     if let Some(c) = cmd {
         let _ = app.session.execute(c, json!({}));
