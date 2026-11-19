@@ -21,7 +21,7 @@ the AI models named in `Co-Authored-By` trailers.
 
 ## In Pulso
 
-- The About window is `about()` in `crates/ui-egui/src/panels/dialogs.rs` (`app.about`, or click the header logo); automation ids `about.tab.*` and `about.credits.*`.
+- The About window is `about()` in `crates/ui-egui/src/panels/dialogs.rs` (`app.about`, or click the header logo). It shows no Contributors or Models tabs (Nodalia's apps do not show them); the data stays in `contributors/` and credits live in `NOTICE`.
 
 ## Credit yourself
 

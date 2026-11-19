@@ -1,4 +1,4 @@
-//! Modal dialogs: About (community links, Contributors and Models credits), New Composition /
+//! Modal dialogs: About (community links), New Composition /
 //! Composition Settings, Solid Settings and the command palette (Camera/Light Settings live in `dialogs_3d`).
 
 use crate::i18n::{tr, tr_args};
@@ -278,6 +278,36 @@ pub(crate) fn modal_fit_placed(ctx: &egui::Context, title: &str, size: egui::Vec
         });
 }
 
+/// A dialog with the Nodalia heading ([`nodalia_theme::about::heading`]): `body` draws the
+/// heading first, and the user can grab its row to move the dialog off what it covers. The drag
+/// area is registered before the heading's controls, so the close button above it stays clickable.
+pub(crate) fn modal_ndl(ctx: &egui::Context, key: &str, width: f32, t: &Tokens, body: impl FnOnce(&mut egui::Ui)) {
+    let pass = ctx.cumulative_pass_nr_for(egui::ViewportId::ROOT);
+    ctx.data_mut(|d| d.insert_temp(modal_pass_id(), pass));
+    let width = width.min(modal_space(ctx).x);
+    let id = egui::Id::unique(("modal", key));
+    let offset_id = id.with("offset");
+    let room = ((ctx.content_rect().size() - vec2(width, 320.0)) * 0.5).max(vec2(0.0, 0.0));
+    let offset = ctx.data(|d| d.get_temp::<egui::Vec2>(offset_id)).unwrap_or_default().clamp(-room, room);
+    egui::Modal::new(id)
+        .area(egui::Modal::default_area(id).anchor(Align2::CENTER_CENTER, offset))
+        .backdrop_color(Color32::from_black_alpha(120))
+        .frame(egui::Frame::window(&ctx.style_of(ctx.theme())).fill(t.panel_bg).inner_margin(egui::Margin::same(18)))
+        .show(ctx, |ui| {
+            ui.set_width(width - 36.0);
+            // The drag area sits under the heading's controls: register it first, from the row the
+            // heading will take, then draw the heading.
+            let row = Rect::from_min_size(ui.cursor().min, vec2(ui.available_width(), nodalia_theme::creator::layout::CLOSE));
+            let grip = ui.interact(row, id.with("grip"), Sense::DRAG).on_hover_cursor(egui::CursorIcon::Grab);
+            if grip.dragged() {
+                let moved = (offset + grip.drag_delta()).clamp(-room, room);
+                ui.ctx().data_mut(|d| d.insert_temp(offset_id, moved));
+            }
+            body(ui);
+            crate::color_picker::note_overlay(ui.ctx(), ui.min_rect().expand(18.0));
+        });
+}
+
 /// The buttons of a [`modal_fit`] body of `height`, kept in view: `footer` lays them out first,
 /// at the bottom (bottom up: its first row is the lowest), and the rest of the body gets the room
 /// above them. Returns that room (a left-to-right row, clipped to it, so a long or wide body
@@ -330,58 +360,21 @@ pub fn show(app: &mut PulsoApp, ctx: &egui::Context) {
     }
 }
 
-/// About tabs: About · Contributors · Models.
-const ABOUT_TABS: [(&str, &str); 3] = [("About", "about"), ("Contributors", "contributors"), ("Models", "models")];
-/// Height of the Contributors / Models tab bodies (they scroll inside it).
-const CREDITS_HEIGHT: f32 = 380.0;
-
-/// The About dialog: tabs for the name/version/blurb, the contributors and the models (the last
-/// two scroll in a fixed-height body), the licence and bundled-font line, and Close. The tab is
-/// kept in egui temp data. A command the About body asked for is run once the modal has been
-/// built; Close clears `app.dialog`.
+/// The About dialog, the window every Nodalia app shares (`nodalia_theme::about`): the NDL
+/// heading with its round close button and the About page. A command the page asked for is run
+/// once the modal has been built.
 fn about(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
+    use nodalia_theme::about as ndl;
     let mut close = false;
-    let mut cmd: Option<&str> = None;
-    let tab_id = egui::Id::unique("about_tab");
-    // Wide enough for every Contributors column at its natural width (modals shrink to the window).
-    modal(ctx, "About Pulso", vec2(820.0, 520.0), t, |ui| {
-        let mut tab = ui.data_mut(|d| d.get_temp::<usize>(tab_id)).unwrap_or(0);
-        ui.horizontal(|ui| {
-            for (i, (label, id)) in ABOUT_TABS.iter().enumerate() {
-                let r = ui.selectable_label(tab == i, *label);
-                app.auto.add(&format!("about.tab.{id}"), r.rect, label);
-                if r.clicked() {
-                    tab = i;
-                }
-            }
-        });
-        ui.data_mut(|d| d.insert_temp(tab_id, tab));
-        ui.separator();
-        match tab {
-            1 | 2 => {
-                let h = CREDITS_HEIGHT.min(ui.available_height().max(120.0));
-                ui.allocate_ui(vec2(ui.available_width(), h), |ui| {
-                    ui.set_max_height(h);
-                    if tab == 1 {
-                        crate::credits::contributors_ui(ui, &mut app.auto);
-                    } else {
-                        crate::credits::models_ui(ui);
-                    }
-                });
-            }
-            _ => about_main(app, ui, t, &mut cmd),
-        }
+    let mut cmd: Option<&'static str> = None;
+    let look = t.creator();
+    modal_ndl(ctx, "About Pulso", ndl::measures::WIDTH, t, |ui| {
+        let title = tr("About Pulso");
+        let heading = ndl::heading(ui, &look, title, egui::Id::unique("about_close"));
+        app.auto.add("about.close", heading.close, "Close");
+        close |= heading.closed || ui.input(|i| i.key_pressed(egui::Key::Escape));
         ui.add_space(8.0);
-        ui.horizontal(|ui| {
-            ui.label(egui::RichText::new(tr("MIT OR Apache-2.0 • Fonts: Inter, JetBrains Mono (OFL)")).small().color(t.text_faint));
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                let r = ui.button(tr("Close"));
-                app.auto.add("about.close", r.rect, "Close");
-                if r.clicked() {
-                    close = true;
-                }
-            });
-        });
+        cmd = about_main(app, ui, &look);
     });
     if let Some(c) = cmd {
         let _ = app.session.execute(c, json!({}));
@@ -391,38 +384,28 @@ fn about(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
     }
 }
 
-/// The About tab: the app icon, version, blurb and project links.
-fn about_main(app: &mut PulsoApp, ui: &mut egui::Ui, t: &Tokens, cmd: &mut Option<&'static str>) {
-    ui.vertical_centered(|ui| {
-        ui.add_space(8.0);
-        let (r, _) = ui.allocate_exact_size(vec2(96.0, 96.0), Sense::hover());
-        crate::brand::paint_mark(ui.painter(), r);
-        ui.add_space(10.0);
-        ui.label(egui::RichText::new("Pulso").font(Tokens::semibold(26.0)).color(t.text));
-        ui.add_space(2.0);
-        ui.label(egui::RichText::new(crate::i18n::tr_args("Version {}", &[&env!("CARGO_PKG_VERSION")])).color(t.text_dim));
-        ui.add_space(10.0);
-        ui.label(egui::RichText::new(tr("A clean-room, open-source compositor for motion graphics and visual effects: native on macOS, Windows and Linux, and in the browser. Part of the Nodalia family of creative apps.")).color(t.text_dim));
-        ui.add_space(14.0);
-        let links: [(&str, &str, &'static str); 4] = [
-            ("Nodalia website", pulso_engine::links::WEBSITE, "help.website"),
-            ("Pulso home page", pulso_engine::links::APP_PAGE, "help.appPage"),
-            ("Source code on GitHub", pulso_engine::links::GITHUB, "help.github"),
-            ("Report an Issue", pulso_engine::links::ISSUES, "help.reportIssue"),
-        ];
-        ui.horizontal_wrapped(|ui| {
-            ui.spacing_mut().item_spacing.x = 14.0;
-            let total: f32 = links.iter().map(|(l, _, _)| ui.painter().layout_no_wrap(tr(l).to_string(), Tokens::ui(13.0), t.accent).size().x + 14.0).sum::<f32>() - 14.0;
-            ui.add_space(((ui.available_width() - total) / 2.0).max(0.0));
-            for (label, url, c) in links {
-                let r = ui.add(egui::Button::new(egui::RichText::new(tr(label)).color(t.accent).font(Tokens::ui(13.0))).frame(false));
-                app.auto.add(&format!("about.{c}"), r.rect, label);
-                if r.on_hover_text(url).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
-                    *cmd = Some(c);
-                }
-            }
-        });
-    });
+/// The About tab: the app icon, version, blurb and project links, drawn by the shared page.
+fn about_main(app: &mut PulsoApp, ui: &mut egui::Ui, look: &nodalia_theme::creator::Look) -> Option<&'static str> {
+    use nodalia_theme::about as ndl;
+    let version = crate::i18n::tr_args("Version {}", &[&env!("CARGO_PKG_VERSION")]);
+    let blurb = tr(
+        "A clean-room, open-source compositor for motion graphics and visual effects: native on macOS, Windows and Linux, and in the browser. Part of the Nodalia family of creative apps.",
+    );
+    let links: [(&str, &str, &'static str); 4] = [
+        ("Nodalia website", pulso_engine::links::WEBSITE, "help.website"),
+        ("Pulso home page", pulso_engine::links::APP_PAGE, "help.appPage"),
+        ("Source code on GitHub", pulso_engine::links::GITHUB, "help.github"),
+        ("Report an Issue", pulso_engine::links::ISSUES, "help.reportIssue"),
+    ];
+    let labels: Vec<String> = links.iter().map(|(label, _, _)| tr(label).to_string()).collect();
+    let shared: Vec<ndl::Link> = labels.iter().zip(&links).map(|(label, (_, url, _))| ndl::Link { label, url }).collect();
+    let footer = tr("MIT OR Apache-2.0 • Fonts: Inter, JetBrains Mono (OFL)");
+    let info = ndl::Info { name: "Pulso", version: &version, tagline: blurb, suite: "", links: &shared, footer };
+    let page = ndl::page(ui, look, &info, |ui, rect| crate::brand::paint_mark(ui.painter(), rect));
+    for ((_, _, c), rect) in links.iter().zip(&page.links) {
+        app.auto.add(&format!("about.{c}"), *rect, c);
+    }
+    page.picked.and_then(|i| links.get(i)).map(|(_, _, c)| *c)
 }
 
 fn comp_settings(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens, existing: bool) {
