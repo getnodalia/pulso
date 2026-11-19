@@ -2995,7 +2995,8 @@ mod tests {
     const COMPLETE: &[(&str, &[Row])] = &[("zh-hans", SIMPLIFIED_CHINESE), ("zh-hant", TRADITIONAL_CHINESE)];
 
     /// The languages whose tables are being filled in: guarded row by row.
-    const PARTIAL: &[(&str, &[Row])] = &[("ja", JAPANESE_EFFECTS), ("ka", GEORGIAN), ("sv", SWEDISH), ("fr", FRENCH), ("es", SPANISH_EFFECTS), ("pt-br", PORTUGUESE_EFFECTS)];
+    const PARTIAL: &[(&str, &[Row])] =
+        &[("ja", JAPANESE_EFFECTS), ("ka", GEORGIAN), ("sv", SWEDISH), ("fr", FRENCH), ("es", SPANISH_EFFECTS), ("pt-br", PORTUGUESE_EFFECTS)];
 
     /// A partial language may lag Simplified Chinese but may not invent ids or disagree about
     /// which effect an id names: a translator fills these tables row by row.
