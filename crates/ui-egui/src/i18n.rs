@@ -4978,6 +4978,20 @@ const PORTUGUESE: &[(&str, &str, &str)] = &[
     ("help.appPage", "Pulso Home Page", "Página inicial do Pulso"),
     ("help.github", "Pulso on GitHub", "Pulso no GitHub"),
     ("file.openDemoProject", "Open Demo Project", "Abrir projeto de demonstração"),
+    ("", "Quick Set Anchor", "Definição rápida de âncora"),
+    ("layer.quickSetAnchor", "Top Left", "Superior esquerdo"),
+    ("layer.quickSetAnchor", "Top", "Superior"),
+    ("layer.quickSetAnchor", "Top Right", "Superior direito"),
+    ("layer.quickSetAnchor", "Left", "Esquerda"),
+    ("layer.quickSetAnchor", "Center", "Centro"),
+    ("layer.quickSetAnchor", "Right", "Direita"),
+    ("layer.quickSetAnchor", "Bottom Left", "Inferior esquerdo"),
+    ("layer.quickSetAnchor", "Bottom", "Inferior"),
+    ("layer.quickSetAnchor", "Bottom Right", "Inferior direito"),
+    ("layer.unprecompose", "Un-precompose", "Desfazer pré-composição"),
+    ("effect.plugins.install", "Install Effect Plug-in...", "Instalar plug-in de efeito..."),
+    ("effect.plugins.install", "Install Effect Plug-in Bundle (Folder)...", "Instalar pacote de plug-ins de efeito (pasta)..."),
+    ("prefs.open", "Plug-in Library...", "Biblioteca de plug-ins..."),
 ];
 
 // >>> Russian, French and German menu catalogs
