@@ -129,6 +129,34 @@ const BUILTINS: &[Builtin] = &[
         description: "3D title cards with a camera orbiting around them over a floor. Essential Graphics: Title.",
         build: text_orbit,
     },
+    Builtin {
+        id: "countdown",
+        name: "Countdown 3-2-1",
+        category: "Titles",
+        description: "Three numbers pop inside a ring, then a closing word. Essential Graphics: Closing Word, Ring Color.",
+        build: countdown,
+    },
+    Builtin {
+        id: "quote-card",
+        name: "Quote Card",
+        category: "Social",
+        description: "A calm square card: an accent line, a quote that fades in and its author. Essential Graphics: Quote, Author, Accent Color.",
+        build: quote_card,
+    },
+    Builtin {
+        id: "product-spotlight",
+        name: "Product Spotlight",
+        category: "Brand",
+        description: "A product placeholder rises inside soft rings above its name and price. Essential Graphics: Product Name, Price, Accent Color.",
+        build: product_spotlight,
+    },
+    Builtin {
+        id: "bar-chart",
+        name: "Bar Chart Intro",
+        category: "Data",
+        description: "Three bars grow in turn under a title, with their labels. Essential Graphics: Title, Bar Color.",
+        build: bar_chart,
+    },
 ];
 
 // ------------------------------------------------------------------------- authoring helpers
@@ -395,6 +423,90 @@ fn text_orbit(s: &mut Session) -> Result<()> {
     });
     expose(s, title, "text/sourceText", "Title")?;
     finish(s, "3D Text Orbit", 3.0)
+}
+
+fn countdown(s: &mut Session) -> Result<()> {
+    comp(s, "Countdown", 1920, 1080, 5.0, "#0B1220")?;
+    let bg = solid(s, "Background", "#000000")?;
+    gradient(s, bg, [960.0, 540.0], [960.0, 1300.0], "#1B2F4B", "#070B14", true)?;
+    let ring = shape(s, "Ring", "ellipse", [520.0, 520.0], "#3D8BFF", [960.0, 540.0])?;
+    set(s, ring, "transform/opacity", op(22.0));
+    keys(s, ring, "transform/scale", &[(0.0, sc(100.0)), (1.0, sc(112.0)), (2.0, sc(100.0)), (3.0, sc(112.0)), (4.0, sc(100.0))]);
+    for (i, n) in ["3", "2", "1"].into_iter().enumerate() {
+        let t0 = i as f64;
+        let l = text(s, n, [960.0, 600.0], 320.0, "#FFFFFF")?;
+        keys(s, l, "transform/scale", &[(t0, sc(130.0)), (t0 + 0.25, sc(100.0)), (t0 + 0.9, sc(92.0))]);
+        keys(s, l, "transform/opacity", &[(t0, op(0.0)), (t0 + 0.15, op(100.0)), (t0 + 0.8, op(100.0)), (t0 + 0.95, op(0.0))]);
+    }
+    let go = text(s, "GO", [960.0, 600.0], 300.0, "#FFFFFF")?;
+    keys(s, go, "transform/scale", &[(3.0, sc(60.0)), (3.4, sc(110.0)), (3.6, sc(100.0))]);
+    keys(s, go, "transform/opacity", &[(3.0, op(0.0)), (3.3, op(100.0))]);
+    expose(s, go, "text/sourceText", "Closing Word")?;
+    expose(s, ring, "contents/group#1/contents/fill/color", "Ring Color")?;
+    finish(s, "Countdown", 3.6)
+}
+
+fn quote_card(s: &mut Session) -> Result<()> {
+    comp(s, "Quote Card", 1080, 1080, 8.0, "#F2EDE4")?;
+    let _bg = solid(s, "Paper", "#F2EDE4")?;
+    let line = shape(s, "Accent Line", "rect", [160.0, 10.0], "#C9593B", [540.0, 250.0])?;
+    keys(s, line, "transform/scale", &[(0.0, KV::Vec3([0.0, 100.0, 100.0])), (0.8, sc(100.0))]);
+    let quote = text(s, "Make the thing you wish\nalready existed.", [540.0, 500.0], 76.0, "#22201C")?;
+    keys(s, quote, "transform/opacity", &[(0.6, op(0.0)), (1.6, op(100.0))]);
+    keys(s, quote, "transform/position", &[(0.6, p3(540.0, 530.0)), (1.6, p3(540.0, 500.0))]);
+    let author = text(s, "Someone thoughtful", [540.0, 800.0], 40.0, "#6B645A")?;
+    keys(s, author, "transform/opacity", &[(1.6, op(0.0)), (2.4, op(100.0))]);
+    expose(s, quote, "text/sourceText", "Quote")?;
+    expose(s, author, "text/sourceText", "Author")?;
+    expose(s, line, "contents/group#1/contents/fill/color", "Accent Color")?;
+    finish(s, "Quote Card", 3.0)
+}
+
+fn product_spotlight(s: &mut Session) -> Result<()> {
+    comp(s, "Product Spotlight", 1920, 1080, 6.0, "#0E1320")?;
+    let bg = solid(s, "Background", "#000000")?;
+    gradient(s, bg, [960.0, 380.0], [960.0, 1300.0], "#27324F", "#080B14", true)?;
+    for (i, r) in [820.0, 620.0].into_iter().enumerate() {
+        let ring = shape(s, &format!("Ring {}", i + 1), "ellipse", [r, r], "#FFFFFF", [960.0, 430.0])?;
+        set(s, ring, "transform/opacity", op(6.0 + 4.0 * i as f64));
+        keys(s, ring, "transform/scale", &[(0.0, sc(80.0)), (1.2 + 0.2 * i as f64, sc(100.0)), (6.0, sc(106.0))]);
+    }
+    let product = shape(s, "Product (replace me)", "rounded", [360.0, 360.0], "#FFC23D", [960.0, 430.0])?;
+    keys(s, product, "transform/position", &[(0.0, p3(960.0, 520.0)), (1.2, p3(960.0, 430.0)), (3.5, p3(960.0, 420.0)), (6.0, p3(960.0, 430.0))]);
+    keys(s, product, "transform/opacity", &[(0.0, op(0.0)), (0.7, op(100.0))]);
+    let name = text(s, "Product name", [960.0, 800.0], 84.0, "#FFFFFF")?;
+    keys(s, name, "transform/opacity", &[(1.0, op(0.0)), (1.7, op(100.0))]);
+    let price = text(s, "$49", [960.0, 900.0], 56.0, "#FFC23D")?;
+    keys(s, price, "transform/opacity", &[(1.4, op(0.0)), (2.1, op(100.0))]);
+    expose(s, name, "text/sourceText", "Product Name")?;
+    expose(s, price, "text/sourceText", "Price")?;
+    expose(s, product, "contents/group#1/contents/fill/color", "Accent Color")?;
+    finish(s, "Product Spotlight", 3.0)
+}
+
+fn bar_chart(s: &mut Session) -> Result<()> {
+    comp(s, "Bar Chart Intro", 1920, 1080, 6.0, "#101820")?;
+    let bg = solid(s, "Background", "#000000")?;
+    gradient(s, bg, [960.0, 0.0], [960.0, 1080.0], "#18232F", "#0A1017", false)?;
+    let title = text(s, "Growth this year", [960.0, 160.0], 84.0, "#FFFFFF")?;
+    keys(s, title, "transform/opacity", &[(0.0, op(0.0)), (0.6, op(100.0))]);
+    let base = 900.0;
+    let bars = [("Q1", 400.0, 0.6), ("Q2", 640.0, 1.2), ("Q3", 520.0, 1.8)];
+    let mut first = None;
+    for (i, (label, h, t0)) in bars.into_iter().enumerate() {
+        let x = 560.0 + 400.0 * i as f64;
+        let bar = shape(s, &format!("Bar {label}"), "rect", [240.0, h], "#3DD6A3", [x, base - h / 2.0])?;
+        keys(s, bar, "transform/scale", &[(t0, KV::Vec3([100.0, 0.0, 100.0])), (t0 + 0.9, sc(100.0))]);
+        keys(s, bar, "transform/position", &[(t0, p3(x, base)), (t0 + 0.9, p3(x, base - h / 2.0))]);
+        let l = text(s, label, [x, base + 70.0], 44.0, "#C9D6E2")?;
+        keys(s, l, "transform/opacity", &[(t0, op(0.0)), (t0 + 0.5, op(100.0))]);
+        first.get_or_insert(bar);
+    }
+    expose(s, title, "text/sourceText", "Title")?;
+    if let Some(bar) = first {
+        expose(s, bar, "contents/group#1/contents/fill/color", "Bar Color")?;
+    }
+    finish(s, "Bar Chart Intro", 3.0)
 }
 
 // ------------------------------------------------------------------------- built-in access
@@ -981,7 +1093,7 @@ mod tests {
         let s = Session::default();
         let l = list(&s);
         assert_eq!(l.len(), BUILTINS.len());
-        assert!(l.len() >= 8);
+        assert!(l.len() >= 12);
         for t in &l {
             assert!(t.builtin && !t.controls.is_empty(), "{t:?}");
             assert!(t.width > 0 && t.duration > 0.0, "{t:?}");

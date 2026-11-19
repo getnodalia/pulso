@@ -971,10 +971,10 @@ asked; the control channel's `app.quit {force: true}` skips the prompt.
 
 ### Update: M13.25 Home template gallery, Simulate Output ▸ My Custom RGB
 
-**Home ▸ Templates** (UI-7; File ▸ New ▸ New Project from Template…): a gallery of eight
+**Home ▸ Templates** (UI-7; File ▸ New ▸ New Project from Template…): a gallery of twelve
 original built-in project templates authored in code from engine commands — Lower Third, Title
-Card, Logo Reveal, Kinetic Type, Social Square 1080×1080, Vertical 9:16 Story, Slideshow and 3D
-Text Orbit — each with Essential Graphics controls on its main comp and a thumbnail rendered by
+Card, Logo Reveal, Kinetic Type, Social Square 1080×1080, Vertical 9:16 Story, Slideshow, 3D
+Text Orbit, Countdown 3-2-1, Quote Card, Product Spotlight and Bar Chart Intro — each with Essential Graphics controls on its main comp and a thumbnail rendered by
 our own renderer the first time the gallery shows it. **File ▸ Save as Template…** writes the
 open project as an `.ectemplate` (the open template container: `manifest.json` with
 `kind: "project"`, `project.ecproj`, `poster.png`, `thumb.txt`) into the config Templates
