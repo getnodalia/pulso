@@ -17,7 +17,7 @@ nodalia-quit = { version = "0.1.0", git = "https://github.com/getnodalia/foundat
 nodalia-ecproj-format = { version = "0.1.0", git = "https://github.com/getnodalia/foundation", rev = "d39185ad063a4aadec2cad783a5d143366ae9010" }
 # In-app updates from this app's GitHub releases, with the update windows for egui.
 nodalia-update = { git = "https://github.com/danielmigueltejedor/nodalia-design", rev = "114848a2ff1a7c29c9a5432fb12e955fbe0aeef2", features = ["egui"] }
-nodalia-theme = { git = "https://github.com/danielmigueltejedor/nodalia-design", rev = "78c44503e877ad748fd21c4e36e65e7bfc3efc81" }
+nodalia-theme = { git = "https://github.com/danielmigueltejedor/nodalia-design", rev = "f3317315e65bf0cf44603a636b9f6dc0282e7dce" }
 # internal
 pulso-time = { path = "crates/time" }
 pulso-geom = { path = "crates/geom" }
