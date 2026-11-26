@@ -15,22 +15,22 @@ pub const MAIN_COMP: &str = "Pulso Intro";
 pub const SHOWCASE_3D: &str = "3D Showcase";
 
 /// Seconds → the nearest frame of the demo's 29.97 fps comps (AE keeps times frame-aligned).
-fn t(s: f64) -> Tick {
+pub(super) fn t(s: f64) -> Tick {
     FrameRate::FPS_29_97.snap_nearest(Tick::from_seconds_f64(s))
 }
 
-fn hex(h: &str) -> [f64; 4] {
+pub(super) fn hex(h: &str) -> [f64; 4] {
     let c = pulso_color::Rgba::from_hex(h).unwrap_or(pulso_color::Rgba::WHITE);
     [c.r as f64, c.g as f64, c.b as f64, 1.0]
 }
 
 /// Eased keyframes (Easy Ease on every key).
-fn keys(list: &[(f64, Value)]) -> Vec<Keyframe> {
+pub(super) fn keys(list: &[(f64, Value)]) -> Vec<Keyframe> {
     list.iter().map(|(s, v)| Keyframe::new(t(*s), v.clone()).eased()).collect()
 }
 
 /// Keyframes with a strong "expo out" ease: fast start, long settle.
-fn keys_out(list: &[(f64, Value)]) -> Vec<Keyframe> {
+pub(super) fn keys_out(list: &[(f64, Value)]) -> Vec<Keyframe> {
     let mut k: Vec<Keyframe> = list.iter().map(|(s, v)| Keyframe::new(t(*s), v.clone())).collect();
     let n = k.len();
     for (i, key) in k.iter_mut().enumerate() {
@@ -47,18 +47,18 @@ fn keys_out(list: &[(f64, Value)]) -> Vec<Keyframe> {
     k
 }
 
-fn set(l: &mut Layer, path: &str, v: Value) {
+pub(super) fn set(l: &mut Layer, path: &str, v: Value) {
     if let Some(p) = l.props.prop_mut(path) {
         p.value = v;
     }
 }
-fn anim(l: &mut Layer, path: &str, k: Vec<Keyframe>) {
+pub(super) fn anim(l: &mut Layer, path: &str, k: Vec<Keyframe>) {
     if let Some(p) = l.props.prop_mut(path) {
         p.keys = k;
     }
 }
 
-fn effect(p: &mut Project, l: &mut Layer, id: &str, size: [f64; 2], params: &[(&str, Value)]) {
+pub(super) fn effect(p: &mut Project, l: &mut Layer, id: &str, size: [f64; 2], params: &[(&str, Value)]) {
     let Some(spec) = pulso_effects::find(id) else { return };
     let mut next = p.next_id;
     let mut g = pulso_effects::instantiate(spec, &mut Ids(&mut next), spec.name, size);
@@ -73,7 +73,7 @@ fn effect(p: &mut Project, l: &mut Layer, id: &str, size: [f64; 2], params: &[(&
     }
 }
 
-fn contents(l: &mut Layer, items: Vec<PropGroup>) {
+pub(super) fn contents(l: &mut Layer, items: Vec<PropGroup>) {
     if let Some(c) = l.props.sub_mut("contents") {
         for g in items {
             c.children.push(g.into());
@@ -81,7 +81,7 @@ fn contents(l: &mut Layer, items: Vec<PropGroup>) {
     }
 }
 
-fn text_layer(p: &mut Project, comp: &Comp, name: &str, doc: TextDoc, pos: [f64; 2]) -> Layer {
+pub(super) fn text_layer(p: &mut Project, comp: &Comp, name: &str, doc: TextDoc, pos: [f64; 2]) -> Layer {
     let mut l = build::layer(p, comp, name, LayerSource::Text, (comp.width, comp.height), None);
     set(&mut l, "text/sourceText", Value::Text(Box::new(doc)));
     set(&mut l, "transform/position", Value::Vec3([pos[0], pos[1], 0.0]));

@@ -31,9 +31,14 @@ fn new_project(s: &mut Session, _: &Value) -> Result<Value> {
 }
 
 fn demo(s: &mut Session, _: &Value) -> Result<Value> {
-    let p = crate::demo::demo_project();
+    let mut p = crate::demo::demo_project();
+    // The photo title sequence needs the media layer; without one the demo is the procedural one.
+    let reel = crate::home::reel::install(s).and_then(|f| crate::home::reel::add(&mut p, f));
     s.replace_project(p, None);
-    if let Some(id) = s.project.items.values().find(|i| i.name == crate::demo::MAIN_COMP).map(|i| i.id) {
+    if let Some(id) = reel {
+        s.open_comp(id);
+        s.set_time(pulso_time::Tick::from_seconds_f64(10.8));
+    } else if let Some(id) = s.project.items.values().find(|i| i.name == crate::demo::MAIN_COMP).map(|i| i.id) {
         s.open_comp(id);
         s.set_time(pulso_time::Tick::from_seconds_f64(2.5));
     }

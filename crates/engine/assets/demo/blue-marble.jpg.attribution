@@ -1,0 +1,8 @@
+asset:        blue-marble.jpg
+title:        The Blue Marble (AS17-148-22727), Apollo 17, 1972-12-07
+author:       NASA (Apollo 17 crew)
+source:       https://commons.wikimedia.org/wiki/File:The_Earth_seen_from_Apollo_17.jpg
+license:      Public domain (NASA media are not copyrighted; NASA media usage guidelines)
+license-file:
+added:        2026-11-26 by Pulso contributors (Claude agent, demo project)
+notes:        Fetched as a Wikimedia Commons thumbnail (1920 px), resized and recompressed (JPEG) to about 1400 px. Used by the "Earthrise" comp of the demo project; credited in its end card.
