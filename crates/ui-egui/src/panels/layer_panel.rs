@@ -222,7 +222,7 @@ fn bottom_bar(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, bar: Rec
     p.text(pos2(vx, bar.center().y), Align2::LEFT_CENTER, tr("View:"), Tokens::ui(12.0), t.text_dim);
     let vr = Rect::from_min_size(pos2(vx + 36.0, bar.center().y - 10.0), vec2(150.0, 20.0));
     let pop = egui::Id::unique("layer-view-pop");
-    if widgets::dropdown(ui, vr, &names[view.min(names.len() - 1)], &t, egui::Id::unique("layer-view")).clicked() {
+    if widgets::dropdown_names(ui, vr, &names[view.min(names.len() - 1)], &t, egui::Id::unique("layer-view")).clicked() {
         widgets::open_popup(ui, pop);
     }
     app.auto.add("layerPanel.view", vr, "View");
@@ -275,7 +275,7 @@ pub fn show(app: &mut PulsoApp, ui: &mut egui::Ui, rect: Rect) {
     };
     let origin = area.center() + pan - vec2((lw * zoom / 2.0) as f32, (lh * zoom / 2.0) as f32);
 
-    let mut names = vec!["Masks".to_string()];
+    let mut names = vec![tr("Masks").to_string()];
     if let Some(fx) = layer.effects() {
         names.extend(fx.groups().map(|g| g.name.clone()));
     }

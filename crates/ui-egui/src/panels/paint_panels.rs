@@ -34,6 +34,7 @@ fn number(
     enabled: bool,
 ) -> Option<f64> {
     let t = app.tokens;
+    let label = crate::i18n::tr(label);
     p.text(pos2(x, y + 9.0), Align2::LEFT_CENTER, label, Tokens::ui(11.5), if enabled { t.text_dim } else { t.text_faint });
     let lw = p.layout_no_wrap(label.to_string(), Tokens::ui(11.5), t.text).size().x;
     let (r, nv, _) = widgets::hot_number_at(
@@ -66,6 +67,7 @@ fn popup_row(
     enabled: bool,
 ) -> Option<usize> {
     let t = app.tokens;
+    let label = crate::i18n::tr(label);
     p.text(pos2(x, y + 10.0), Align2::LEFT_CENTER, label, Tokens::ui(11.5), if enabled { t.text_dim } else { t.text_faint });
     let r = Rect::from_min_size(pos2(x + 70.0, y), vec2((w - 70.0).max(60.0), 20.0));
     let pop = egui::Id::unique(("paint-pop", key));

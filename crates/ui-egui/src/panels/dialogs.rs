@@ -581,11 +581,11 @@ fn solid(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
             let cur = super::comp_settings::PIXEL_ASPECTS
                 .iter()
                 .find(|(_, v)| (v - par).abs() < 1e-3)
-                .map(|p| p.0.to_string())
+                .map(|p| tr(p.0).to_string())
                 .unwrap_or_else(|| format!("{par:.2}"));
             let r = nodalia_ui::ComboBox::from_id_salt("solid-par").width(240.0).selected_text(cur).show_ui(ui, |ui| {
                 for (label, v) in super::comp_settings::PIXEL_ASPECTS {
-                    if ui.selectable_label((v - par).abs() < 1e-3, *label).clicked() {
+                    if ui.selectable_label((v - par).abs() < 1e-3, tr(label)).clicked() {
                         par = *v;
                     }
                 }

@@ -116,7 +116,11 @@ pub fn home_tab(app: &mut PulsoApp, ui: &mut egui::Ui, area: Rect) {
             }
             p.rect_stroke(tr, 6.0, Stroke::new(1.0, if resp.hovered() { t.accent } else { t.separator }), StrokeKind::Inside);
             // Category chip (built-in) or "Mine".
-            let chip = if tpl.builtin { tpl.category.clone() } else { format!("{} · Mine", tpl.category) };
+            let chip = if tpl.builtin {
+                crate::i18n::tr(&tpl.category).to_string()
+            } else {
+                format!("{} · {}", crate::i18n::tr(&tpl.category), crate::i18n::tr("Mine"))
+            };
             let g = p.layout_no_wrap(chip, Tokens::medium(10.0), Color32::WHITE);
             let cr = Rect::from_min_size(tr.min + vec2(8.0, 8.0), g.size() + vec2(12.0, 4.0));
             p.rect_filled(cr, 8.0, Color32::from_black_alpha(150));

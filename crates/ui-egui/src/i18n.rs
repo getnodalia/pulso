@@ -7,6 +7,8 @@ use crate::PulsoApp;
 
 /// Effect names, keyed by effect id (#821).
 pub(crate) mod effects;
+#[cfg(test)]
+pub(crate) mod engine_text;
 /// Translations for the panels, tooltips and dialogs below the menu bar (see the module docs).
 pub(crate) mod ui;
 use pulso_engine::menus::{MenuEntry, MenuNode};
@@ -223,6 +225,18 @@ fn menu_catalog(language: &str) -> Option<&'static [(&'static str, &'static str,
         "sv" => SWEDISH,
         _ => return None,
     })
+}
+
+/// The Spanish row for `text` (the panel catalog's, else a menu bar row for it), `None` when
+/// Spanish has none or leaves it as it is. Read by the translated-interface test, which fails a
+/// screen that draws `text` in English although Spanish translates it.
+#[doc(hidden)]
+pub fn spanish_row(text: &str) -> Option<&'static str> {
+    let source = text.trim();
+    let dotted = source.strip_suffix('…').map(|stem| format!("{stem}..."));
+    let panel = ui::spanish_row(source);
+    let menu = || SPANISH.iter().find(|(_, en, _)| *en == source || Some(*en) == dotted.as_deref()).map(|(_, _, es)| *es);
+    panel.or_else(menu).filter(|es| *es != source)
 }
 
 /// A command's label drawn outside the menu bar (the dock's tab titles, the workspace bar), in the
@@ -9164,6 +9178,14 @@ mod tests {
             }
         }
         println!("total: {total}");
+    }
+
+    /// Spanish has a row for every menu entry, every panel text and every effect the app draws.
+    #[test]
+    fn spanish_has_no_missing_rows() {
+        assert_eq!(missing_menu_entries("es"), Vec::<String>::new(), "menu rows");
+        assert_eq!(ui::missing("es"), Vec::<String>::new(), "panel rows");
+        assert_eq!(effects::missing("es"), Vec::<String>::new(), "effect rows");
     }
 
     /// Prints the translated-row counts per language, the numbers `docs/localization-parity.md`

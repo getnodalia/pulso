@@ -197,10 +197,13 @@ pub fn camera(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
     super::dialogs::modal_placed(ctx, "Camera Settings", vec2(520.0, 420.0), t, place, |ui| {
         egui::Grid::new("cam-grid").num_columns(2).spacing([14.0, 9.0]).show(ui, |ui| {
             ui.label(tr("Type"));
-            nodalia_ui::ComboBox::from_id_salt("cam-type").selected_text(if d.two_node { "Two-Node Camera" } else { "One-Node Camera" }).show_ui(ui, |ui| {
-                ui.selectable_value(&mut d.two_node, true, tr("Two-Node Camera"));
-                ui.selectable_value(&mut d.two_node, false, tr("One-Node Camera"));
-            });
+            nodalia_ui::ComboBox::from_id_salt("cam-type").selected_text(tr(if d.two_node { "Two-Node Camera" } else { "One-Node Camera" })).show_ui(
+                ui,
+                |ui| {
+                    ui.selectable_value(&mut d.two_node, true, tr("Two-Node Camera"));
+                    ui.selectable_value(&mut d.two_node, false, tr("One-Node Camera"));
+                },
+            );
             ui.end_row();
             ui.label(tr("Name"));
             let r = ui.add(egui::TextEdit::singleline(&mut d.name).desired_width(240.0));
@@ -209,9 +212,9 @@ pub fn camera(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
             ui.label(tr("Preset"));
             let focal = focal_for_zoom(w, d.zoom);
             let cur = PRESETS.iter().find(|(_, f)| (f - focal).abs() < 1e-6).map(|(n, _)| *n).unwrap_or("Custom");
-            nodalia_ui::ComboBox::from_id_salt("cam-preset").selected_text(cur).show_ui(ui, |ui| {
+            nodalia_ui::ComboBox::from_id_salt("cam-preset").selected_text(tr(cur)).show_ui(ui, |ui| {
                 for (n, f) in PRESETS {
-                    if ui.selectable_label(cur == n, n).clicked() {
+                    if ui.selectable_label(cur == n, tr(n)).clicked() {
                         d.zoom = zoom_for_focal(w, f);
                     }
                 }
@@ -337,7 +340,7 @@ pub fn light(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
             }
             if falls_off(d.kind) {
                 ui.label(tr("Falloff"));
-                nodalia_ui::ComboBox::from_id_salt("light-falloff").selected_text(FALLOFFS[d.falloff.min(2)]).show_ui(ui, |ui| {
+                nodalia_ui::ComboBox::from_id_salt("light-falloff").selected_text(tr(FALLOFFS[d.falloff.min(2)])).show_ui(ui, |ui| {
                     for (i, f) in FALLOFFS.iter().enumerate() {
                         ui.selectable_value(&mut d.falloff, i, *f);
                     }

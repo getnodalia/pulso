@@ -104,8 +104,8 @@ pub fn show(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
             egui::ScrollArea::vertical().max_height(200.0).show(ui, |ui| {
                 egui::Grid::new("tpl-lines").num_columns(2).spacing(vec2(12.0, 2.0)).show(ui, |ui| {
                     for (k, v) in &lines {
-                        ui.label(egui::RichText::new(*k).color(t.text_dim).size(11.5));
-                        ui.label(egui::RichText::new(v).size(11.5));
+                        ui.label(egui::RichText::new(tr(k)).color(t.text_dim).size(11.5));
+                        ui.label(egui::RichText::new(tr(v)).size(11.5));
                         ui.end_row();
                     }
                 });

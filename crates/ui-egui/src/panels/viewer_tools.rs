@@ -975,7 +975,7 @@ fn bottom_bar_contents(app: &mut PulsoApp, ui: &mut egui::Ui, bar: Rect, zoom: f
     let tr = Rect::from_min_size(pos2(x + 4.0, cy - 9.0), g.size() + vec2(8.0, 4.0));
     p.galley(pos2(tr.min.x + 4.0, tr.min.y + 2.0), g, t.timecode);
     let resp = ui.interact(tr, egui::Id::unique("vw-timecode"), Sense::click());
-    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, "Current time"));
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, crate::i18n::tr("Current time")));
     if resp.has_focus() {
         p.rect_stroke(tr.shrink(1.0), 2.0, Stroke::new(1.0, t.focus), StrokeKind::Inside);
     }

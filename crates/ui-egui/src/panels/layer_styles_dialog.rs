@@ -96,11 +96,13 @@ fn control(ui: &mut egui::Ui, p: &Property, v: &KV) -> Option<Value> {
         }
         (KV::Enum(i), ParamUi::Popup { options }) => {
             let mut sel = *i as usize;
-            nodalia_ui::ComboBox::from_id_salt(("ls-popup", p.uid)).selected_text(options.get(sel).cloned().unwrap_or_default()).show_ui(ui, |ui| {
-                for (k, o) in options.iter().enumerate() {
-                    ui.selectable_value(&mut sel, k, o);
-                }
-            });
+            nodalia_ui::ComboBox::from_id_salt(("ls-popup", p.uid))
+                .selected_text(crate::i18n::tr(options.get(sel).map(String::as_str).unwrap_or_default()))
+                .show_ui(ui, |ui| {
+                    for (k, o) in options.iter().enumerate() {
+                        ui.selectable_value(&mut sel, k, crate::i18n::tr(o));
+                    }
+                });
             (sel != *i as usize).then(|| json!(sel))
         }
         (KV::Scalar(x), ui_kind) => {
@@ -186,7 +188,7 @@ pub fn show(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
                             } else {
                                 ui.add_space(24.0);
                             }
-                            let r = ui.selectable_label(sel == id, name);
+                            let r = ui.selectable_label(sel == id, crate::i18n::tr(name));
                             if r.clicked() {
                                 app.dialog_state.layer_style.selected = id.to_string();
                             }

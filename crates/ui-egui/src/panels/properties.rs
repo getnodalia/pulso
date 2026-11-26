@@ -194,7 +194,7 @@ pub fn show(app: &mut PulsoApp, ui: &mut egui::Ui, rect: Rect) {
 
 fn section_header(app: &mut PulsoApp, p: &egui::Painter, x0: f32, w: f32, y: f32, title: &str, auto: &str) {
     let t = app.tokens;
-    p.text(pos2(x0, y + ROW_H / 2.0), Align2::LEFT_CENTER, title, Tokens::semibold(12.0), t.text);
+    p.text(pos2(x0, y + ROW_H / 2.0), Align2::LEFT_CENTER, crate::i18n::tr(title), Tokens::semibold(12.0), t.text);
     let r = Rect::from_min_size(pos2(x0, y), vec2(w, ROW_H));
     app.auto.add(auto, r, title);
 }
@@ -263,11 +263,11 @@ fn transform_row(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, layer
             actions.push(("prop.toggleAnimation".into(), json!({"layer": lid, "prop": uid, "selected": true})));
         }
     }
-    p.text(pos2(r.min.x + 42.0, cy), Align2::LEFT_CENTER, &pr.name, Tokens::ui(12.0), t.text);
+    p.text(pos2(r.min.x + 42.0, cy), Align2::LEFT_CENTER, crate::i18n::tr(&pr.name), Tokens::ui(12.0), t.text);
     let vx = r.min.x + (r.width() * 0.5).max(130.0);
     let label = Rect::from_min_max(pos2(r.min.x + 42.0, r.min.y), pos2(vx - 20.0, r.max.y));
     let resp = ui.interact(label, egui::Id::unique(("props-label", uid)), Sense::click());
-    crate::a11y::role_name(&resp, egui::accesskit::Role::Button, &pr.name);
+    crate::a11y::role_name(&resp, egui::accesskit::Role::Button, crate::i18n::tr(&pr.name));
     app.auto.add(&format!("{base}.label"), label, &pr.name);
     // A double click, or the keyboard's activation (a primary single click is not one).
     if resp.double_clicked() || (resp.clicked() && !resp.clicked_by(egui::PointerButton::Primary)) {
@@ -397,7 +397,7 @@ fn text_section(
     y += 28.0;
     let sr = Rect::from_min_size(pos2(x0, y), vec2(w, 22.0));
     let spop = egui::Id::unique("props-style-pop");
-    if widgets::dropdown(ui, sr, &doc.style, &t, egui::Id::unique("props-style")).clicked() {
+    if widgets::dropdown_names(ui, sr, &doc.style, &t, egui::Id::unique("props-style")).clicked() {
         widgets::open_popup(ui, spop);
     }
     app.auto.add("properties.text.style", sr, "Font style");

@@ -5,6 +5,7 @@ mod native_menu_text_keys;
 mod render_queue_snapshot;
 mod roto_model_guard;
 mod shared_docking_ui;
+mod translated_interface;
 mod ui_3d;
 mod ui_accessibility;
 mod ui_accessibility_audit;

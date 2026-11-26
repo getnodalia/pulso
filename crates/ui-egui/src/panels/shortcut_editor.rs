@@ -395,8 +395,12 @@ pub fn show(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
                 }
             }
             if !name.starts_with('#') {
-                let who: Vec<String> =
-                    table.bindings().into_iter().filter(|(sc, _)| split(sc) == (mods, name.to_string())).map(|(_, b)| b.label.clone()).collect();
+                let who: Vec<String> = table
+                    .bindings()
+                    .into_iter()
+                    .filter(|(sc, _)| split(sc) == (mods, name.to_string()))
+                    .map(|(_, b)| crate::i18n::command_label(&b.command, &b.label).to_string())
+                    .collect();
                 if !who.is_empty() {
                     resp.on_hover_text(who.join("\n"));
                 }
@@ -427,8 +431,12 @@ pub fn show(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
         if let Some(k) = &st.key {
             p.text(info.left_top() + vec2(8.0, 6.0), Align2::LEFT_TOP, tr_args("Key: {}", &[&k]), Tokens::semibold(12.0), t.tab_text_active);
             let mut yy = info.min.y + 26.0;
-            let mut list: Vec<(String, String, String)> =
-                table.bindings().into_iter().filter(|(sc, _)| split(sc).1 == *k).map(|(sc, b)| (sc.to_string(), b.label.clone(), b.scope.clone())).collect();
+            let mut list: Vec<(String, String, String)> = table
+                .bindings()
+                .into_iter()
+                .filter(|(sc, _)| split(sc).1 == *k)
+                .map(|(sc, b)| (sc.to_string(), crate::i18n::command_label(&b.command, &b.label).to_string(), b.scope.clone()))
+                .collect();
             list.sort();
             if list.is_empty() {
                 p.text(pos2(info.min.x + 8.0, yy), Align2::LEFT_TOP, tr("Not assigned"), Tokens::ui(11.5), t.text_dim);
@@ -487,8 +495,20 @@ pub fn show(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
                                 ui.painter().rect_filled(r, 0.0, t.row_alt);
                             }
                             let pp = ui.painter();
-                            pp.text(pos2(r.min.x + 6.0, r.center().y), Align2::LEFT_CENTER, &b.label, Tokens::ui(11.5), t.text);
-                            pp.text(pos2(r.min.x + 230.0, r.center().y), Align2::LEFT_CENTER, b.path.join(" > "), Tokens::ui(10.5), t.text_faint);
+                            pp.text(
+                                pos2(r.min.x + 6.0, r.center().y),
+                                Align2::LEFT_CENTER,
+                                crate::i18n::command_label(&b.command, &b.label),
+                                Tokens::ui(11.5),
+                                t.text,
+                            );
+                            pp.text(
+                                pos2(r.min.x + 230.0, r.center().y),
+                                Align2::LEFT_CENTER,
+                                b.path.iter().map(|s| tr(s)).collect::<Vec<_>>().join(" > "),
+                                Tokens::ui(10.5),
+                                t.text_faint,
+                            );
                             let ks: Vec<String> = keys.iter().map(|k| crate::menus::shortcut_text(k)).collect();
                             let col = if b.scope == APP_SCOPE { APP_COLOR } else { PANEL_COLOR };
                             pp.text(
@@ -499,6 +519,7 @@ pub fn show(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
                                 if keys.is_empty() { t.text_faint } else { col },
                             );
                             app.auto.add(&format!("shortcuts.row.{i}"), r, &b.label);
+                            resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, crate::i18n::command_label(&b.command, &b.label)));
                             if resp.clicked() {
                                 st.selected = Some(b.key.clone());
                                 st.pending.clear();
@@ -506,7 +527,7 @@ pub fn show(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
                         }
                     },
                 );
-                ui.label(RichText::new(format!("{} of {} commands", rows.len(), table.bindables.len())).color(t.text_faint));
+                ui.label(RichText::new(tr_args("{} of {} commands", &[&rows.len(), &table.bindables.len()])).color(t.text_faint));
             });
             ui.separator();
             // Selected command editor.
@@ -516,8 +537,8 @@ pub fn show(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
                     ui.label(RichText::new(tr("Select a command to change its shortcut.")).color(t.text_dim));
                     return;
                 };
-                ui.label(RichText::new(&b.label).font(Tokens::semibold(13.0)).color(t.tab_text_active));
-                ui.label(RichText::new(format!("{} • {}", b.command, scope_label(&b.scope))).color(t.text_faint));
+                ui.label(RichText::new(crate::i18n::command_label(&b.command, &b.label)).font(Tokens::semibold(13.0)).color(t.tab_text_active));
+                ui.label(RichText::new(format!("{} • {}", b.command, tr(&scope_label(&b.scope)))).color(t.text_faint));
                 ui.add_space(6.0);
                 let keys = table.keys.get(&b.key).cloned().unwrap_or_default();
                 if keys.is_empty() {
@@ -565,7 +586,7 @@ pub fn show(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
                         ui.add_space(4.0);
                         ui.label(RichText::new(tr_args("⚠ {} is used by:", &[&(crate::menus::shortcut_text(&k))])).color(t.warning));
                         for c in conflicts.iter().take(4) {
-                            ui.label(RichText::new(format!("   {} ({})", c.label, scope_label(&c.scope))).color(t.warning));
+                            ui.label(RichText::new(format!("   {} ({})", tr(&c.label), tr(&scope_label(&c.scope)))).color(t.warning));
                         }
                     }
                 }
@@ -596,7 +617,7 @@ pub fn show(app: &mut PulsoApp, ctx: &egui::Context, t: &Tokens) {
     if let Some(name) = st.confirm_delete.clone() {
         let mut answer: Option<bool> = None;
         super::dialogs::modal(ctx, "Delete Preset", vec2(460.0, 150.0), t, |ui| {
-            ui.label(RichText::new(format!("Delete the preset “{name}”?")).color(t.tab_text_active));
+            ui.label(RichText::new(tr_args("Delete the preset “{}”?", &[&name])).color(t.tab_text_active));
             ui.add_space(4.0);
             ui.label(RichText::new(tr("You can't undo this.")).color(t.text_dim).size(11.0));
             ui.add_space(18.0);

@@ -16,18 +16,18 @@ use crate::{PulsoApp, widgets};
 const ROW: f32 = 26.0;
 
 fn label(p: &egui::Painter, x: f32, y: f32, s: &str, t: &Tokens) {
-    p.text(pos2(x, y + 9.0), Align2::LEFT_CENTER, s, Tokens::ui(12.0), t.text_dim);
+    p.text(pos2(x, y + 9.0), Align2::LEFT_CENTER, crate::i18n::tr(s), Tokens::ui(12.0), t.text_dim);
 }
 
 /// A dropdown with options; returns the new index when changed.
 fn choice(app: &mut PulsoApp, ui: &mut egui::Ui, r: Rect, auto: &str, options: &[&str], cur: usize) -> Option<usize> {
     let t = app.tokens;
     let id = egui::Id::unique(("animtool-dd", auto));
-    if widgets::dropdown(ui, r, options.get(cur).copied().unwrap_or(""), &t, id).clicked() {
+    if widgets::dropdown(ui, r, crate::i18n::tr(options.get(cur).copied().unwrap_or("")), &t, id).clicked() {
         widgets::open_popup(ui, id);
     }
     app.auto.add(auto, r, options.get(cur).copied().unwrap_or(""));
-    let opts: Vec<String> = options.iter().map(|s| s.to_string()).collect();
+    let opts: Vec<String> = options.iter().map(|s| crate::i18n::tr(s).to_string()).collect();
     widgets::popup_menu(ui, id, r.left_bottom(), &opts, Some(cur)).filter(|i| *i != cur)
 }
 
@@ -46,7 +46,7 @@ fn checkbox(app: &mut PulsoApp, ui: &mut egui::Ui, at: egui::Pos2, auto: &str, t
     let t = app.tokens;
     let r = Rect::from_min_size(at, vec2(16.0, 16.0));
     let clicked = widgets::checkbox(ui, r, on, &t, egui::Id::unique(("animtool-cb", auto))).changed();
-    ui.painter().text(pos2(r.max.x + 6.0, r.center().y), Align2::LEFT_CENTER, text, Tokens::ui(12.0), t.text);
+    ui.painter().text(pos2(r.max.x + 6.0, r.center().y), Align2::LEFT_CENTER, crate::i18n::tr(text), Tokens::ui(12.0), t.text);
     app.auto.add(auto, r, text);
     if clicked { !on } else { on }
 }

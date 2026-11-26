@@ -11,6 +11,19 @@ pub fn dropdown(app: &mut PulsoApp, ui: &mut egui::Ui, r: Rect, auto: &str, opti
     let t = app.tokens;
     let id = egui::Id::unique(("kit-dd", auto));
     let text = options.get(cur).copied().unwrap_or("");
+    if widgets::dropdown(ui, r, crate::i18n::tr(text), &t, id).clicked() {
+        widgets::open_popup(ui, id);
+    }
+    app.auto.add(auto, r, text);
+    let opts: Vec<String> = options.iter().map(|s| crate::i18n::tr(s).to_string()).collect();
+    widgets::popup_menu(ui, id, r.left_bottom(), &opts, Some(cur)).filter(|i| *i != cur)
+}
+
+/// [`dropdown`] for options that are names the user chose (layers, comps): drawn as they are.
+pub fn dropdown_names(app: &mut PulsoApp, ui: &mut egui::Ui, r: Rect, auto: &str, options: &[&str], cur: usize) -> Option<usize> {
+    let t = app.tokens;
+    let id = egui::Id::unique(("kit-dd", auto));
+    let text = options.get(cur).copied().unwrap_or("");
     if widgets::dropdown(ui, r, text, &t, id).clicked() {
         widgets::open_popup(ui, id);
     }
@@ -24,7 +37,7 @@ pub fn checkbox(app: &mut PulsoApp, ui: &mut egui::Ui, at: egui::Pos2, auto: &st
     let t = app.tokens;
     let r = Rect::from_min_size(at, vec2(16.0, 16.0));
     let clicked = widgets::checkbox(ui, r, on, &t, egui::Id::unique(("kit-cb", auto))).changed();
-    ui.painter().text(pos2(r.max.x + 6.0, r.center().y), Align2::LEFT_CENTER, text, Tokens::ui(12.0), t.text);
+    ui.painter().text(pos2(r.max.x + 6.0, r.center().y), Align2::LEFT_CENTER, crate::i18n::tr(text), Tokens::ui(12.0), t.text);
     let full = Rect::from_min_size(at, vec2(22.0 + text.len() as f32 * 6.5, 16.0));
     app.auto.add(auto, full, text);
     if clicked { !on } else { on }
@@ -40,7 +53,7 @@ pub fn button(app: &mut PulsoApp, ui: &mut egui::Ui, r: Rect, auto: &str, text: 
 
 /// A dimmed label at (x, y-row).
 pub fn label(ui: &egui::Ui, at: egui::Pos2, text: &str, t: &Tokens) {
-    ui.painter().text(pos2(at.x, at.y + 9.0), Align2::LEFT_CENTER, text, Tokens::ui(12.0), t.text_dim);
+    ui.painter().text(pos2(at.x, at.y + 9.0), Align2::LEFT_CENTER, crate::i18n::tr(text), Tokens::ui(12.0), t.text_dim);
 }
 
 /// A draggable number; returns the new value.

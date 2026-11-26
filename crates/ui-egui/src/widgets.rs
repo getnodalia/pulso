@@ -362,6 +362,12 @@ fn field(ui: &mut Ui, rect: Rect, text: &mut String, hint: &str, t: &Tokens, sea
 
 /// Dropdown-looking control ("Full ▾").
 pub fn dropdown(ui: &mut Ui, rect: Rect, text: &str, t: &Tokens, id: egui::Id) -> Response {
+    dropdown_tip(ui, rect, crate::i18n::tr(text), None, t, id)
+}
+
+/// [`dropdown`] for a value the user named (a layer, a style, a font): shown as it is, never looked
+/// up in the catalog.
+pub fn dropdown_names(ui: &mut Ui, rect: Rect, text: &str, t: &Tokens, id: egui::Id) -> Response {
     dropdown_tip(ui, rect, text, None, t, id)
 }
 
@@ -412,6 +418,7 @@ pub fn dropdown_tip(ui: &mut Ui, rect: Rect, text: &str, tip: Option<&str>, t: &
 
 /// Text button with a subtle fill.
 pub fn text_button(ui: &mut Ui, rect: Rect, text: &str, primary: bool, t: &Tokens, id: egui::Id) -> Response {
+    let text = crate::i18n::tr(text);
     let resp = ui.interact(rect, id, Sense::click());
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, ui.is_enabled(), text));
     let bg = if primary {

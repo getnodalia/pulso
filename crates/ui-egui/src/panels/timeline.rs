@@ -2330,7 +2330,7 @@ fn header_search_and_switches(app: &mut PulsoApp, ui: &mut egui::Ui, g: &Tl) {
         (Icon::Flowchart, false, "flowchart", "Composition Mini-Flowchart"),
     ] {
         let r = Rect::from_min_size(pos2(bx - 24.0, top + 11.0), vec2(24.0, 24.0));
-        let resp = widgets::icon_button(ui, r, icon, on, &t, egui::Id::unique(("tl-sw", id))).on_hover_text(tip);
+        let resp = widgets::icon_button(ui, r, icon, on, &t, egui::Id::unique(("tl-sw", id))).on_hover_text(crate::i18n::tr(tip));
         app.auto.add(&format!("timeline.switch.{id}"), r, tip);
         if resp.clicked() {
             match id {
@@ -3296,8 +3296,12 @@ fn layer_parent_cell(app: &mut PulsoApp, ui: &mut egui::Ui, g: &mut Rw, rc: &Row
         },
     );
     let pr_rect = Rect::from_min_size(pos2(cw.parent + 20.0, cy - 9.0), vec2(94.0, 18.0));
-    let plabel = layer.parent.and_then(|p| comp.layer(p)).map(|l| format!("{}. {}", comp.index_of(l.id).unwrap_or(0), l.name)).unwrap_or_else(|| "None".into());
-    let presp = widgets::dropdown(ui, pr_rect, &plabel, &t, egui::Id::unique(("parent", layer.id.0)));
+    let plabel = layer
+        .parent
+        .and_then(|p| comp.layer(p))
+        .map(|l| format!("{}. {}", comp.index_of(l.id).unwrap_or(0), l.name))
+        .unwrap_or_else(|| crate::i18n::tr("None").to_string());
+    let presp = widgets::dropdown_names(ui, pr_rect, &plabel, &t, egui::Id::unique(("parent", layer.id.0)));
     app.auto.add(&format!("timeline.layer.{}.parent", layer.id.0), pr_rect, "Parent");
     let pop = egui::Id::unique(("par-pop", layer.id.0));
     if presp.clicked() {
@@ -3852,7 +3856,7 @@ fn expr_controls(app: &mut PulsoApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<
     );
     let indent = cw.name + 6.0 + 14.0 * row.depth as f32;
     lp.text(pos2(indent + 12.0, cy), Align2::LEFT_CENTER, crate::i18n::tr("Expression:"), Tokens::ui(11.5), t.text_dim);
-    lp.text(pos2(indent + 82.0, cy), Align2::LEFT_CENTER, &prop.name, Tokens::ui(11.5), t.text);
+    lp.text(pos2(indent + 82.0, cy), Align2::LEFT_CENTER, crate::i18n::tr(&prop.name), Tokens::ui(11.5), t.text);
     // "=" enable switch and the property pick whip (AE's expression controls).
     let en_r = Rect::from_center_size(pos2(cw.switches + 10.0, cy), vec2(16.0, 16.0));
     let en = ui.interact(en_r, egui::Id::unique(("expr-en", uid)), Sense::click()).on_hover_text(crate::i18n::tr("Enable Expression"));
@@ -4159,7 +4163,8 @@ fn prop_name(app: &mut PulsoApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>,
     let name_x = indent + 12.0;
     // 3D layers show Rotation as "Z Rotation" next to X/Y Rotation.
     let is_tr_rot = layer.transform().and_then(|t| t.get("rotation")).is_some_and(|r| r.uid == prop.uid);
-    let base = if is_tr_rot && prop.name == "Rotation" && layer.is_3d() { "Z Rotation".to_string() } else { prop.name.clone() };
+    let base =
+        if is_tr_rot && prop.name == "Rotation" && layer.is_3d() { crate::i18n::tr("Z Rotation").to_string() } else { crate::i18n::tr(&prop.name).to_string() };
     let pname = if prop.has_expression() { format!("{base}  =") } else { base };
     lp.text(pos2(name_x, cy), Align2::LEFT_CENTER, &pname, Tokens::ui(12.0), if prop.has_expression() { t.expr_text } else { t.text });
     let name_rect = Rect::from_min_max(pos2(name_x, r.min.y), pos2(cw.switches - 2.0, r.max.y));
@@ -4170,7 +4175,8 @@ fn prop_name(app: &mut PulsoApp, ui: &mut egui::Ui, g: &mut Rw, rc: &RowCtx<'_>,
         egui::DragAndDrop::set_payload(&ctx, crate::panels::DragPayload::Property { layer: layer.id.0, prop: *uid });
     }
     if name_resp.dragged() {
-        egui::Tooltip::always_open(ctx.clone(), ui.layer_id(), egui::Id::unique("prop-drag-tip"), egui::PopupAnchor::Pointer).show(|ui| ui.label(&prop.name));
+        egui::Tooltip::always_open(ctx.clone(), ui.layer_id(), egui::Id::unique("prop-drag-tip"), egui::PopupAnchor::Pointer)
+            .show(|ui| ui.label(crate::i18n::tr(&prop.name)));
     }
     if name_resp.clicked() {
         actions.push(("prop.select".into(), json!({"layer": layer.id.0, "prop": uid, "add": ui.input(|i| i.modifiers.shift)})));

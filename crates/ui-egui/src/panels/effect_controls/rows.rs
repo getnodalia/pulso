@@ -243,7 +243,7 @@ fn value_mask(app: &mut PulsoApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value,
     };
     let PropCx { t, uid, cy, vx, r, layer, prop, .. } = *cx;
     // A mask of this layer ("Path" popup).
-    let mut opts = vec!["None".to_string()];
+    let mut opts = vec![crate::i18n::tr("None").to_string()];
     if let Some(m) = layer.masks() {
         opts.extend(m.groups().map(|g| g.name.clone()));
     }
@@ -251,7 +251,7 @@ fn value_mask(app: &mut PulsoApp, ui: &mut egui::Ui, cx: &PropCx, value: &Value,
     let label = opts.get(i).cloned().unwrap_or_else(|| format!("Mask {i}"));
     let dr = Rect::from_min_size(pos2(vx, cy - 9.0), vec2((r.max.x - vx - 56.0).clamp(80.0, 200.0), 18.0));
     let pop = egui::Id::unique(("ec-mpop", uid));
-    if widgets::dropdown(ui, dr, &label, &t, egui::Id::unique(("ec-m", uid))).clicked() {
+    if widgets::dropdown_names(ui, dr, &label, &t, egui::Id::unique(("ec-m", uid))).clicked() {
         widgets::open_popup(ui, pop);
     }
     app.auto.add(&format!("effectControls.prop.{uid}.value"), dr, &prop.name);

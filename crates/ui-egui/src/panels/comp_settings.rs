@@ -268,22 +268,25 @@ fn tab_body(
                     .or_else(|| PRESETS.iter().find(|(_, w, h, par, f)| matches(d, *w, *h, *par, *f)).map(|p| p.0))
                     .unwrap_or("Custom");
                 ui.horizontal(|ui| {
-                    let r = nodalia_ui::ComboBox::from_id_salt("comp-preset").width(300.0).selected_text(current).show_ui(ui, |ui| {
-                        // Your own presets first, then the built-in ones.
-                        for q in custom {
-                            if ui.selectable_label(q.name == current, &q.name).clicked() {
-                                (d.width, d.height, d.pixel_aspect, d.fps) = (q.width, q.height, q.pixel_aspect, q.frame_rate);
+                    let r = nodalia_ui::ComboBox::from_id_salt("comp-preset")
+                        .width(300.0)
+                        .selected_text(if own.is_some() { current } else { tr(current) })
+                        .show_ui(ui, |ui| {
+                            // Your own presets first, then the built-in ones.
+                            for q in custom {
+                                if ui.selectable_label(q.name == current, &q.name).clicked() {
+                                    (d.width, d.height, d.pixel_aspect, d.fps) = (q.width, q.height, q.pixel_aspect, q.frame_rate);
+                                }
                             }
-                        }
-                        if !custom.is_empty() {
-                            ui.separator();
-                        }
-                        for (name, w, h, par, f) in PRESETS {
-                            if ui.selectable_label(*name == current, *name).clicked() {
-                                (d.width, d.height, d.pixel_aspect, d.fps) = (*w, *h, *par, *f);
+                            if !custom.is_empty() {
+                                ui.separator();
                             }
-                        }
-                    });
+                            for (name, w, h, par, f) in PRESETS {
+                                if ui.selectable_label(*name == current, *name).clicked() {
+                                    (d.width, d.height, d.pixel_aspect, d.fps) = (*w, *h, *par, *f);
+                                }
+                            }
+                        });
                     auto.add("dialog.comp.preset", r.response.rect, "Preset");
                     let (save_r, _) = ui.allocate_exact_size(vec2(20.0, 20.0), egui::Sense::hover());
                     let save = crate::widgets::icon_button(ui, save_r, Icon::Plus, d.preset_name.is_some(), t, egui::Id::unique("comp-preset-save"))

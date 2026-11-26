@@ -78,7 +78,7 @@ fn trackable(l: &Layer) -> bool {
 }
 
 fn label(p: &egui::Painter, pos: Pos2, s: &str, t: &Tokens) {
-    p.text(pos, Align2::LEFT_CENTER, s, Tokens::ui(12.0), t.text_dim);
+    p.text(pos, Align2::LEFT_CENTER, crate::i18n::tr(s), Tokens::ui(12.0), t.text_dim);
 }
 
 /// A button that can be disabled (drawn dim and inert).
@@ -87,7 +87,7 @@ fn button(app: &mut PulsoApp, ui: &mut egui::Ui, r: Rect, text: &str, enabled: b
     app.auto.add(id, r, text);
     if !enabled {
         ui.painter().rect_filled(r, r.height() / 2.0, Color32::from_rgb(0x2a, 0x2a, 0x2a));
-        ui.painter().text(r.center(), Align2::CENTER_CENTER, text, Tokens::medium(12.0), t.text_faint);
+        ui.painter().text(r.center(), Align2::CENTER_CENTER, crate::i18n::tr(text), Tokens::medium(12.0), t.text_faint);
         return false;
     }
     widgets::text_button(ui, r, text, false, &t, egui::Id::unique(id)).clicked()
@@ -180,9 +180,9 @@ pub fn show(app: &mut PulsoApp, ui: &mut egui::Ui, rect: Rect) {
     let srcs: Vec<(LayerId, String)> =
         comp.layers.iter().enumerate().filter(|(_, l)| trackable(l)).map(|(i, l)| (l.id, format!("{}. {}", i + 1, l.name))).collect();
     let dd = Rect::from_min_size(pos2(field_x, y), vec2(field_w, 20.0));
-    let name = source.and_then(|s| srcs.iter().find(|(l, _)| *l == s)).map(|(_, n)| n.clone()).unwrap_or_else(|| "None".into());
+    let name = source.and_then(|s| srcs.iter().find(|(l, _)| *l == s)).map(|(_, n)| n.clone()).unwrap_or_else(|| crate::i18n::tr("None").to_string());
     let did = egui::Id::unique("tracker-source-dd");
-    if widgets::dropdown(ui, dd, &name, &t, did).clicked() {
+    if widgets::dropdown_names(ui, dd, &name, &t, did).clicked() {
         widgets::open_popup(ui, did);
     }
     app.auto.add("tracker.motionSource", dd, "Motion Source");
@@ -205,9 +205,9 @@ pub fn show(app: &mut PulsoApp, ui: &mut egui::Ui, rect: Rect) {
     let trackers: Vec<(Uid, String)> =
         source.and_then(|s| comp.layer(s)).map(|l| l.trackers().map(|(g, _)| (g.uid, g.name.clone())).collect()).unwrap_or_default();
     let dd = Rect::from_min_size(pos2(field_x, y), vec2(field_w, 20.0));
-    let cname = cur.and_then(|(_, u)| trackers.iter().find(|(g, _)| *g == u)).map(|(_, n)| n.clone()).unwrap_or_else(|| "None".into());
+    let cname = cur.and_then(|(_, u)| trackers.iter().find(|(g, _)| *g == u)).map(|(_, n)| n.clone()).unwrap_or_else(|| crate::i18n::tr("None").to_string());
     let did = egui::Id::unique("tracker-current-dd");
-    if widgets::dropdown(ui, dd, &cname, &t, did).clicked() && !trackers.is_empty() {
+    if widgets::dropdown_names(ui, dd, &cname, &t, did).clicked() && !trackers.is_empty() {
         widgets::open_popup(ui, did);
     }
     app.auto.add("tracker.currentTrack", dd, "Current Track");
@@ -259,7 +259,13 @@ pub fn show(app: &mut PulsoApp, ui: &mut egui::Ui, rect: Rect) {
         let cr = Rect::from_min_size(pos2(xx, y + 2.0), vec2(16.0, 16.0));
         let resp = ui.add_enabled_ui(transformish, |ui| widgets::checkbox(ui, cr, on && transformish, &t, egui::Id::unique(("tracker-cb", key)))).inner;
         app.auto.add(&format!("tracker.{key}"), cr, text);
-        p.text(pos2(cr.max.x + 4.0, cr.center().y), Align2::LEFT_CENTER, text, Tokens::ui(12.0), if transformish { t.text } else { t.text_faint });
+        p.text(
+            pos2(cr.max.x + 4.0, cr.center().y),
+            Align2::LEFT_CENTER,
+            crate::i18n::tr(text),
+            Tokens::ui(12.0),
+            if transformish { t.text } else { t.text_faint },
+        );
         if resp.changed() && transformish {
             run(app, &ctx, "track.setType", with(json!({ key: !on })));
         }
@@ -305,7 +311,7 @@ pub fn show(app: &mut PulsoApp, ui: &mut egui::Ui, rect: Rect) {
         (pulso_engine::tracking::Direction::FrameForward, true, true, "frameForward", "Analyze 1 frame forward"),
     ] {
         let r = Rect::from_min_size(pos2(bx, y), vec2(30.0, 22.0));
-        let resp = ui.interact(r, egui::Id::unique(("tracker-analyze", id)), Sense::click()).on_hover_text(tip);
+        let resp = ui.interact(r, egui::Id::unique(("tracker-analyze", id)), Sense::click()).on_hover_text(crate::i18n::tr(tip));
         let stop = tracking && running_dir == Some(dir) && !frame;
         let on = enabled && (!tracking || stop);
         p.rect_filled(r, 4.0, if resp.hovered() && on { t.hover } else { t.field_bg });
