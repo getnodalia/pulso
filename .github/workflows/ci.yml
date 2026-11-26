@@ -32,4 +32,3 @@ jobs:
   git-sources:
     name: git-sources
     uses: getnodalia/foundation/.github/workflows/git-sources.yml@4debdfe28cf5820d1748864efbd8d6996922d1ac # foundation main
-
