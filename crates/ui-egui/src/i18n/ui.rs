@@ -92,7 +92,36 @@ fn catalog(language: &str) -> Option<&'static Index> {
         "sv" => (&SV, SWEDISH),
         _ => return None,
     };
-    Some(index.get_or_init(|| rows.iter().copied().collect()))
+    Some(index.get_or_init(|| {
+        let mut index: Index = rows.iter().copied().collect();
+        if language == "es" {
+            add_menu_rows(&mut index, super::menu_catalog(language).unwrap_or_default());
+        }
+        index
+    }))
+}
+
+/// A word a panel draws that the menu bar's catalog translates is drawn the same way in the
+/// panel, when every menu row for it says the same: "Composition", "Close", "Save". A panel row
+/// for the text wins, and a text the menu bar translates two ways stays as it is.
+fn add_menu_rows(index: &mut Index, menu: &'static [(&'static str, &'static str, &'static str)]) {
+    let mut by_text: HashMap<&'static str, Option<&'static str>> = HashMap::new();
+    for (_, en, translated) in menu {
+        by_text
+            .entry(en)
+            .and_modify(|t| {
+                if *t != Some(*translated) {
+                    *t = None
+                }
+            })
+            .or_insert(Some(translated));
+    }
+    for (en, translated) in by_text {
+        let Some(translated) = translated else { continue };
+        if translated != en {
+            index.entry(en).or_insert(translated);
+        }
+    }
 }
 
 /// The panel strings `language` has no row for, for the missing-strings report: every English
@@ -158,6 +187,11 @@ fn string_literal(rest: &str) -> Option<String> {
 pub(crate) fn catalog_characters(language: &str) -> Vec<char> {
     let panels = catalog(language).into_iter().flat_map(|c| c.values()).flat_map(|s| s.chars());
     panels.chain(super::effects::characters(language)).collect::<std::collections::BTreeSet<_>>().into_iter().collect()
+}
+
+/// The Spanish panel catalog's row for `text` (see [`super::spanish_row`]).
+pub(crate) fn spanish_row(text: &str) -> Option<&'static str> {
+    catalog("es").and_then(|c| c.get(text)).copied()
 }
 
 /// Translate one interface string: the current language's row for `text`, or `text` itself.
@@ -15162,6 +15196,32 @@ const SPANISH: &[(&str, &str)] = &[
     ("Window Controls on Linux", "Controles de ventana en Linux"),
     ("Desktop's Own", "Los del escritorio"),
     ("Window controls change the next time Pulso starts.", "Los controles de ventana cambian la próxima vez que se inicie Pulso."),
+    ("Best", "Máxima"),
+    ("Bevel", "Bisel"),
+    ("Bevel and Emboss", "Bisel y relieve"),
+    ("Color Overlay", "Superposición de color"),
+    ("Cube", "Cubo"),
+    ("Drop Shadow", "Sombra paralela"),
+    ("Easy Ease", "Suavizado"),
+    ("Front", "Frontal"),
+    ("Gradient Overlay", "Superposición de degradado"),
+    ("Inner Glow", "Resplandor interior"),
+    ("Inner Shadow", "Sombra interior"),
+    ("On", "Activado"),
+    ("Outer Glow", "Resplandor exterior"),
+    ("Position", "Posición"),
+    ("Quality", "Calidad"),
+    ("Revert", "Revertir"),
+    ("Rotation", "Rotación"),
+    ("Satin", "Satinado"),
+    ("Scale", "Escala"),
+    ("Stroke", "Trazo"),
+    ("Undocked Panels", "Paneles no acoplados"),
+    ("Zoom In", "Acercar"),
+    ("Mine", "Mía"),
+    ("{} of {} commands", "{} de {} comandos"),
+    ("Delete the preset “{}”?", "¿Eliminar el preajuste «{}»?"),
+    ("Z Rotation", "Rotación Z"),
 ];
 
 /// Georgian (ka): every row of the Chinese catalogs, in the same order (the tests keep them in step).
@@ -17962,6 +18022,7 @@ mod tests {
         ("color_picker.rs", include_str!("../color_picker.rs")),
         ("credits.rs", include_str!("../credits.rs")),
         ("dock.rs", include_str!("../dock.rs")),
+        ("i18n/engine_text.rs", include_str!("../i18n/engine_text.rs")),
         ("dock_ui.rs", include_str!("../dock_ui.rs")),
         ("header.rs", include_str!("../header.rs")),
         ("menus/bar.rs", include_str!("../menus/bar.rs")),

@@ -71,6 +71,7 @@ pub fn text_target(app: &PulsoApp) -> Option<TextTarget> {
 /// decides the new state.
 fn toggle(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, r: Rect, id: &str, look: (&str, bool, bool)) -> bool {
     let (label, on, bold) = look;
+    let label = tr(label);
     let t = app.tokens;
     let resp = ui.interact(r, egui::Id::unique(("text-toggle", id)), Sense::click());
     p.rect_filled(
@@ -291,7 +292,7 @@ pub fn character(app: &mut PulsoApp, ui: &mut egui::Ui, rect: Rect) {
     y += 28.0;
     let sr = Rect::from_min_size(pos2(x0, y), vec2(w - 84.0, 22.0));
     let spop = egui::Id::unique("char-style-pop");
-    if widgets::dropdown(ui, sr, &doc.style, &t, egui::Id::unique("char-style")).clicked() && enabled {
+    if widgets::dropdown_names(ui, sr, &doc.style, &t, egui::Id::unique("char-style")).clicked() && enabled {
         widgets::open_popup(ui, spop);
     }
     app.auto.add("character.style", sr, "Font style");
@@ -341,7 +342,7 @@ pub fn character(app: &mut PulsoApp, ui: &mut egui::Ui, rect: Rect) {
                 app.ui.status = crate::i18n::tr_args("Click in the Composition panel to sample text {}", &[&label]);
             }
         }
-        p.text(pos2(er.max.x + 6.0, y + 10.0), Align2::LEFT_CENTER, label, Tokens::ui(11.5), t.text_dim);
+        p.text(pos2(er.max.x + 6.0, y + 10.0), Align2::LEFT_CENTER, tr(label), Tokens::ui(11.5), t.text_dim);
     }
     y += 32.0;
     // Style toggles: Faux Bold, Faux Italic, All Caps, Small Caps, Superscript, Subscript.
@@ -734,7 +735,7 @@ pub(super) fn font_picker(app: &mut PulsoApp, ui: &mut egui::Ui, id: egui::Id, r
     app.auto.add(auto, rect, "Font family");
     if !widgets::popup_is_open(ui, id) || !enabled {
         ui.data_mut(|d| d.remove::<FontSearch>(state_id));
-        if widgets::dropdown(ui, rect, current, &app.tokens, id.with("field")).clicked() && enabled {
+        if widgets::dropdown_names(ui, rect, current, &app.tokens, id.with("field")).clicked() && enabled {
             widgets::open_popup(ui, id);
         }
         return None;

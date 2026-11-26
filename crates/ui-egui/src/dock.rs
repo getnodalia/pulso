@@ -574,7 +574,7 @@ fn doc_close(
 ) -> bool {
     let timeline = PanelKind::Timeline.id();
     let hit = ui.interact(rect.expand(2.0), egui::Id::unique(("comp-tab-close", doc.id)), Sense::click());
-    hit.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, hit.enabled(), "Close"));
+    hit.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, hit.enabled(), crate::i18n::tr("Close")));
     let cc = if hit.hovered() { style.text } else { style.inactive_text };
     let k = 3.5;
     let painter = ui.painter().with_clip_rect(clip);

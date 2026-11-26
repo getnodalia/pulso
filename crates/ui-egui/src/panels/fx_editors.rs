@@ -860,14 +860,14 @@ fn extractor_layers(app: &mut PulsoApp, ui: &mut egui::Ui, p: &egui::Painter, la
     let label = match extractor_layer(&vals) {
         Some("") => "RGBA".to_string(),
         Some(l) => l.to_string(),
-        None => "Custom".to_string(),
+        None => crate::i18n::tr("Custom").to_string(),
     };
     // Lined up with the parameter names and value popups below (Effect Controls' row layout).
     p.text(pos2(r.min.x + 37.0, r.center().y), Align2::LEFT_CENTER, tr("Layer"), Tokens::ui(12.0), t.text);
     let vx = (r.min.x + r.width() * 0.48).max(r.min.x + 161.0);
     let dr = Rect::from_min_size(pos2(vx, r.center().y - 9.0), vec2((r.max.x - vx - 56.0).clamp(80.0, 200.0), 18.0));
     let pop = egui::Id::unique(("extractor-layers", euid));
-    if widgets::dropdown(ui, dr, &label, &t, egui::Id::unique(("extractor-layer", euid)))
+    if widgets::dropdown_names(ui, dr, &label, &t, egui::Id::unique(("extractor-layer", euid)))
         .on_hover_text(tr("The OpenEXR layer shown in red, green, blue and alpha"))
         .clicked()
     {

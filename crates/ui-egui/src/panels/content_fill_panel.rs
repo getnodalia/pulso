@@ -88,11 +88,11 @@ pub fn show(app: &mut PulsoApp, ui: &mut egui::Ui, rect: Rect) {
     // Reference frame: a layer of the comp at a time.
     kit::label(ui, pos2(x0, y), "Reference Frame:", &t);
     if let Some(c) = &comp {
-        let mut names = vec!["None".to_string()];
+        let mut names = vec![crate::i18n::tr("None").to_string()];
         names.extend(c.layers.iter().map(|l| l.name.clone()));
         let cur = st.reference_layer.and_then(|r| c.layers.iter().position(|l| l.id == r)).map(|i| i + 1).unwrap_or(0);
         let opts: Vec<&str> = names.iter().map(String::as_str).collect();
-        if let Some(i) = kit::dropdown(app, ui, Rect::from_min_size(pos2(xv, y), vec2(w, 20.0)), "contentFill.referenceLayer", &opts, cur) {
+        if let Some(i) = kit::dropdown_names(app, ui, Rect::from_min_size(pos2(xv, y), vec2(w, 20.0)), "contentFill.referenceLayer", &opts, cur) {
             set.insert("referenceLayer".into(), if i == 0 { json!(null) } else { json!(c.layers[i - 1].id.0) });
         }
         y += ROW;

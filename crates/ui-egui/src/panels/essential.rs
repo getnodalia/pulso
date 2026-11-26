@@ -552,7 +552,7 @@ fn instance(app: &mut PulsoApp, ui: &mut egui::Ui, actions: &mut Actions) {
                 }
             }
             if is_over {
-                let r = ui.small_button("Revert");
+                let r = ui.small_button(crate::i18n::tr("Revert"));
                 app.auto.add(&format!("essential.instance.{}.revert", c.id), r.rect, "Revert");
                 if r.clicked() {
                     actions.push(("essential.revert".into(), json!({"layer": layer.id.0, "control": c.id})));
