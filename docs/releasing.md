@@ -60,7 +60,7 @@ pushing to release.`), so bump it first.
 with `cargo xtask version set` before building, so the binaries report it too. Signing and the
 draft release need the `release` environment, which only the `release` branch can use. Run on
 any other branch (`gh workflow run release.yml --ref <branch>`), it is a dry run: the jobs that
-sign nothing (Linux, Flatpak, FreeBSD, web) build and check everything, the macOS and Windows
+sign nothing (Linux, FreeBSD, web) build and check everything, the macOS and Windows
 jobs are refused by the environment's branch rule, and no draft release is made.
 
 ## What gets built
@@ -75,7 +75,6 @@ jobs are refused by the environment's branch rule, and no draft release is made.
 | Linux aarch64 | `pulso-<v>-linux-aarch64.{AppImage,deb,rpm,tar.gz}` | `ubuntu-22.04-arm` |
 | Linux riscv64 | `pulso-<v>-linux-riscv64.tar.gz` | cross-compiled on `ubuntu-24.04` (CLI smoke-tested under QEMU) |
 | Linux AppImage updates | `pulso-<v>-linux-{x86_64,aarch64}.AppImage.zsync` | with the AppImages |
-| Flatpak x86_64, aarch64 | `pulso-<v>-linux-{x86_64,aarch64}.flatpak` (the Linux tarball, repackaged) | `ubuntu-24.04`, `ubuntu-24.04-arm` |
 | FreeBSD 14+ x86_64 | `pulso-<v>-freebsd-x86_64.tar.gz` | a FreeBSD 14.3 VM on `ubuntu-latest` |
 | Web | `pulso-web-<v>.zip` (a static site; see [web.md](web.md)) | `ubuntu-latest` |
 
@@ -116,20 +115,14 @@ ports.ubuntu.com. It ships the tarball only, needs glibc 2.39 (Ubuntu 24.04+, De
 `pulso-cli --version` under `qemu-riscv64` as a smoke test. `package.sh` cross-compiles when
 `CROSS_ARCH`, `CROSS_TARGET` and `CROSS_COMPILE` are set (see its header).
 
-### Linux: AppImage updates and Flatpak
+### Linux: AppImage updates
 
 Each AppImage embeds update information
-(`gh-releases-zsync|storytold|pulso|latest|pulso-*-linux-<arch>.AppImage.zsync`), and
+(`gh-releases-zsync|getnodalia|pulso|latest|pulso-*-linux-<arch>.AppImage.zsync`), and
 the `.zsync` file published beside it lets [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate)
 and AppImageLauncher fetch only the changed blocks from the newest published (non-pre-release)
 version. `package.sh` writes the `.zsync` when `zsyncmake` (the `zsync` package) is installed; the
 workflow checks both.
-
-The `.flatpak` bundles repackage the Linux job's tarball with
-`packaging/linux/flatpak-bundle.sh` and `packaging/linux/flatpak/dev.danielmiguelt.Pulso.bundle.yml`
-(no Rust build inside flatpak-builder), then install the bundle and run `pulso-cli --version`
-in the sandbox. `dev.danielmiguelt.Pulso.yml` is the from-source manifest for Flathub; packaging
-lint keeps the runtime and sandbox permissions of the two identical.
 
 ### FreeBSD
 

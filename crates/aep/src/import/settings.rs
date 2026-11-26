@@ -15,7 +15,7 @@ pub(crate) fn color_space(name: &str) -> Option<ColorSpace> {
         // writes (its description tag) once it re-saves such a project.
         "Rec.709 Gamma 2.4" | "Rec.709 Gamma 2.4 (Pulso)" => Some(ColorSpace::Rec709),
         // Projects exported before the rename name the profile after upstream.
-        "Rec.709 Gamma 2.4 (EffectCraft)" => Some(ColorSpace::Rec709), // rebrand: keep
+        "Rec.709 Gamma 2.4 (EffectCraft)" => Some(ColorSpace::Rec709),
         _ => None,
     }
 }
@@ -96,7 +96,7 @@ mod tests {
     fn rec709_under_both_names() {
         assert_eq!(color_space("Rec.709 Gamma 2.4"), Some(ColorSpace::Rec709));
         assert_eq!(color_space("Rec.709 Gamma 2.4 (Pulso)"), Some(ColorSpace::Rec709));
-        assert_eq!(color_space("Rec.709 Gamma 2.4 (EffectCraft)"), Some(ColorSpace::Rec709)); // rebrand: keep
+        assert_eq!(color_space("Rec.709 Gamma 2.4 (EffectCraft)"), Some(ColorSpace::Rec709));
         assert_eq!(color_space("Rec.709 Gamma 2.4 (other)"), None);
     }
 }

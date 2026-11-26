@@ -19,7 +19,6 @@ interface follows Foundation's [NDL standard](https://github.com/getnodalia/foun
 | Dependency | Where | Replacement | Blocked on |
 |---|---|---|---|
 | `storytold/craft-common-actions` | `.github/workflows/freebsd.yml`, `.github/workflows/windows-arm64.yml` | Foundation reusable workflows (release, refresh-contributors, windows-arm64) | writing and testing them |
-| `storytold/effectcraft` | `.github/workflows/upstream-sync.yml` | none: the intended upstream sync, renamed by `scripts/rebrand.py` | — | <!-- rebrand: keep -->
 | `storytold/egui.git` | `xtask/src/lock_patches.rs` | to decide | — |
 | `storytold/pdfcraft` | `packaging/macos/package.sh` | to decide | — |
 | `storytold/vectorcraft` | `packaging/macos/dmg/README.md`, `packaging/macos/package.sh` | to decide | — |
@@ -29,17 +28,14 @@ interface follows Foundation's [NDL standard](https://github.com/getnodalia/foun
 Done (2026-11-18): Pulso depends on the shared libraries under Nodalia's names only. The
 `nodalia-*` crates come from `nodalia/libs`, Toma's media crates (`toma-*`) from `nodalia/toma`,
 and the fonts build input from `nodalia/fonts` (`NODALIA_FONTS_DIR`), all in getnodalia/foundation
-at the commits made from the upstream revisions Pulso pinned before. The weekly upstream sync runs
-foundation's `scripts/nodalia_libs.py app` after `rebrand.py`, so upstream's `craft-*` and
-`filmcraft-*` dependencies arrive renamed and pinned the same way.
+at the commits made from the upstream revisions Pulso pinned before. There is no upstream sync.
 
 ## Technical debt
 
 - None from the rename: every name is Pulso's, internal ones included (crates `pulso-*`, binaries
-  `pulso`, `pulso-cli` and `pulso-web`, app id `dev.danielmiguelt.Pulso`). `scripts/rebrand.py`
-  applies `.github/rebrand.toml` to upstream's tree in the weekly sync (`docs/upstream.md`), and the
-  "No upstream names" check runs `python3 scripts/rebrand.py check`. File signatures keep their
-  upstream names so files saved before the rename keep opening.
+  `pulso`, `pulso-cli` and `pulso-web`, app id `dev.danielmiguelt.Pulso`). There is no upstream sync and
+  no rename tooling. File signatures keep their
+  earlier names so files saved before the rename keep opening.
 
 ## Reusable Nodalia components
 

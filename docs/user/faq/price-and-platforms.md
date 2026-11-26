@@ -13,7 +13,7 @@ Yes, Pulso is free. It is open source, dual-licensed under MIT or Apache-2.0, at
 |----------|----------------------------------------------------------------------------------------|
 | Windows  | x64, arm64 and 32-bit x86, as MSI installers and portable zips                         |
 | macOS    | One universal app for Apple silicon and Intel                                          |
-| Linux    | x86_64 and aarch64 as AppImage, Flatpak, deb, rpm and tar.gz; riscv64 deb, rpm, tar.gz |
+| Linux    | x86_64 and aarch64 as AppImage, deb, rpm and tar.gz; riscv64 deb, rpm, tar.gz |
 | FreeBSD  | x86_64 tar.gz                                                                          |
 | Browser  | A web build that runs the full app                                                     |
 

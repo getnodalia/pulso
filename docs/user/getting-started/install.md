@@ -36,7 +36,6 @@ Pick one file from the release. Replace `x86_64` with `aarch64` on ARM.
 | `pulso-<version>-linux-x86_64.AppImage` | Run `chmod +x` on the file, then run it. |
 | `pulso-<version>-linux-x86_64.deb`      | For Debian and Ubuntu.                   |
 | `pulso-<version>-linux-x86_64.rpm`      | For Fedora, RHEL and openSUSE.           |
-| `pulso-<version>-linux-x86_64.flatpak`  | `flatpak install --user <file>`          |
 | `pulso-<version>-linux-x86_64.tar.gz`   | Unpack it anywhere.                      |
 
 For RISC-V 64-bit there is a `.deb`, an `.rpm` and a `.tar.gz` (`riscv64` in the file name). They need glibc 2.39 or newer. There is also a FreeBSD x86_64 `.tar.gz`.
