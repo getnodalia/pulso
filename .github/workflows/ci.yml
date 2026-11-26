@@ -31,7 +31,7 @@ jobs:
   # Every git dependency in Cargo.lock comes from getnodalia or nodalia-design.
   git-sources:
     name: git-sources
-    uses: getnodalia/foundation/.github/workflows/git-sources.yml@5321115b86797dd193181f889f0155c986959231 # foundation main
+    uses: getnodalia/foundation/.github/workflows/git-sources.yml@4debdfe28cf5820d1748864efbd8d6996922d1ac # foundation main
 
   # Pulso's own names everywhere; upstream's arrive renamed by the weekly sync.
   names:
