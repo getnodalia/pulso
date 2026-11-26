@@ -20,7 +20,6 @@ pub mod bench;
 pub mod brand;
 pub mod color_picker;
 pub mod control;
-pub mod credits;
 pub mod display_gpu;
 pub mod dock;
 pub mod dock_ui;
