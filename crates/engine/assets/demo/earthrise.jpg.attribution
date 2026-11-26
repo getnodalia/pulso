@@ -1,0 +1,8 @@
+asset:        earthrise.jpg
+title:        Earthrise (AS08-14-2383), Apollo 8, 1968-12-24
+author:       NASA / Bill Anders (Apollo 8)
+source:       https://commons.wikimedia.org/wiki/File:NASA-Apollo8-Dec24-Earthrise.jpg
+license:      Public domain (NASA media are not copyrighted; NASA media usage guidelines)
+license-file:
+added:        2026-11-26 by Pulso contributors (Claude agent, demo project)
+notes:        Fetched as a Wikimedia Commons thumbnail (1920 px), cropped to 3:2, resized to 1600 px and recompressed (JPEG). Used by the "Earthrise" comp of the demo project; credited in its end card.
