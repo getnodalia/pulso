@@ -385,7 +385,7 @@ the app. Only WebAssembly effects are listed: they run in the same sandbox as an
 package can't read files, open the network or crash the app.
 
 * **One reviewed catalog.** The list comes from one `index.json` in the
-  [`storytold/effectcraft-plugins`](https://github.com/storytold/effectcraft-plugins) repository;
+  [`getnodalia/pulso-plugins`](https://github.com/getnodalia/pulso-plugins) repository;
   packages are added by pull request and reviewed there. The app has no field for another
   catalog; `library.refresh {catalog}` (for plug-in authors testing an entry) takes an `index.json`
   on GitHub or a local file, and the page then says it shows a test catalog until Refresh.

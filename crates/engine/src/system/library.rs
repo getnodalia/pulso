@@ -31,7 +31,7 @@ use crate::commands::{CommandSpec, always, b_p, bad, str_p};
 use crate::{PluginLoader, PluginPreviewer, Result, Session, cmd, query};
 
 /// The community catalog.
-pub const CATALOG_URL: &str = "https://raw.githubusercontent.com/storytold/effectcraft-plugins/main/index.json";
+pub const CATALOG_URL: &str = "https://raw.githubusercontent.com/getnodalia/pulso-plugins/main/index.json";
 /// The catalog format this build reads.
 pub const CATALOG_SCHEMA: u32 = 1;
 /// Hosts plug-ins and catalogs may be downloaded from (release assets redirect to the last two).

@@ -1,6 +1,6 @@
 # Checks index.json on every pull request and push: schema, unique ids, every release's download
 # (size + SHA-256), then installs every package with the real Pulso loader.
-# Lives at .github/workflows/validate.yml in storytold/effectcraft-plugins.
+# Lives at .github/workflows/validate.yml in getnodalia/pulso-plugins.
 name: Validate
 
 on:

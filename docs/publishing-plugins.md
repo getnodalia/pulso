@@ -142,7 +142,7 @@ file you attached to the release (download it again if in doubt).
 ## 7. Write the catalog entry
 
 The catalog is one `index.json` in the
-[`storytold/effectcraft-plugins`](https://github.com/storytold/effectcraft-plugins) repository.
+[`getnodalia/pulso-plugins`](https://github.com/getnodalia/pulso-plugins) repository.
 A starting point for that repository (an example entry, a JSON Schema and the checks run on
 every pull request) is in [`examples/plugin-catalog`](../examples/plugin-catalog).
 
@@ -259,7 +259,7 @@ The Refresh button in the app goes back to the community catalog.
 
 ## 9. Open a pull request to the catalog
 
-1. Fork [`storytold/effectcraft-plugins`](https://github.com/storytold/effectcraft-plugins).
+1. Fork [`getnodalia/pulso-plugins`](https://github.com/getnodalia/pulso-plugins).
 2. Add your package to `packages` in `index.json`. Keep the file's formatting.
 3. Open a pull request. Say what the effect does and link the release. A screenshot or a short
    video helps the review.

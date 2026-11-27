@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/storytold/effectcraft-plugins/main/schema.json",
+  "$id": "https://raw.githubusercontent.com/getnodalia/pulso-plugins/main/schema.json",
   "title": "Pulso Plug-in Library catalog (index.json), format 1",
   "description": "Mirrors crates/engine/src/system/library.rs (parse_catalog). Unknown fields are rejected here to catch typos; the app itself ignores them.",
   "type": "object",
