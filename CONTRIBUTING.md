@@ -53,11 +53,11 @@ cargo +stable-x86_64-pc-windows-gnu run -p pulso -- --demo
 ```
 
 An older MinGW earlier on `PATH` can break the build: CodeBlocks' GCC 8.1 fails to link
-`boa_engine` ([#1882](https://github.com/storytold/effectcraft/issues/1882)).
+`boa_engine` (#1882).
 
 Rust's bundled LLD and self-contained libraries don't include every import library Pulso
 needs, so on their own they stop with `unable to find library` for `-lshlwapi`, `-lktmw32`,
-`-lpropsys` and `-lversion` ([#1886](https://github.com/storytold/effectcraft/issues/1886)). To
+`-lpropsys` and `-lversion` (#1886). To
 link that way, copy those four from mingw-w64 into a folder of its own and add that folder to the
 search path in your own Cargo config (`%USERPROFILE%\.cargo\config.toml`). Don't add all of
 mingw-w64's `lib` folder: its C runtime clashes with Rust's bundled one

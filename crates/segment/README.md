@@ -13,7 +13,7 @@ Trained models for Roto Brush and face tracking, each kind behind one swappable 
 - **`MODELS`**: the registry. Every entry must be open source under a licence compatible with
   Pulso's MIT OR Apache-2.0 (`ALLOWED_LICENCES`), with its task, authors, homepage, licence
   URL, an app download URL when available, size and SHA-256. `load` refuses anything else.
-  SAM 2 is Install from File only until a storytold-controlled mirror is available.
+  SAM 2 is Install from File only until a Nodalia-controlled mirror is available.
   The checkpoint `source` stays separate from the app download URL, so file-install guidance and
   licence notices identify the verified artifact even when app downloads are unavailable.
 - **Weights are never bundled.** They are downloaded on demand (or installed from a file) by the

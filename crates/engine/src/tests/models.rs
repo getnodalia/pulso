@@ -255,7 +255,7 @@ fn reloading_for_a_stroke_does_not_block_or_retry_a_failed_load() {
 }
 
 /// With `PULSO_DOWNLOAD_SIZE=mobilesam` (or another downloadable registry id): the in-app
-/// download verifies and loads the file. SAM 2 must refuse until a storytold mirror is available.
+/// download verifies and loads the file. SAM 2 must refuse until a Nodalia mirror is available.
 /// Skipped without the variable: downloadable entries need the network and large files.
 #[cfg(not(target_arch = "wasm32"))]
 #[test]

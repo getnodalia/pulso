@@ -21,7 +21,7 @@ Open **Help ▸ System Compatibility Report...** and read the **GPU:** and **Win
 5. Close Pulso and start it again. The change applies from the next launch.
 6. Open the report again and check that `Window graphics:` now names your card.
 
-One user whose GPU was not detected on 0.8.0 fixed it this way: they set the window graphics to Automatic, and Pulso started through Vulkan ([issue #596](https://github.com/storytold/effectcraft/issues/596)).
+One user whose GPU was not detected on 0.8.0 fixed it this way: they set the window graphics to Automatic, and Pulso started through Vulkan (issue #596).
 
 If the window runs on your card but the report still says `GPU: none (CPU compositing)`, the reason after it says why the GPU compositor did not start. With **OpenGL (compatibility)**, compositing always runs on the CPU, because the GPU compositor needs DirectX 12, Vulkan, Metal or WebGPU.
 
@@ -33,7 +33,7 @@ The **GPU Information...** button on the Previews page of the preferences names 
 
 ## Windows 11 with DirectX 12
 
-On some Windows 11 PCs with NVIDIA GPUs, the GPU compositor fails to start on DirectX 12 because the FXC shader compiler rejects some of Pulso's GPU kernels. Two users reproduced this with an RTX 4060 laptop GPU and an RTX 3060. In their tests Pulso fell back to CPU compositing, and the same build started on Vulkan. This is still open in 0.9.2 as [issue #613](https://github.com/storytold/effectcraft/issues/613). Check the issue for updates.
+On some Windows 11 PCs with NVIDIA GPUs, the GPU compositor fails to start on DirectX 12 because the FXC shader compiler rejects some of Pulso's GPU kernels. Two users reproduced this with an RTX 4060 laptop GPU and an RTX 3060. In their tests Pulso fell back to CPU compositing, and the same build started on Vulkan. This is still open in 0.9.2 as issue #613. Check the issue for updates.
 
 The window can also take a long time to appear. On 0.8.0 with an RTX 5060 Ti, one user measured 69 seconds before the window showed on DirectX 12 without a working DXC shader compiler, against 3 seconds on Vulkan, which is what Automatic picked on that PC. If you close Pulso during that wait, the next launch uses OpenGL and has no GPU compositor until you set **Window Graphics** back to **Automatic** (steps above). So wait for the window on the first launch.
 

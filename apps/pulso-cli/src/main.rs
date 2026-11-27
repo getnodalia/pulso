@@ -375,7 +375,7 @@ const MAX_COMMANDS_STEPS: usize = 100_000;
 
 /// The text of `--commands source`: the file `source`, or standard input for `-`, refused past
 /// [`MAX_COMMANDS_BYTES`]. This reader, [`parse_commands`] and [`command_step`] are ported from
-/// vectorcraft-cli's (storytold/vectorcraft#3630), with a tuple in place of its `Step` enum.
+/// vectorcraft-cli's, with a tuple in place of its `Step` enum.
 fn read_commands(source: &str) -> Result<String, String> {
     use std::io::Read;
     let mut bytes = vec![];

@@ -51,12 +51,6 @@ Set `verified` to the latest release (the newest release tag) after checking the
 A folder's `index.md` names the folder in the sidebar. Files or folders starting with `_` are
 drafts and are not published.
 
-## Check before you push
-
-    node <path to your artcraft-services checkout>/frontend/apps/artcraft-website-next/scripts/docs/core.mjs docs/user
-
-The checker lives in storytold/artcraft-services. A CI check will be added once it is on that repo's main branch.
-
 ## Support PRs
 
 Pages written to answer a user question come in as PRs titled `docs(support): <page title>`.
