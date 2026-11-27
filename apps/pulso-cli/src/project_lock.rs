@@ -3,7 +3,7 @@
 //! A `--save` run reads the project, edits it and writes the whole file back, so two at once would
 //! silently drop the edits of whichever saved first (#2851). Each run holds an OS lock from before
 //! its read until it exits; the next one waits, then reads what the first one saved. This is how
-//! filmcraft-cli does it (storytold/filmcraft#3926).
+//! filmcraft-cli does it.
 //!
 //! The lock is on a file next to the project, not on the project: a save replaces the project's
 //! inode, and on Windows a locked file can't be read by other processes. The OS drops the lock when

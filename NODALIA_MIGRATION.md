@@ -16,11 +16,7 @@ interface follows Foundation's [NDL standard](https://github.com/getnodalia/foun
 
 ## Inherited dependencies still pending
 
-| Dependency | Where | Replacement | Blocked on |
-|---|---|---|---|
-| `storytold/craft-common-actions` | `.github/workflows/freebsd.yml`, `.github/workflows/windows-arm64.yml` | Foundation reusable workflows (release, refresh-contributors, windows-arm64) | writing and testing them |
-| `storytold/pdfcraft` | `packaging/macos/package.sh` | to decide | — |
-| `storytold/vectorcraft` | `packaging/macos/dmg/README.md`, `packaging/macos/package.sh` | to decide | — |
+None. Nothing in this repository names a storytold repository any more.
 
 ## Shared libraries
 

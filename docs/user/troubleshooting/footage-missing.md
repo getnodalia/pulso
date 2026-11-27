@@ -28,7 +28,7 @@ Relinking keeps item names, interpretation and layer timing. It does not change 
 
 A project stores where each footage file is. If you move or rename the files, or open the project on another computer, the project cannot find them.
 
-Projects built with the command-line tool or an agent can use relative paths such as `bg.mp4`. Before 0.8.0, the app looked for those in its own working directory instead of next to the project file. Since 0.8.0 it also looks next to the project file ([pull request #676](https://github.com/storytold/effectcraft/pull/676)). The reporter on macOS has not confirmed the fix yet ([issue #652](https://github.com/storytold/effectcraft/issues/652)).
+Projects built with the command-line tool or an agent can use relative paths such as `bg.mp4`. Before 0.8.0, the app looked for those in its own working directory instead of next to the project file. Since 0.8.0 it also looks next to the project file (pull request #676). The reporter on macOS has not confirmed the fix yet (issue #652).
 
 ## Still stuck?
 

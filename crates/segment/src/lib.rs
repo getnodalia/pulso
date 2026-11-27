@@ -171,7 +171,7 @@ pub const MOBILE_SAM: ModelInfo = ModelInfo {
 };
 
 /// SAM 2.1 Tiny (Meta AI, Apache-2.0): a video object tracker with streaming memory. The weights are
-/// the Hugging Face `transformers` checkpoint, identified by SHA-256. Until a storytold mirror
+/// the Hugging Face `transformers` checkpoint, identified by SHA-256. Until a Nodalia mirror
 /// is available, install it from a file. `pulso-sam2` (native only) loads it, not [`load`].
 pub const SAM2_TINY: ModelInfo = ModelInfo {
     id: "sam2.1-hiera-tiny",
@@ -436,7 +436,7 @@ mod tests {
             ["mobilesam", "sam2.1-hiera-tiny", "sam2.1-hiera-small", "sam2.1-hiera-base-plus", "sam2.1-hiera-large"]
         );
         for model in [SAM2_TINY, SAM2_SMALL, SAM2_BASE_PLUS, SAM2_LARGE] {
-            assert!(model.url.is_empty(), "SAM 2 has no app download until a storytold mirror is available");
+            assert!(model.url.is_empty(), "SAM 2 has no app download until a Nodalia mirror is available");
             assert!(model.file_name.ends_with(".safetensors"));
             assert!(model.source.contains("/blob/") && model.source.ends_with("/model.safetensors"));
             assert!(notice(&model).contains(&format!("Source: {}", model.source)));

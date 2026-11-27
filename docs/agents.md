@@ -204,7 +204,7 @@ Things that tripped up a long agent-driven session (a multi-scene 3D piece built
   default to layer time; pass `timeBase: "comp"` to supply comp seconds on offset or
   stretched layers. `run_script`'s `setValueAtTime` and `keyTime` also use comp time. Without an
   explicit engine time base, subtract the layer's start time before keying an unstretched layer
-  ([#257](https://github.com/storytold/effectcraft/issues/257)).
+  (#257).
 - **Moving a layer in time.** `execute_command layer.timing {"layers":["Scene 2"],"start":5.1}` sets
   the start time in comp seconds and moves the in and out points with it.
 - **Loops in scripts.** `run_script` can call any engine command with `app.run(id, params)`, for
@@ -233,8 +233,8 @@ Things that tripped up a long agent-driven session (a multi-scene 3D piece built
   of at least 8 pixels or four map texels, plus Shadow Diffusion). It only lights
   Advanced 3D comps, so creating one (or changing a light's type to Environment) switches a
   Classic 3D comp to Advanced 3D
-  ([#261](https://github.com/storytold/effectcraft/issues/261),
-  [#2436](https://github.com/storytold/effectcraft/issues/2436)).
+  (#261,
+  #2436).
 
 ### Cookbook (from end-to-end QA)
 
@@ -574,7 +574,7 @@ Trained model (Roto Brush 2.0 / 3.0):
   SHA-256 and whether it is installed, selected and active.
 - `roto.model.download {id}` fetches and verifies weights when the registry provides an app download URL;
   `roto.model.install {path, id?}` installs a file you already have. SAM 2 is Install from File only until
-  a storytold-controlled mirror is available; its size and SHA-256 are verified before installation.
+  a Nodalia-controlled mirror is available; its size and SHA-256 are verified before installation.
 - `roto.model.select {id: classical|mobilesam|sam2.1-hiera-tiny|sam2.1-hiera-small|sam2.1-hiera-base-plus|sam2.1-hiera-large}` chooses which one Roto Brush uses (SAM 2 also tracks the object through the clip, see [roto-brush-sam2.md](roto-brush-sam2.md); `roto.status` then reports `source` and per-frame `tracker.frames` with `confidence` and `occluded`). Loading runs
   in the background. `"wait": true` waits for the requested operation; download/install load the model
   only if it is already selected. They do not activate an unselected model: after installation, use
