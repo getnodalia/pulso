@@ -43,8 +43,8 @@ and loads the package. Before merging, also check:
 
 The template lives in Pulso at `examples/plugin-catalog/`.
 
-1. Create the empty public repository `storytold/effectcraft-plugins` (branch `main`, so the app's
-   catalog URL `https://raw.githubusercontent.com/storytold/effectcraft-plugins/main/index.json`
+1. Create the empty public repository `getnodalia/pulso-plugins` (branch `main`, so the app's
+   catalog URL `https://raw.githubusercontent.com/getnodalia/pulso-plugins/main/index.json`
    resolves).
 2. Copy `README.md`, `index.json`, `example-entry.json`, `schema.json` and `scripts/` to its root,
    and `validate.yml` to `.github/workflows/validate.yml`.

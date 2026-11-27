@@ -128,10 +128,7 @@ reproduce an image (for example, point lists traced from someone else's icon).
 - Read [`docs/gaps.md`](docs/gaps.md) and [`docs/target-app-parity.md`](docs/target-app-parity.md) before choosing work. Fidelity, reliability and stability (G1–G3) come before new features.
 - Workflows call getnodalia/foundation's reusable workflows pinned by commit; see the CI workflows section.
 
-Shared real-file test corpora (Photoshop-authored PSDs, etc.) live in
-[`storytold/photocraft-corpus`](https://github.com/storytold/photocraft-corpus).
-Never commit large binary fixtures to this repo; fetch them pinned by commit and sha256-verified,
-as Lienzo does with `cargo xtask corpus`.
+Shared real-file test oracles live in [`getnodalia/nodalia-corpus`](https://github.com/getnodalia/nodalia-corpus), each with its provenance and licence. Never commit large binary fixtures to this repo; fetch them pinned by commit and sha256-verified, as Lienzo does with `cargo xtask corpus`.
 
 ## See also
 

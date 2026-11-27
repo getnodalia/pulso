@@ -6,7 +6,7 @@
   "repo": "https://github.com/getnodalia/pulso/tree/main/examples/plugins/posterize-bands",
   "description": "Posterizes luminance into a chosen number of bands and tints them.",
   "tags": ["stylize", "color"],
-  "preview": {"video": "https://github.com/storytold/effectcraft-plugins/raw/main/previews/posterize-bands.mp4"},
+  "preview": {"video": "https://github.com/getnodalia/pulso-plugins/raw/main/previews/posterize-bands.mp4"},
   "versions": [
     {
       "version": "1.0.0",
