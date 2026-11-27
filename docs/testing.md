@@ -8,7 +8,7 @@ cargo xtask ci --affected  # the same gates, scoped to crates your change can af
 
 The After Effects test projects of `crates/aep` are not in the repository; without them the
 `crates/aep`, engine and ui-egui tests that need one print `SKIPPED: fixture <name> missing` and
-pass. They live in [storytold/effectcraft-corpus](https://github.com/storytold/effectcraft-corpus).
+pass. They live in [getnodalia/nodalia-corpus](https://github.com/getnodalia/nodalia-corpus) (folder `aep/`), which has none yet; the maintainer adds real projects there with their provenance.
 `cargo xtask aep-corpus` fetches them at the commit pinned in `crates/aep/tests/fixtures/corpus.lock`,
 checks every file against the SHA-256 listed there (any mismatch fails and installs nothing) and
 installs them in `corpus/aep`. Point `PULSO_AEP_FIXTURES` at that folder to run those tests

@@ -59,8 +59,9 @@ After Effects, one change per file, compared byte by byte. No source code or for
 documentation of another `.aep` reader or writer was used, and no Adobe asset is used. The test fixtures are such generated files
 (own test data): a few combined projects, one composition per case (`tests/fixtures/CASES.md`;
 the generator is in `tests/fixtures/tools/`). They are not in this repository but in
-[storytold/effectcraft-corpus](https://github.com/storytold/effectcraft-corpus), with their
-attribution, the generation notes and the inspection of their embedded content.
+[getnodalia/nodalia-corpus](https://github.com/getnodalia/nodalia-corpus) (folder `aep/`), with their
+attribution, the generation notes and the inspection of their embedded content. That folder has no
+project yet: the maintainer adds them, and until then the tests that need one skip.
 `cargo xtask aep-corpus` fetches them at the commit pinned in `tests/fixtures/corpus.lock`, checks
 every file against the SHA-256 listed there and only then installs them in `corpus/aep` (ignored by
 git). The tests read them from the folder named by the `PULSO_AEP_FIXTURES` environment
