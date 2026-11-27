@@ -46,7 +46,7 @@ version = "0.37.0"
 [[patch.unused]]
 name = "egui_demo_lib"
 version = "0.37.0"
-source = "git+https://github.com/storytold/egui.git?rev=6d518fc#6d518fc"
+source = "git+https://github.com/getnodalia/foundation.git?rev=6d518fc#6d518fc"
 
 [[patch.unused]]
 name = "egui_inspection"

@@ -74,9 +74,6 @@ fn parse_lock(text: &str) -> Result<Lock, String> {
     }
     let repo = repo.filter(|r| !r.is_empty()).ok_or_else(|| format!("{LOCK}: no `repo` line"))?;
     let commit = commit.ok_or_else(|| format!("{LOCK}: no `commit` line"))?;
-    if files.is_empty() {
-        return Err(format!("{LOCK}: no files listed"));
-    }
     Ok(Lock { repo, commit, files })
 }
 
@@ -160,6 +157,10 @@ pub fn run(root: &Path, args: &[String]) -> Result<(), String> {
     let dest = if dir.is_absolute() { dir } else { root.join(dir) };
     let text = std::fs::read_to_string(root.join(LOCK)).map_err(|e| format!("{LOCK}: {e}"))?;
     let lock = parse_lock(&text)?;
+    if lock.files.is_empty() {
+        println!("aep-corpus: {LOCK} lists no files yet, so there is nothing to fetch; the tests that need a project skip");
+        return Ok(());
+    }
     if up_to_date(&dest, &lock.files) {
         println!("aep-corpus: {} files in {} already match the pin {}", lock.files.len(), dest.display(), &lock.commit[..12]);
     } else {
@@ -194,6 +195,12 @@ mod tests {
     }
 
     #[test]
+    fn a_lock_file_may_list_no_files() {
+        let l = parse_lock(&lock("")).unwrap();
+        assert!(l.files.is_empty());
+    }
+
+    #[test]
     fn rejects_malformed_locks() {
         for (body, why) in [
             (format!("{H}  ../x.aep\n"), "parent folder"),
@@ -204,7 +211,6 @@ mod tests {
             ("abc  aep/a.aep\n".to_string(), "short hash"),
             (format!("{}  aep/a.aep\n", H.to_uppercase()), "upper-case hash"),
             (format!("{H} aep/a.aep\n"), "one space"),
-            (String::new(), "no files"),
         ] {
             assert!(parse_lock(&lock(&body)).is_err(), "{why} must be rejected");
         }
@@ -217,7 +223,7 @@ mod tests {
     fn the_checked_in_lock_file_is_valid() {
         let text = std::fs::read_to_string(crate::root().join(LOCK)).unwrap();
         let l = parse_lock(&text).unwrap();
-        assert_eq!(l.files.len(), 20);
+        assert!(l.repo.contains("getnodalia/nodalia-corpus"), "the corpus is Nodalia's own");
         assert!(l.files.windows(2).all(|w| w[0].1 < w[1].1), "files sorted by path");
     }
 
